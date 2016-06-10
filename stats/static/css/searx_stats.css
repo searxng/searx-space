@@ -1,0 +1,38 @@
+body {
+  padding-top: 70px;
+  padding-bottom: 30px;
+}
+
+.theme-dropdown .dropdown-menu {
+  position: static;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.theme-showcase > p > .btn {
+  margin: 5px 0;
+}
+
+.theme-showcase .navbar .container {
+  width: auto;
+}
+
+.label-http {
+    display: inline-block;
+    position: absolute;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.label-http:hover {
+    display: inline-block;
+    position: absolute;
+    max-width: 100%;
+}
+
+.time {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+}
