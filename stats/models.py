@@ -9,7 +9,10 @@ class Instance(models.Model):
     install_since = models.DateField()
 
     def __str__(self):
-        return self.url
+        if self.url is None or self.url == '':
+            return self.hidden_server_url
+        else:
+            return self.url
 
     def url_host(self):
         if self.url is not None:
@@ -51,13 +54,36 @@ class Query(models.Model):
         return '[' + self.engine.name + '] ' + self.query
 
 
+class Certificate(models.Model):
+    signature = models.CharField(max_length=1024, blank=True)
+    signature_algorithm = models.CharField(max_length=256, blank=True)
+    start_date = models.DateField()
+    expire_date = models.DateField()
+    issuer = models.CharField(max_length=1024, blank=True)
+    subject = models.CharField(max_length=1024, blank=True)
+    cert = models.CharField(max_length=8192, blank=True)
+
+    def __str__(self):
+        return self.subject
+
+
+class Url(models.Model):
+    url = models.URLField(max_length=1024, blank=True, unique=True)
+
+    def __str__(self):
+        return self.url
+
+
 class InstanceTest(models.Model):
     timestamp = models.DateField(auto_now_add=True)
     instance = models.ForeignKey(Instance, on_delete=models.CASCADE)
+    url = models.ForeignKey(Url, on_delete=models.SET_NULL, null=True)
     response_time = models.DurationField()
     http_result = models.PositiveSmallIntegerField()
     error_message = models.CharField(max_length=256, blank=True)
-    certificate_issuer = models.CharField(max_length=1024, blank=True)
+    certificate = models.ForeignKey(Certificate, on_delete=models.SET_NULL, null=True)
+    valid_ssl = models.BooleanField(default=True)
+    valid_instance = models.BooleanField(default=True)
     searx_version = models.CharField(max_length=32, blank=True)
 
 
@@ -72,10 +98,6 @@ class QueryTest(models.Model):
 
 
 '''
-class QueryTestResultUrl(models.Model):
-    url = models.URLField(max_length=1024, blank=True, unique=True)
-
-
 class QueryTestResult(models.Model):
     query_test = models.ForeignKey(QueryTest, on_delete=models.CASCADE)
     rank = models.PositiveSmallIntegerField()

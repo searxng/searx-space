@@ -33,6 +33,10 @@ body {
     max-width: 100%;
 }
 
+.invalid .url {
+    opacity: 0.4
+}
+
 .time {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
 }

@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 
 # Create your views here.
 from django.http import HttpResponse
@@ -8,10 +8,15 @@ from django.db.models import Count, Max
 from .models import Instance, Engine, Query, InstanceTest
 
 HTTP_CODE = {
+    # 2xx
     200: 'OK',
+
+    # 3xx
     301: 'Moved Permanently',
     302: 'Found',
     303: 'See Other',
+
+    # 4xx
     400: 'Bad Request',
     401: 'Unauthorized',
     403: 'Forbidden',
@@ -51,7 +56,7 @@ HTTP_CODE = {
 '''
 def index(request):
     # get all instances
-    instances = Instance.objects.annotate(last_test_id=Max('instancetest')).order_by('install_since')
+    instances = Instance.objects.annotate(last_test_id=Max('instancetest')).exclude(url='').order_by('install_since')
     # get all last tests for all instances
     instance_test_ids = []
     instance_tests = {}
@@ -85,7 +90,17 @@ def index(request):
     return HttpResponse(template.render(context, request))
 
 
-def instance(request, instance):
+def instance(request, instance_id):
+    instance = get_object_or_404(Instance, pk=instance_id)
+    '''
+    display:
+    - history for normal instance and onion instance: certificate change, searx version change, url change
+    how ?
+    - load InstanceTest, iterate, and a new entry each time there a change
+
+    display:
+    - response time (avg, median, 95% quartile)
+    '''
     return HttpResponse('')
 
 

@@ -1,58 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-  {% load staticfiles %}
-  {% load humanize %}
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <link rel="icon" href="{% static '/img/favicon.png' %}">
-
-    <title>searx-stats</title>
-
-    <!-- Bootstrap core CSS -->
-    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
-
-    <!-- Bootstrap theme -->
-    <link href="{% static 'css/bootstrap-theme.min.css' %}" rel="stylesheet">
-    
-    <!-- Custom styles for this template -->
-    <link href="{% static 'css/searx_stats.css' %}" rel="stylesheet">
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="{% static 'js/html5shiv.min.js'}"></script>
-      <script src="{% static 'js/respond.min.js'}"></script>
-    <![endif]-->
-  </head>
-  <body>
-
-    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#">searx stats</a>
-        </div>
-        <div id="navbar" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
-            <li class="active"><a href="#">Home</a></li>
-            <li><a href="/admin">Admin</a></li>
-            <!--<li><a href="#instances">Instances</a></li>-->
-            <!--<li><a href="#engines">Engines</a></li>-->
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div>
-    </nav>
-
-    <div class="container theme-showcase" role="main">
-
+{% extends "stats/base.html" %}
+{% load staticfiles %}
+{% load humanize %}
+{% block content %}
       <!-- Main jumbotron for a primary marketing message or call to action -->
       <div class="jumbotron">
         <h1>Welcome</h1>
@@ -74,7 +23,6 @@
       <thead>
         <tr>
           <th>URL</th>
-          <!-- <th>onion URL</th> -->
 	  <th>Online status</th>
 	  <th>Searx version</th>
 	  <th>Response time</th>
@@ -84,8 +32,8 @@
       </thead>
       <tbody>
 	{% for instance in instances %}
-	<tr>
-	  <td><a href="{{ instance.url }}">{{ instance.url }}</a>
+	<tr {%if instance.last_test.valid_instance %}class="valid"{% else %}class="invalid"{% endif %}>
+	  <td class="url"><a href="{{ instance.url }}">{{ instance.url }}</a>
 	    <a href="https://www.ssllabs.com/ssltest/analyze.html?d={{ instance.url_host }}">
 	      <button type="button" class="btn btn-default btn-xs">
 		<span class="glyphicon glyphicon-check" aria-hidden="true"></span>
@@ -93,7 +41,6 @@
 	      </button>
 	    </a>
 	  </td>
-	  <!-- <td><a href="{{ instance.hidden_service_url }}">{{ instance.hidden_service_url }}</a></td> -->
 	  <td><span class="label-http label {{instance.last_test.http_result_class}}">{{ instance.last_test.http_result_msg }}</span></td>
 	  <td>{{ instance.last_test.searx_version }}</td>
 	  <td><span class="time">{{ instance.last_test.response_time.total_seconds|floatformat:3|intcomma }}</span></td>
@@ -114,5 +61,5 @@
     <p>No instance are available.</p>
     {% endif %}
 
+{% endblock %}
 
-</html>
