@@ -1,6 +1,11 @@
 searx-stats2
 ============
 
+Statistics on `searx <https://asciimoo.github.io/searx/>`__ instances
+
+Rewrite of the `first version <https://github.com/pointhi/searx_stats>`__ (written in PHP)
+
+Licence: GNU AGPLv3+
 
 Installation
 ~~~~~~~~~~~~
@@ -11,7 +16,7 @@ Installation
 -  install dependencies: ``pip install requirements.txt``
 -  edit your
    `searx_stats2/settings.py <https://github.com/dalf/searx-stats2/blob/master/searx_stats2/settings.py>`__
-   (set your ``SECRET_KEY``!)
+   (set your ``SECRET_KEY``, and you may want to configure the database : https://docs.djangoproject.com/en/1.9/ref/settings/#databases )
+-  run ``./manage.py migrate stats``
 -  run ``./manage installtasks`` to setup a cron task to update the instances status. Alternative use ``./manage runtask update`` to update manually
 -  run ``./manage runserver`` to start the application
-
