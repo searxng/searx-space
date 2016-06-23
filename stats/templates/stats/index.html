@@ -41,9 +41,9 @@
 	      </button>
 	    </a>
 	  </td>
-	  <td><span class="label-http label {{instance.last_test.http_result_class}}">{{ instance.last_test.http_result_msg }}</span></td>
+	  <td><span class="label-http label {{instance.last_test.result_class}}">{{ instance.last_test.result_msg }}</span></td>
 	  <td>{{ instance.last_test.searx_version }}</td>
-	  <td><span class="time">{{ instance.last_test.response_time.total_seconds|floatformat:3|intcomma }}</span></td>
+	  <td><span class="time">{{ instance.last_test.total_response_time.total_seconds|floatformat:3|intcomma }}</span></td>
 	  <td>{{ instance.last_test.timestamp }}</td>
 	  <td>
 	    <a href="{% url 'instance' instance.id %}">

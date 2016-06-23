@@ -29,7 +29,7 @@ HTTP_CODE = {
     496: 'SSL Certificate Required',
     497: 'HTTP Request Sent to HTTPS Port',
     499: 'Client Closed Request',
-    
+
     # Standard
     500: 'Internal Server Error',
     501: 'Not Implemented',
@@ -47,13 +47,15 @@ HTTP_CODE = {
     524: 'A Timeout Occurred',
     525: 'SSL Handshake Failed',
     526: 'Invalid SSL Certificate',
-    
 }
+
 
 '''
   TO OPTIMIZE
   AND NOT REALIBLE (assume the last test for an instance has the highest id)
 '''
+
+
 def index(request):
     # get all instances
     instances = Instance.objects.annotate(last_test_id=Max('instancetest')).exclude(url='').order_by('install_since')
@@ -70,17 +72,30 @@ def index(request):
     for instance in instances:
         if instance.last_test_id in instance_tests:
             instance.last_test = instance_tests[instance.last_test_id]
-            if instance.last_test.error_message != '':
-                instance.last_test.http_result_class = 'label-danger'
-                instance.last_test.http_result_msg = instance.last_test.error_message
+            if instance.last_test.connection_error_message != '':
+                # connection problem
+                instance.last_test.result_class = 'label-danger'
+                instance.last_test.result_msg = instance.last_test.connection_error_message
+            elif not instance.last_test.valid_instance and instance.last_test.http_status_code < 300:
+                # connection is working and get HTTP response but there is no searx instance
+                instance.last_test.result_class = 'label-danger'
+                instance.last_test.result_msg = str(instance.last_test.http_status_code) + ' - Not a valid Searx instance'
             else:
-                instance.last_test.http_result_msg = str(instance.last_test.http_result) + ' - ' + HTTP_CODE.get(instance.last_test.http_result, '')
-                if instance.last_test.http_result < 300:
-                    instance.last_test.http_result_class = 'label-success'
-                elif instance.last_test.http_result < 400:
-                    instance.last_test.http_result_class = 'label-warning'
+                # connection ok, display HTTP error code
+                instance.last_test.result_msg = str(instance.last_test.http_status_code) \
+                + ' - ' + HTTP_CODE.get(instance.last_test.http_status_code, '')
+                if instance.last_test.http_status_code < 300:
+                    # valid instance because it was tested before
+                    instance.last_test.result_class = 'label-success'
+                elif instance.last_test.http_status_code < 400:
+                    instance.last_test.result_class = 'label-warning'
                 else:
-                    instance.last_test.http_result_class = 'label-danger'
+                    instance.last_test.result_class = 'label-danger'
+        else:
+            #
+            instance.last_test = {}
+            instance.last_test['result_class'] = 'label-default'
+            instance.last_test['result_msg'] = 'Untested'
 
     # rendering
     template = loader.get_template('stats/index.html')
@@ -110,4 +125,3 @@ def engine_list(request):
 
 def engine(request, instance):
     return HttpResponse('')
-

@@ -54,7 +54,7 @@ class RequestContainer(object):
 
         if cookies is None:
             cookies = {}
-            
+
         if callback is None:
             callback = no_callback
 
@@ -80,7 +80,7 @@ class RequestContainer(object):
         curl_handler.setopt(curl_handler.WRITEFUNCTION, self._response_buffer.write)
         curl_handler.setopt(curl_handler.SSL_VERIFYPEER, int(ssl_verification))
 
-    def extract_response(self):
+    def extract_response(self, curl_error_code=None, curl_error_message=None):
         body = self._response_buffer.getvalue()
         status_code = self.curl_handler.getinfo(pycurl.HTTP_CODE)
         content_type = self.curl_handler.getinfo(pycurl.CONTENT_TYPE)
@@ -91,7 +91,7 @@ class RequestContainer(object):
             ("NAMELOOKUP_TIME", pycurl.NAMELOOKUP_TIME),
             ("CONNECT_TIME", pycurl.CONNECT_TIME),
             ("APPCONNECT_TIME", pycurl.APPCONNECT_TIME),
-            ("PRETRANSFER_TIME" ,pycurl.PRETRANSFER_TIME),
+            ("PRETRANSFER_TIME", pycurl.PRETRANSFER_TIME),
             ("STARTTRANSFER_TIME", pycurl.STARTTRANSFER_TIME),
             ("REDIRECT_TIME", pycurl.REDIRECT_TIME),
             ("REDIRECT_COUNT", pycurl.REDIRECT_COUNT)
@@ -106,22 +106,26 @@ class RequestContainer(object):
         dictcertinfo = []
         for cert in certinfo:
             d = {}
-            for k,v in cert:
+            for k, v in cert:
                 d[k] = v
             dictcertinfo.append(d)
 
         # create object
-        self.response = ResponseContainer(self.url, dictcertinfo, status_code, body, content_type, timings)
+        self.response = ResponseContainer(self.url, dictcertinfo, status_code,
+                                          curl_error_code, curl_error_message,
+                                          body, content_type, timings)
 
 
 class ResponseContainer(object):
-    def __init__(self, url, certinfo, status_code, body, content_type, timings):
+    def __init__(self, url, certinfo, status_code, curl_error_code, curl_error_message, body, content_type, timings):
         self.url = url
         self.certinfo = certinfo
         self.status_code = status_code
         self.text = self.content = body
         self.content_type = content_type
-        self.timings = timings        
+        self.timings = timings
+        self.curl_error_code = curl_error_code
+        self.curl_error_message = curl_error_message
 
 
 class MultiRequest(object):
@@ -134,7 +138,6 @@ class MultiRequest(object):
             self._curl_multi_handler = multi_handler
         else:
             self._curl_multi_handler = pycurl.CurlMulti()
-
 
     def add(self, url, **kwargs):
         handle = get_connection()
@@ -149,20 +152,15 @@ class MultiRequest(object):
         self._async_callbacks = []
         self._async_results = []
 
-    def _callback(self, callback, response, error_code, error_message, *parameters):
+    def _callback(self, callback, response, *parameters):
         if self._defer_callbacks:
             self._async_callbacks.append(
                 (callback,
-                 response,
-                 error_code,
-                 error_message)
-                 + parameters
+                 response,) + parameters
             )
         else:
             self._async_results.append(POOL.submit(callback,
                                                    response,
-                                                   error_code,
-                                                   error_message,
                                                    *parameters))
 
     def send_requests(self):
@@ -211,17 +209,13 @@ class MultiRequest(object):
                         self._callback(
                             self.requests[h].callback,
                             self.requests[h].response,
-                            None,
-                            None,
                             *self.requests[h].callback_parameters
                         )
-                    for h, err_code, err_string in error_list:
-                        self.requests[h].extract_response()
+                    for h, error_code, error_message in error_list:
+                        self.requests[h].extract_response(curl_error_code=error_code, curl_error_message=error_message)
                         self._callback(
                             self.requests[h].callback,
                             self.requests[h].response,
-                            err_code,
-                            err_string,
                             *self.requests[h].callback_parameters
                         )
 
@@ -237,11 +231,28 @@ class MultiRequest(object):
         for future in self._async_results:
             remaining_time = max(0.0, timeout - (time() - send_start))
             try:
-                future.result(timeout = remaining_time)
+                future.result(timeout=remaining_time)
             except TimeoutError:
                 logging.warning('engine timeout: {0}'.format(th._engine_name))
 
         return True
+
+
+'''
+
+'''
+
+
+def fetch(url, **kwargs):
+    response_container = None
+
+    def c(_response_container):
+        response_container = _response_container
+
+    multi = MultiRequest()
+    multi.add(url, callback=c, **kwargs)
+    multi.send_requests()
+    return response_container
 
 
 # Thread pool with the GIL limitation
@@ -251,21 +262,20 @@ if __name__ == '__main__':
     def __test_callback0(responseContainer):
         pass
 
-    def __test_callback(responseContainer, error_code, error_message, www):
+    def __test_callback(responseContainer, www):
+        print(www)
         if responseContainer is not None:
             print(responseContainer.url)
+            print(responseContainer.curl_error_code)
+            print(responseContainer.curl_error_message)
             print(responseContainer.status_code)
             print(responseContainer.content_type)
             if len(responseContainer.certinfo) > 0:
                 print(responseContainer.certinfo[0]['Signature'])
                 print(responseContainer.certinfo[0]['Expire date'])
                 print(responseContainer.certinfo[0])
-            for k,v in responseContainer.timings.items():
+            for k, v in responseContainer.timings.items():
                 print("{name} {time}".format(name=k, time=v))
-        else:
-            print(error[0])
-            print(error[1])
-
 
     r = MultiRequest(defer_callbacks=False)
     useragent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.84 Safari/537.36'
@@ -276,3 +286,6 @@ if __name__ == '__main__':
     # r.add('https://httpbin.org/delay/0', cookies={'as': 'sa', 'bb': 'cc'})
     # r.add('http://httpbin.org/delay/0', callback=__test_callback, timeout=1.0, headers={'User-Agent': 'x'})
     r.send_requests()
+
+    print('---------------------')
+    print(fetch('http://www.example.com'))

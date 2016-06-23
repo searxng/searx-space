@@ -3,6 +3,7 @@ from django.contrib import admin
 # Register your models here.
 from .models import Instance, Engine, Query
 
+
 class InstanceAdmin(admin.ModelAdmin):
     list_display = ('url', 'hidden_service_url', 'install_since')
     ordering = ('install_since',)

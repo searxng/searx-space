@@ -3,6 +3,7 @@ from django.db import models
 # Create your models here.
 from urllib.parse import urlparse
 
+
 class Instance(models.Model):
     url = models.URLField(max_length=200, blank=True, unique=True)
     hidden_service_url = models.URLField(max_length=200, blank=True)
@@ -10,7 +11,7 @@ class Instance(models.Model):
 
     def __str__(self):
         if self.url is None or self.url == '':
-            return self.hidden_server_url
+            return self.hidden_service_url
         else:
             return self.url
 
@@ -33,13 +34,9 @@ class Engine(models.Model):
 class Query(models.Model):
     GET = 'GET'
     POST = 'POST'
-    HEAD = 'HEAD'
-    OPTIONS = 'OPTIONS'
     HTTP_METHODS = (
         (GET, 'GET'),
         (POST, 'POST'),
-        (HEAD, 'HEAD'),
-        (OPTIONS, 'OPTIONS'),        
     )
 
     engine = models.ForeignKey(Engine, on_delete=models.CASCADE, db_column='engine_name')
@@ -75,27 +72,48 @@ class Url(models.Model):
 
 
 class InstanceTest(models.Model):
-    timestamp = models.DateField(auto_now_add=True)
+    # keys
+    timestamp = models.DateTimeField(auto_now_add=True)
     instance = models.ForeignKey(Instance, on_delete=models.CASCADE)
     url = models.ForeignKey(Url, on_delete=models.SET_NULL, null=True)
-    response_time = models.DurationField()
-    http_result = models.PositiveSmallIntegerField()
-    error_message = models.CharField(max_length=256, blank=True)
+    # response time
+    pretransfer_response_time = models.DurationField()
+    total_response_time = models.DurationField()
+    # SSL
     certificate = models.ForeignKey(Certificate, on_delete=models.SET_NULL, null=True)
+    connection_error_message = models.CharField(max_length=256, blank=True)
     valid_ssl = models.BooleanField(default=True)
+    # HTTP
+    http_status_code = models.PositiveSmallIntegerField(null=True)
+    # Searx
     valid_instance = models.BooleanField(default=True)
     searx_version = models.CharField(max_length=32, blank=True)
 
+    class Meta:
+        ordering = ["-timestamp", "instance", "url"]
+        unique_together = (("timestamp", "instance", "url"),)
+
 
 class QueryTest(models.Model):
-    timestamp = models.DateField(auto_now_add=True)
+    # keys
+    timestamp = models.DateTimeField(auto_now_add=True)
     instance = models.ForeignKey(Instance, on_delete=models.CASCADE)
+    url = models.ForeignKey(Url, on_delete=models.SET_NULL, null=True)
     query = models.ForeignKey(Query, on_delete=models.CASCADE)
-    response_time = models.DurationField()
-    http_result = models.PositiveSmallIntegerField()
-    error_message = models.CharField(max_length=256, blank=True)
+    # response time
+    pretransfer_response_time = models.DurationField()
+    total_response_time = models.DurationField()
+    # TCP
+    connection_error_message = models.CharField(max_length=256, blank=True)
+    # HTTP
+    http_status_code = models.PositiveSmallIntegerField()
+    # Result
+    valid_result = models.BooleanField(default=True)
     result_count = models.PositiveSmallIntegerField()
 
+    class Meta:
+        ordering = ["-timestamp", "instance", "query"]
+        unique_together = (("timestamp", "instance", "url"),)
 
 '''
 class QueryTestResult(models.Model):

@@ -5,14 +5,15 @@ import dateutil.parser
 from lxml import html, etree
 from datetime import timedelta
 
-from .httpadapter import MultiRequest
+from .httpadapter import MultiRequest, fetch
 from .models import Instance, Engine, Query, InstanceTest, Certificate, Url
 
 
 @kronos.register('0 0 * * *')
 def update():
+    #
     instances = Instance.objects.order_by('install_since')
-    
+
     # normal instances
     '''
     deferred callbacks : make sure to never block reading of HTTP responses
@@ -65,7 +66,7 @@ def get_searx_version(response_container):
         dom = html.fromstring(response_html)
     except etree.XMLSyntaxError:
         # not a valid HTML document
-        # TODO workaround with regex
+        # TODO workaround with regex ?
         return ''
 
     searx_full_version = extract_text_from_dom(dom, "/html/head/meta[@name='generator']/@content")
@@ -80,49 +81,65 @@ def get_searx_version(response_container):
     return searx_version
 
 
-def update_instance(response_container, error_code, error_message, instance, instance_test_ssl_pb):
+def update_instance(response_container, instance, instance_test_ssl_pb):
     logging.info('update instance {0}'.format(response_container.url))
 
-    response_time = timedelta(seconds=response_container.timings['TOTAL_TIME'])
+    # get response time
+    pretransfer_response_time = timedelta(seconds=response_container.timings['TOTAL_TIME'])
+    total_response_time = timedelta(seconds=response_container.timings['TOTAL_TIME'])
     url = get_url(response_container.url)
 
+    # get certificate
     certificate = None
     if len(response_container.certinfo) > 0:
         curl_certificate = response_container.certinfo[0]
         certificate = get_certificate(curl_certificate)
 
-    if error_code is None:
-        http_result = response_container.status_code
+    if response_container.curl_error_code is None:
+        # connection ok
+        http_status_code = response_container.status_code
+        curl_error_message = ''
+        # read searx version
         searx_version = get_searx_version(response_container)
         valid_instance = (searx_version != '')
-        error_message = ''
     else:
-        valid_instance = False
-        http_result = 0
+        # connection error
+        http_status_code = None
+        curl_error_message = response_container.curl_error_message
         searx_version = ''
-    
-    it = InstanceTest(instance=instance, 
+        valid_instance = False
+
+    it = InstanceTest(instance=instance,
                       url=url,
-                      response_time=response_time, 
-                      searx_version=searx_version, 
-                      http_result=http_result,
-                      error_message = error_message,
-                      certificate = certificate,
-                      valid_ssl = valid_instance,
-                      valid_instance = valid_instance
-                     )
+                      pretransfer_response_time=pretransfer_response_time,
+                      total_response_time=total_response_time,
+                      certificate=certificate,
+                      connection_error_message=curl_error_message,
+                      valid_ssl=valid_instance,
+                      http_status_code=http_status_code,
+                      valid_instance=valid_instance,
+                      searx_version=searx_version,)
     it.save()
 
     # if SSL error, check again without SSL verification after
-    if error_code in [35, 51, 58, 59, 60, 83, 90, 91]:
+    # see https://curl.haxx.se/libcurl/c/libcurl-errors.html
+    # 35: A problem occurred somewhere in the SSL/TLS handshake.
+    # 51: The remote server's SSL certificate or SSH md5 fingerprint was deemed not OK.
+    # 58: problem with the local client certificate.
+    # 59: Couldn't use specified cipher.
+    # 60: Peer certificate cannot be authenticated with known CA certificates.
+    # 83: Issuer check failed
+    # 90: Failed to match the pinned key specified with CURLOPT_PINNEDPUBLICKEY.
+    # 91: Status returned failure when asked with CURLOPT_SSL_VERIFYSTATUS.
+    if response_container.curl_error_code in [35, 51, 58, 59, 60, 83, 90, 91]:
         instance_test_ssl_pb.append(it)
 
 
-def update_instance_version(response_container, error_code, error_message, instance_test):
-    if error_code is None:
+def update_instance_version(response_container, instance_test):
+    if response_container.curl_error_code is None:
         instance_test = InstanceTest.objects.get(pk=instance_test.pk)
-        instance_test.searx_version = get_searx_version(response_container)
         instance_test.valid_ssl = False
+        instance_test.searx_version = get_searx_version(response_container)
         instance_test.valid_instance = (instance_test.searx_version != '')
         instance_test.save()
 
@@ -152,13 +169,13 @@ def get_certificate(curl_certificate):
 
     # lookup
     certificates = Certificate.objects.filter(
-        signature = curl_certificate['Signature'],
-        signature_algorithm = curl_certificate['Signature Algorithm'],
-        start_date = start_date,
-        expire_date = expire_date,
-        issuer = curl_certificate['Issuer'],
-        subject = curl_certificate['Subject'],
-        cert = curl_certificate['Cert'],
+        signature=curl_certificate['Signature'],
+        signature_algorithm=curl_certificate['Signature Algorithm'],
+        start_date=start_date,
+        expire_date=expire_date,
+        issuer=curl_certificate['Issuer'],
+        subject=curl_certificate['Subject'],
+        cert=curl_certificate['Cert'],
     )
 
     if len(certificates) > 0:
@@ -167,13 +184,13 @@ def get_certificate(curl_certificate):
 
     # not found : create a new one
     certificate = Certificate(
-        signature = curl_certificate['Signature'],
-        signature_algorithm = curl_certificate['Signature Algorithm'],
-        start_date = start_date,
-        expire_date = expire_date,
-        issuer = curl_certificate['Issuer'],
-        subject = curl_certificate['Subject'],
-        cert = curl_certificate['Cert'],
+        signature=curl_certificate['Signature'],
+        signature_algorithm=curl_certificate['Signature Algorithm'],
+        start_date=start_date,
+        expire_date=expire_date,
+        issuer=curl_certificate['Issuer'],
+        subject=curl_certificate['Subject'],
+        cert=curl_certificate['Cert'],
     )
     certificate.save()
     return certificate
