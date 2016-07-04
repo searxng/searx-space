@@ -21,6 +21,11 @@ class QueryAdmin(admin.ModelAdmin):
     ordering = ('engine', 'query', 'method', 'language', 'image_proxy', 'safesearch', 'locale')
 
 
+class InstanceTestAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'timestamp', 'instance', 'url_type', 'aggregate_id', 'http_status_code', 'connection_error_message')
+    ordering = ('instance', 'aggregate_id', 'timestamp')
+
+
 admin.site.register(Instance, InstanceAdmin)
 admin.site.register(Engine, EngineAdmin)
 admin.site.register(Query, QueryAdmin)

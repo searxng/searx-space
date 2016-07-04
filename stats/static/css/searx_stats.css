@@ -31,6 +31,29 @@ body {
     display: inline-block;
     position: absolute;
     max-width: 100%;
+    z-index: 1000;
+}
+
+.certificate {
+    width: 200px;
+}
+
+.label-certificate {
+    display: inline-block;
+    position: absolute;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.label-certificate:hover {
+    display: inline-block;
+    position: absolute;
+    max-width: 100%;
+    z-index: 1000;
+    padding-right: 20px;
 }
 
 .invalid .url {
@@ -39,4 +62,36 @@ body {
 
 .time {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+}
+
+tr.odd {
+    background: white;
+}
+
+tr.even {
+    background-color: #f9f9f9;
+}
+
+tr.odd .label-certificate:hover {
+    background: white;
+}
+
+tr.even .label-certificate:hover {
+    background: #f9f9f9;
+}
+
+tr.linked td {
+    border-top: none !important;
+}
+
+tr.linked .url {
+    padding-left: 30px;
+}
+
+tr.linked .status {
+/*    padding-left: 120px; */
+}
+
+tr.linked .time {
+    padding-left: 60px;
 }

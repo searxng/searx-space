@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'kronos',
     'test_pep8',
+    'debug_toolbar'
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -128,3 +129,11 @@ STATIC_URL = '/static/'
 PROJECT_DIR = os.path.dirname(__file__)
 TEST_PEP8_DIRS = [os.path.dirname(PROJECT_DIR), ]
 TEST_PEP8_EXCLUDE = ['migrations', ]  # Exclude this paths from tests
+
+# CACHE
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake'
+    }
+}

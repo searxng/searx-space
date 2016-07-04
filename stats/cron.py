@@ -6,7 +6,7 @@ from lxml import html, etree
 from datetime import timedelta
 
 from .httpadapter import MultiRequest, fetch
-from .models import Instance, Engine, Query, InstanceTest, Certificate, Url
+from .models import Instance, Engine, Query, InstanceTest, Certificate, Url, URL_TYPE_HTTPS, URL_TYPE_TOR
 
 
 @kronos.register('0 0 * * *')
@@ -15,41 +15,38 @@ def update():
     instances = Instance.objects.order_by('install_since')
 
     # normal instances
-    '''
-    deferred callbacks : make sure to never block reading of HTTP responses
-    '''
-    multi = MultiRequest(defer_callbacks=True)
+    # deferred callbacks : make sure to never block reading of HTTP responses
+    multi = MultiRequest(defer_callbacks=True, max_simultanous_connections=3)
     instance_test_ssl_pb = []
     for instance in instances:
         if instance.url != '':
             multi.add(instance.url,
-                      timeout=20,
+                      timeout=20000,
                       callback=update_instance,
-                      callback_parameters=(instance, instance_test_ssl_pb))
+                      callback_parameters=(instance, instance_test_ssl_pb, URL_TYPE_HTTPS))
     multi.send_requests()
 
     # for normal instance with SSL problem, check again without SSL check
-    multi = MultiRequest(defer_callbacks=True)
+    multi = MultiRequest(defer_callbacks=True, max_simultanous_connections=3)
     for instance_test in instance_test_ssl_pb:
         multi.add(str(instance_test.url),
-                  timeout=20,
+                  timeout=20000,
                   ssl_verification=False,
                   callback=update_instance_version,
                   callback_parameters=(instance_test, ))
     multi.send_requests()
+    # TODO : check if Tor is working
 
     # Onion instances
-    '''
-    multi = MultiRequest(defer_callbacks=True)
+    multi = MultiRequest(defer_callbacks=True, max_simultanous_connections=3)
     for instance in instances:
         if instance.hidden_service_url != '':
             multi.add(instance.hidden_service_url,
-                      proxy='socks4a://localhost:9050',
-                      timeout=20,
+                      proxy='socks4://localhost:9050',
+                      timeout=20000,
                       callback=update_instance,
-                      callback_parameters=(instance, ))
+                      callback_parameters=(instance, None, URL_TYPE_TOR))
     multi.send_requests()
-    '''
 
 
 # returns extract_text on the first result selected by the xpath or None
@@ -81,7 +78,7 @@ def get_searx_version(response_container):
     return searx_version
 
 
-def update_instance(response_container, instance, instance_test_ssl_pb):
+def update_instance(response_container, instance, instance_test_ssl_pb, url_type):
     logging.info('update instance {0}'.format(response_container.url))
 
     # get response time
@@ -111,14 +108,16 @@ def update_instance(response_container, instance, instance_test_ssl_pb):
 
     it = InstanceTest(instance=instance,
                       url=url,
+                      url_type=url_type,
                       pretransfer_response_time=pretransfer_response_time,
                       total_response_time=total_response_time,
                       certificate=certificate,
                       connection_error_message=curl_error_message,
-                      valid_ssl=valid_instance,
+                      valid_ssl=valid_instance,   # bug ?
                       http_status_code=http_status_code,
                       valid_instance=valid_instance,
                       searx_version=searx_version,)
+    update_aggregate_id(it)
     it.save()
 
     # if SSL error, check again without SSL verification after
@@ -131,23 +130,60 @@ def update_instance(response_container, instance, instance_test_ssl_pb):
     # 83: Issuer check failed
     # 90: Failed to match the pinned key specified with CURLOPT_PINNEDPUBLICKEY.
     # 91: Status returned failure when asked with CURLOPT_SSL_VERIFYSTATUS.
-    if response_container.curl_error_code in [35, 51, 58, 59, 60, 83, 90, 91]:
+    if instance_test_ssl_pb is not None and response_container.curl_error_code in [35, 51, 58, 59, 60, 83, 90, 91]:
         instance_test_ssl_pb.append(it)
 
 
-def update_instance_version(response_container, instance_test):
+def update_instance_version(response_container, instancetest):
     if response_container.curl_error_code is None:
-        instance_test = InstanceTest.objects.get(pk=instance_test.pk)
-        instance_test.valid_ssl = False
-        instance_test.searx_version = get_searx_version(response_container)
-        instance_test.valid_instance = (instance_test.searx_version != '')
-        instance_test.save()
+        instancetest = InstanceTest.objects.get(pk=instancetest.pk)
+        instancetest.valid_ssl = False
+        instancetest.searx_version = get_searx_version(response_container)
+        instancetest.valid_instance = (instancetest.searx_version != '')
+        certificate = None
+        if len(response_container.certinfo) > 0:
+            curl_certificate = response_container.certinfo[0]
+            instancetest.certificate = get_certificate(curl_certificate)
+        update_aggregate_id(instancetest)
+        instancetest.save()
+
+
+def update_aggregate_id(instancetest):
+    # get the last aggregate_id
+    lastrecord = InstanceTest.objects.filter(instance=instancetest.instance)\
+                 .order_by('-timestamp')\
+                 .first()
+    if lastrecord is None:
+        aggregate_id = 0
+    else:
+        aggregate_id = lastrecord.aggregate_id
+
+    # get the last test for the same URL
+    if (lastrecord is None) or (lastrecord.url != instancetest.url):
+        lastrecord = InstanceTest.objects.filter(instance=instancetest.instance, url=instancetest.url)\
+                                         .order_by('-timestamp')\
+                                         .first()
+
+    # if the two test can aggregate keeps the same id
+    # can_aggregate accepts None
+    if instancetest.can_aggregate(lastrecord):
+        instancetest.aggregate_id = aggregate_id
+    else:
+        # is it the first test for this aggregate_id and URL
+        lastrecord = InstanceTest.objects.filter(instance=instancetest.instance, aggregate_id=aggregate_id, url=instancetest.url)\
+                                         .order_by('-timestamp')\
+                                         .first()
+        if lastrecord is not None:
+            instancetest.aggregate_id = aggregate_id + 1
+        else:
+            instancetest.aggregate_id = aggregate_id
 
 
 def get_url(url_string):
     if url_string is None:
         return None
 
+    # get_or_create(defaults=None, **kwargs) ?
     urls = Url.objects.filter(url=url_string)
 
     if len(urls) > 0:

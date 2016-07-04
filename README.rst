@@ -3,7 +3,9 @@ searx-stats2
 
 Statistics on `searx <https://asciimoo.github.io/searx/>`__ instances
 
-Rewrite of the `first version <https://github.com/pointhi/searx_stats>`__ (written in PHP)
+Rewrite in Python of the `first version <https://github.com/pointhi/searx_stats>`__ (written in PHP)
+
+WARNING : Work in progress.
 
 Licence: GNU AGPLv3+
 

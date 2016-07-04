@@ -18,40 +18,46 @@
 
     </div>
 
-    {% if instances %}
-    <table class="table table-striped">
+    {% if instancetest_list %}
+    <table class="table">
       <thead>
         <tr>
           <th>URL</th>
 	  <th>Online status</th>
 	  <th>Searx version</th>
+	  <th>Certificate</th>
 	  <th>Response time</th>
           <th>Last update</th>
 	  <th>Details</th>
         </tr>
       </thead>
       <tbody>
-	{% for instance in instances %}
-	<tr {%if instance.last_test.valid_instance %}class="valid"{% else %}class="invalid"{% endif %}>
-	  <td class="url"><a href="{{ instance.url }}">{{ instance.url }}</a>
-	    <a href="https://www.ssllabs.com/ssltest/analyze.html?d={{ instance.url_host }}">
+	{% for instancetest in instancetest_list %}
+	<tr class="{%if instancetest.valid_instance %}valid{% else %}invalid{% endif %} {%if instancetest.odd %}odd{% else %}even{% endif %} {%if instancetest.first %}first{% endif %} {%if instancetest.linked %}linked{% endif %}">
+	  <td class="url"><a href="{{ instancetest.url.url }}">{{ instancetest.url.url }}</a>
+	    {% if instancetest.url.scheme == 'https' %}
+	    <a href="https://www.ssllabs.com/ssltest/analyze.html?d={{ instancetest.url.netloc }}">
 	      <button type="button" class="btn btn-default btn-xs">
 		<span class="glyphicon glyphicon-check" aria-hidden="true"></span>
 		Check SSL
 	      </button>
 	    </a>
+	    {% endif %}
 	  </td>
-	  <td><span class="label-http label {{instance.last_test.result_class}}">{{ instance.last_test.result_msg }}</span></td>
-	  <td>{{ instance.last_test.searx_version }}</td>
-	  <td><span class="time">{{ instance.last_test.total_response_time.total_seconds|floatformat:3|intcomma }}</span></td>
-	  <td>{{ instance.last_test.timestamp }}</td>
+	  <td class="status"><span class="label-http label {{instancetest.result_class}}">{{ instancetest.result_msg }}</span></td>
+	  <td>{{ instancetest.searx_version }}</td>
+	  <td class="certificate"><span class="label-certificate">{% if instancetest.certificate  %}{{ instancetest.certificate }}{% endif %}</span></td>
+	  <td><span class="time">{{ instancetest.total_response_time.total_seconds|floatformat:3|intcomma }}</span></td>
+	  <td>{{ instancetest.timestamp }}</td>
 	  <td>
-	    <a href="{% url 'instance' instance.id %}">
+	    {% if instancetest.first %}
+	    <a href="{% url 'instance' instancetest.instance.pk %}">
 	      <button type="button" class="btn btn-default btn-xs">
 		<span class="glyphicon glyphicon-expand"></span>
 		Detail
 	      </button>
 	    </a>
+	    {% endif %}
 	  </td>
 	</tr>
 	{% endfor %}

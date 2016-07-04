@@ -8,8 +8,17 @@ from time import time
 from concurrent.futures import ThreadPoolExecutor
 
 
-def no_callback(*args):
+# We should ignore SIGPIPE when using pycurl.NOSIGNAL - see
+# the libcurl tutorial for more info.
+try:
+    import signal
+    signal.signal(signal.SIGPIPE, signal.SIG_IGN)
+except ImportError:
     pass
+
+
+def callback_get_response(response_container):
+    return response_container
 
 
 def get_connection():
@@ -44,7 +53,7 @@ class RequestContainer(object):
                  callback=None,
                  callback_parameters=None,
                  data=None,
-                 timeout=5.0,
+                 timeout=5000,
                  ssl_verification=True,
                  proxy=None
                  ):
@@ -56,10 +65,33 @@ class RequestContainer(object):
             cookies = {}
 
         if callback is None:
-            callback = no_callback
+            callback = callback_get_response
 
         if callback_parameters is None:
             callback_parameters = ()
+
+        self.url = url
+        self.timeout = timeout
+
+        self.callback = callback
+        self.callback_parameters = callback_parameters
+        self.curl_handler = curl_handler
+        self._response_buffer = BytesIO()
+        self.response = None
+
+        # curl_handler
+        curl_handler.setopt(curl_handler.URL, url)
+
+        curl_handler.setopt(curl_handler.WRITEFUNCTION, self._response_buffer.write)
+
+        curl_handler.setopt(curl_handler.SSL_VERIFYPEER, int(ssl_verification))
+
+        curl_handler.setopt(curl_handler.CONNECTTIMEOUT_MS, self.timeout)
+        curl_handler.setopt(curl_handler.TIMEOUT_MS, self.timeout)
+
+        curl_handler.setopt(curl_handler.HTTPHEADER,
+                            ['{0}: {1}'.format(k, v)
+                             for k, v in headers.items()])
 
         if data is not None:
             curl_handler.setopt(curl_handler.POSTFIELDS, urlencode(data))
@@ -67,18 +99,16 @@ class RequestContainer(object):
         if proxy is not None:
             curl_handler.setopt(curl_handler.PROXY, proxy)
 
-        self.url = url
-        self.headers = headers
-        self.cookies = cookies
-        self.timeout = int(timeout * 1000)  # in milisecs
-        self.callback = callback
-        self.callback_parameters = callback_parameters
-        self.curl_handler = curl_handler
+        if cookies:
+            curl_handler.setopt(curl_handler.COOKIE, '; '.join('{0}={1}'.format(k, v)
+                                for k, v in cookies.items()))
+        else:
+            curl_handler.unsetopt(curl_handler.COOKIE)
 
-        self._response_buffer = BytesIO()
-        self.response = None
-        curl_handler.setopt(curl_handler.WRITEFUNCTION, self._response_buffer.write)
-        curl_handler.setopt(curl_handler.SSL_VERIFYPEER, int(ssl_verification))
+    def set_timeout(self, timeout):
+        self.timeout = int(timeout)
+        self.curl_handler.setopt(pycurl.CONNECTTIMEOUT_MS, self.timeout)
+        self.curl_handler.setopt(pycurl.TIMEOUT_MS, self.timeout)
 
     def extract_response(self, curl_error_code=None, curl_error_message=None):
         body = self._response_buffer.getvalue()
@@ -102,13 +132,22 @@ class RequestContainer(object):
             timings[i[0]] = self.curl_handler.getinfo(i[1])
 
         # certinfo
-        certinfo = self.curl_handler.getinfo(pycurl.INFO_CERTINFO)
-        dictcertinfo = []
-        for cert in certinfo:
-            d = {}
-            for k, v in cert:
-                d[k] = v
-            dictcertinfo.append(d)
+        try:
+            certinfo = self.curl_handler.getinfo(pycurl.INFO_CERTINFO)
+
+            dictcertinfo = []
+            for cert in certinfo:
+                d = {}
+                for k, v in cert:
+                    d[k] = v
+                dictcertinfo.append(d)
+        except UnicodeDecodeError:
+            # FIXME ? trigger by curl_handler.getinfo(...)
+            dictcertinfo = []
+
+        # close
+        self._response_buffer.close()
+        self.curl_handler.close()
 
         # create object
         self.response = ResponseContainer(self.url, dictcertinfo, status_code,
@@ -127,17 +166,32 @@ class ResponseContainer(object):
         self.curl_error_code = curl_error_code
         self.curl_error_message = curl_error_message
 
+    def __str__(self):
+        if self.curl_error_code is not None:
+            return 'ResponseContainer<Error : ' + self.curl_error_message + ' (' + str(self.curl_error_code) + ')>'
+        else:
+            return 'ResponseContainer<HTTP status code:' + str(self.status_code) + '>'
+
 
 class MultiRequest(object):
-    def __init__(self, multi_handler=None, defer_callbacks=False):
-        self.requests = {}
 
-        self._defer_callbacks = defer_callbacks
+    def __init__(self, multi_handler=None, max_simultanous_connections=None, defer_callbacks=False):
+        self.requests = {}
 
         if multi_handler:
             self._curl_multi_handler = multi_handler
         else:
             self._curl_multi_handler = pycurl.CurlMulti()
+
+        if max_simultanous_connections is not None:
+            self._curl_multi_handler.setopt(pycurl.M_MAX_TOTAL_CONNECTIONS, max_simultanous_connections)
+
+        self._defer_callbacks = defer_callbacks
+        self._async_callbacks = []
+        self._async_results = []
+
+    def count(self):
+        return len(self.requests)
 
     def add(self, url, **kwargs):
         handle = get_connection()
@@ -147,10 +201,6 @@ class MultiRequest(object):
             self.requests[handle] = request_container
         except pycurl.error as error:
             print(error)
-
-    def _init(self):
-        self._async_callbacks = []
-        self._async_results = []
 
     def _callback(self, callback, response, *parameters):
         if self._defer_callbacks:
@@ -164,43 +214,34 @@ class MultiRequest(object):
                                                    *parameters))
 
     def send_requests(self):
-        self._init()
+        # no request ?
+        results = []
 
         if len(self.requests) == 0:
-            return False
+            return results
 
-        select_timeout = 0.5
+        # a least one request
+        select_timeout = 1.0
 
         # set timeout
         timeout = max(c.timeout for c in self.requests.values())
         for h, c in self.requests.items():
-            h.setopt(h.CONNECTTIMEOUT_MS, timeout)
-            h.setopt(h.TIMEOUT_MS, timeout)
-            h.setopt(h.URL, c.url)
-            c.headers['Connection'] = 'keep-alive'
+            c.set_timeout(timeout)
 
-            h.setopt(h.HTTPHEADER,
-                     ['{0}: {1}'.format(k, v)
-                      for k, v in c.headers.items()])
-
-            if c.cookies:
-                h.setopt(h.COOKIE, '; '.join('{0}={1}'.format(k, v)
-                                             for k, v in c.cookies.items()))
-            else:
-                h.unsetopt(h.COOKIE)
-
+        # curl loop
         send_start = time()
         handles_num = len(self.requests)
         results = []
         while handles_num:
-            ret = self._curl_multi_handler.select(select_timeout)
-            if ret == -1:
-                continue
+            # sleep until some more data is available.
+            self._curl_multi_handler.select(select_timeout)
+
+            # Run the internal curl state machine for the multi stack
             while 1:
                 ret, new_handles_num = self._curl_multi_handler.perform()
-                # handle finished
+
                 if new_handles_num < handles_num:
-                    _, success_list, error_list = self._curl_multi_handler.info_read()
+                    num_q, success_list, error_list = self._curl_multi_handler.info_read()
                     for h in success_list:
                         # init self.requests[h].response
                         # call in main thread to avoid conflict usage of the curl handler
@@ -220,6 +261,7 @@ class MultiRequest(object):
                         )
 
                     handles_num -= len(success_list) + len(error_list)
+
                 if ret != pycurl.E_CALL_MULTI_PERFORM:
                     break
 
@@ -231,61 +273,45 @@ class MultiRequest(object):
         for future in self._async_results:
             remaining_time = max(0.0, timeout - (time() - send_start))
             try:
-                future.result(timeout=remaining_time)
+                results.append(future.result(timeout=remaining_time))
             except TimeoutError:
                 logging.warning('engine timeout: {0}'.format(th._engine_name))
 
-        return True
-
-
-'''
-
-'''
+        return results
 
 
 def fetch(url, **kwargs):
-    response_container = None
-
-    def c(_response_container):
-        response_container = _response_container
-
-    multi = MultiRequest()
-    multi.add(url, callback=c, **kwargs)
-    multi.send_requests()
-    return response_container
+    handle = get_connection()
+    request_container = RequestContainer(url, handle, **kwargs)
+    try:
+        handle.perform()
+        request_container.extract_response()
+    except pycurl.error as error:
+        error_code, error_message = error.args[0], error.args[1]
+        request_container.extract_response(curl_error_code=error_code, curl_error_message=error_message)
+    return request_container.response
 
 
 # Thread pool with the GIL limitation
 POOL = ThreadPoolExecutor(8)
 
 if __name__ == '__main__':
-    def __test_callback0(responseContainer):
-        pass
 
-    def __test_callback(responseContainer, www):
-        print(www)
-        if responseContainer is not None:
-            print(responseContainer.url)
-            print(responseContainer.curl_error_code)
-            print(responseContainer.curl_error_message)
-            print(responseContainer.status_code)
-            print(responseContainer.content_type)
-            if len(responseContainer.certinfo) > 0:
-                print(responseContainer.certinfo[0]['Signature'])
-                print(responseContainer.certinfo[0]['Expire date'])
-                print(responseContainer.certinfo[0])
-            for k, v in responseContainer.timings.items():
-                print("{name} {time}".format(name=k, time=v))
+    def __test_callback(responseContainer):
+        print(responseContainer.url, responseContainer.content_type, responseContainer.status_code, responseContainer.curl_error_code, )
 
-    r = MultiRequest(defer_callbacks=False)
+    r = MultiRequest(defer_callbacks=False, max_simultanous_connections=None)
     useragent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.84 Safari/537.36'
-    r.add('https://www.searx.me/', headers={'User-Agentxx': useragent}, callback=__test_callback, callback_parameters=('aaaa',))
-    # r.add('https://httpbin.org/delay/0', headers={'User-Agent': 'x'}, callback=__test_callback, callback_parameters=('aaaa',))
-    # r.add('https://httpbin.org/delay/0', headers={'User-Agent': 'x'}, timeout=20, callback=__test_callback0)
-    # r.add('http://127.0.0.1:7777/', headers={'User-Agent': 'x'})
-    # r.add('https://httpbin.org/delay/0', cookies={'as': 'sa', 'bb': 'cc'})
-    # r.add('http://httpbin.org/delay/0', callback=__test_callback, timeout=1.0, headers={'User-Agent': 'x'})
+    r.add('https://www.searx.me/', callback=__test_callback)
+    r.add('https://httpbin.org/delay/0', headers={'User-Agent': useragent}, callback=__test_callback)
+    r.add('https://httpbin.org/delay/0', headers={'User-Agent': 'x'}, timeout=20000, callback=__test_callback)
+    r.add('http://127.0.0.1:7777/', headers={'User-Agent': 'x'}, callback=__test_callback)
+    r.add('https://httpbin.org/delay/0', cookies={'as': 'sa', 'bb': 'cc'}, callback=__test_callback)
+    r.add('http://httpbin.org/delay/0', callback=__test_callback, timeout=10000, headers={'User-Agent': 'x'})
+    r.add('https://www.google.com', callback=__test_callback)
+    r.add('https://www.yahoo.com', callback=__test_callback)
     r.send_requests()
-
+    '''
     print('---------------------')
-    print(fetch('http://www.example.com'))
+    print(fetch('http://www.example.com', timeout=2000))
+    '''
