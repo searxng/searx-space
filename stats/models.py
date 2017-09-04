@@ -1,7 +1,7 @@
 from django.db import models
 
 # Create your models here.
-from urllib.parse import urlparse
+from stats.url_utils import urlparse
 
 
 class Instance(models.Model):
