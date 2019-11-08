@@ -2,6 +2,16 @@
 .pytest_cache/
 
 *~
+*/*~
+*/*/*~
+*/*/*/*~
+*/*/*/*/*~
+
+# Git
+.git
+.gitignore
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
 */__pycache__/
 */*/__pycache__/
@@ -11,6 +21,7 @@ __pycache__/
 */*/*.py[cod]
 */*/*/*.py[cod]
 
+# to sync with .gitignore
 ve
 node_modules
 html/data

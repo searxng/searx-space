@@ -1,0 +1,168 @@
+.help,
+.help:hover {
+  vertical-align: super;
+  background-color: lightgray;
+  color: white;
+  text-decoration: none;
+  border-radius: 50px;
+  font-size: 8px;
+  padding: 3px;
+  margin: 3px;
+}
+
+.info-tooltip {
+  display: none;
+  position: absolute;
+  padding: 0.5rem;
+  margin: 0rem 0 0 2rem;
+  border: 1px solid black;
+  background: white;
+  font-family: monospace;
+}
+
+.info-tooltip p {
+  margin: 0.125rem;
+}
+
+.info-tooltip td {
+  padding: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: keep-all;
+  white-space: nowrap;
+  max-width: 90rem;
+}
+
+a:hover + .info-tooltip,
+span:hover + .info-tooltip,
+.info-tooltip:hover {
+  display: block;
+  /* opacity: 1; */
+}
+
+sup {
+  font-size: 60%;
+}
+input {
+  width: 100%;
+  border: 1px solid lightgray;
+}
+
+.container {
+  width: auto;
+}
+
+.column-url {
+  width: 25rem;
+}
+
+.column-status {
+  width: 3rem;
+}
+
+.column-version {
+  width: 16rem;
+}
+
+.column-tls {
+  width: 6rem;
+}
+
+.column-country {
+  width: 6rem;
+}
+
+.column-certificate {
+  width: 32rem;
+}
+
+.column-responsetime {
+  width: 9rem;
+  text-align: right;
+}
+
+.value-tls {
+  color: white;
+  display: block;
+  text-align: center;
+  margin: 0;
+}
+
+.value-csp {
+  color: white;
+  display: block;
+  text-align: center;
+  margin: 0;
+}
+
+.column-csp {
+  width: 6rem;
+}
+
+.value-html {
+  color: white;
+  display: block;
+  text-align: center;
+  margin: 0;
+}
+
+.column-html {
+  width: 6rem;
+}
+
+.value-responsetime {
+  color: white;
+  display: block;
+  padding: 2px;
+}
+
+.column-error {
+  width: 40%;
+}
+
+.urls,
+.ips {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem;
+}
+
+.engine {
+  display: block;
+  writing-mode: vertical-rl;
+  width: 1.5rem;
+  padding: 0;
+  margin: 0;
+}
+
+.item-check {
+  display: inline-block;
+  transform: rotate(45deg);
+  height: 1rem;
+  width: 0.5rem;
+  border-bottom: 2px solid #78b13f;
+  border-right: 2px solid #78b13f;
+  text-indent: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  margin: 0.2rem;
+}
+
+.item-nocheck  {
+  display: none;
+}
+
+.table-striped-column td, .table-striped-column th {
+  position: relative;
+}
+
+.table-striped-column td:hover::after, .table-striped-column th:hover::after {
+  content: "";
+  position: absolute;
+  background-color: #f9f9f9;
+  left: 0;
+  top: -5000px;
+  height: 10000px;
+  width: 100%;
+  z-index: -1;
+}

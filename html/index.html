@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Searx instances</title>
+
+    <link rel="stylesheet" href="assets/bootstrap.min.css"/>
+    <link rel="stylesheet" href="assets/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="main.css">
+    <script src="assets/vue.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vue-nav-tabs/themes/vue-tabs.css">
+  </head>
+
+  <body>
+    <div id="searxinstances">
+      <header>
+          <nav class="navbar navbar-inverse navbar-static-top">
+            <div class="container">
+              <div class="navbar-header">
+                <a class="navbar-brand" href="#">Searx statistics</a>
+              </div>
+              <ul class="nav navbar-nav" role="tablist">
+                <li role="presentation" :class="selected_tab=='online'?'active':''"><a href="#" v-on:click="selected_tab='online'">Online</a></li>
+                <li role="presentation" :class="selected_tab=='searxerrors'?'active':''"><a href="#" v-on:click="selected_tab='searxerrors'">Offline & errors</a></li>
+                <li role="presentation" :class="selected_tab=='multipleips'?'active':''"><a href="#" v-on:click="selected_tab='multipleips'">Similar instances</a></li>
+              </ul>
+              <p class="navbar-text">|</p>
+              <ul class="nav navbar-nav" role="tablist">
+                  <li role="presentation" :class="selected_tab=='engines'?'active':''"><a href="#" v-on:click="selected_tab='engines'">Engines</a></li>
+              </ul>
+              <ul class="nav navbar-nav navbar-right" role="tablist">
+                  <li role="presentation" :class="selected_tab=='about'?'active':''"><a href="#" v-on:click="selected_tab='about'">About</a></li>
+              </ul>
+            </div>
+          </nav>        
+      </header>
+      <main role="main" class="container theme-showcase" v-if="instances.length > 0">
+        <div v-if="selected_tab === 'online'">
+          <h2>{{instances_filtered.length}} online instances</h2>
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th class="column-url">URL</th>
+                    <th class="column-version">Version</th>
+                    <th class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
+                    <th class="column-csp">CSP<a class="help" href="#help-csp-grade">?</a></th>
+                    <th class="column-tls">TLS<a class="help" href="#help-tls-grade">?</a></th>
+                    <th class="column-certificate">Certificate</th>
+                    <th class="column-country">Country<a class="help" href="#help-country">?</a></th>
+                    <th class="column-network">Network</th>
+                    <th class="column-responsetime">Initial response time</th>
+                    <th class="column-responsetime">Index response time</th>
+                    <th class="column-responsetime">Wikipedia response time</th>
+                    <th class="column-responsetime">Google response time</th>
+                  </tr>
+                  <tr>
+                      <th class="column-url"></th>
+                      <th class="column-version"><input v-model="filters.version"/></th>
+                      <th class="column-html"><input v-model="filters.html_grade"/></th>
+                      <th class="column-csp"><input v-model="filters.csp_grade"/></th>
+                      <th class="column-tls"><input v-model="filters.tls_grade"/></th>
+                      <th class="column-certificate"></th>
+                      <th class="column-country"><input v-model="filters.network_x_whois_2"/></th>
+                      <th class="column-network"><input v-model="filters.network_x_whois_1" /></th>
+                      <th class="column-responsetime"></th>
+                      <th class="column-responsetime"></th>
+                      <th class="column-responsetime"></th>
+                      <th class="column-responsetime"><input v-model="filters.google" type="checkbox" /></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="detail in instances_filtered">
+                    <td class="column-url"><a :href="detail.url">{{detail.url}}</a></td>
+                    <td class="network-country">{{detail.version}}</td>
+                    <td class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
+                    <td class="column-csp"><csp-component :value="detail.http"></csp-component></td>
+                    <td class="column-tls"><tls-component :value="detail.tls"></tls-component></td>
+                    <td class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
+                    <td class="column-country"><network-component :value="detail.network" field="2"></network-component></td>
+                    <td class="column-network"><network-component :value="detail.network" field="1"></network-component></td>
+                    <td class="column-responsetime"><time-component :value="detail.timing.initial"></time-component></td>
+                    <td class="column-responsetime"><time-component :value="detail.timing.index"></time-component></td>
+                    <td class="column-responsetime"><time-component :value="detail.timing.search_wp"></time-component></td>
+                    <td class="column-responsetime"><time-component :value="detail.timing.search_go"></time-component></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4 id="help-http-grade">HTTP grade</h4>
+            <p>When the page is loaded by Firefox, are the scripts well-known ?</p>
+            <ul>
+              <li>A - only well known scripts from the git repository (may be some unknown css or images)</li>
+              <li>B - some unknown content, but at least 4 other instances have the same content</li>
+              <li>D - some unknown content and only another instance has it</li>
+              <li>E - some unknown content, and only this instance has it</li>
+              <li>F - external link</li>
+            </ul>
+            <p>Be aware that only inline and external ( &lt;script src="...") scripts are checked.
+            There are many other ways to leak information.</p>
+
+            <h4 id="help-csp-grade">CSP grade</h4>
+            <p>Grade from <a href="https://observatory.mozilla.org/faq.html">Observatory by mozilla</a>.</p>
+
+            <h4 id="help-tls-grade">TLS grade</h4>
+            <p>Grade from <a href="https://tls.imirhil.fr/">tls.imirhil.fr</a>.</p>
+
+            <h4 id="help-country">Country</h4>
+            <p>From whois information of the IPs</p>
+          </div>
+          <div v-if="selected_tab === 'searxerrors'">
+          <div class="table-responsive">
+              <h2>Searx not found</h2>
+              <table class="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th class="column-url">URL</th>
+                      <th class="column-status">Status</th>
+                      <th class="column-certificate">Certificate</th>
+                      <th class="column-tls">Country</th>
+                      <th class="column-network">Network</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="detail in instances_nosearx">
+                      <td class="column-url"><a :href="detail.url">{{detail.url}}</a></td>
+                      <td class="column-status"><span class="label label-success" v-if="detail.http.status_code">{{detail.http.status_code}}</span></td>
+                      <td class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
+                      <td class="column-country"><network-component :value="detail.network" field="2"></network-component></td>
+                      <td class="column-network"><network-component :value="detail.network" field="1"></network-component></td>
+                    </tr>
+                  </tbody>
+              </table>
+            </div>
+            <template v-for="instanceList, instanceError in instances_ko">
+              <h2>{{instanceError}}</h2>
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                      <tr>
+                        <th class="column-url">URL</th>
+                        <th class="column-status">Status</th>
+                        <th class="column-certificate">Certificate</th>
+                        <th class="column-tls">Country</th>
+                        <th class="column-network">Network</th>
+                        <th>Error</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="detail in instanceList">
+                        <td class="column-url"><a :href="detail.url">{{detail.url}}</a></td>
+                        <td class="column-status"><span class="label label-danger" v-if="detail.http.status_code">{{detail.http.status_code}}</span></td>
+                        <td class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
+                        <td class="column-country"><network-component :value="detail.network" field="2"></network-component></td>
+                        <td class="column-network"><network-component :value="detail.network" field="1"></network-component></td>
+                        <td class="column-error">{{detail.error}}</td>
+                      </tr>
+                    </tbody>
+                </table>
+              </div>
+            </template>
+          </div>
+          <div v-if="selected_tab === 'multipleips'">
+            <h2>Multiple instances for one IP</h2>
+
+            <table class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th class="column-url">Instances</th>
+                  <th>IP</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="ips, urls in instances_per_ips">
+                  <td><ul class="urls">
+                      <li v-for="url in urls.split('|')" ><a :href="url">{{url}}</a></li>
+                    </ul></td>
+                  <td><ul class="ips">
+                      <li v-for="ip in ips">{{ip}}</li>
+                    </ul>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-if="selected_tab === 'engines'">
+            <h2>Working engines for {{instances_filtered.length}} instances (of {{instances.length}})</h2>
+            <p>Instances appear here only if <a href="https://github.com/searx/searx-checker">searx-checker</a> is installed.</p>
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped table-striped-column">
+                  <thead>
+                    <tr>
+                      <td></td>
+                      <td v-for="v, engine in engines"><div class="engine">{{engine}}</div></td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                      <tr v-for="detail in instances_filtered" v-if="detail.status">
+                          <td><a :href="detail.url">{{detail.url}}</a></td>
+                          <td v-for="v, engine in engines">
+                            <span v-if="detail.status.includes(engine)" class="item-check">✔️</span>
+                            <span v-else class="item-nocheck">❌</span>
+                          </td>
+                      </tr>
+                  </tbody>
+              </table>
+            </div>
+          </div>
+          <div v-if="selected_tab === 'about'">
+            <h2>About</h2>
+            <p><a href="https://github.com/dalf/searx-stats2">https://github.com/dalf/searx-stats2</a></p>
+          </div>
+      </main>
+    </div>
+    <script src="main.js"></script>
+  </body>
+</html>

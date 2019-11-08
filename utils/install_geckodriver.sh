@@ -1,0 +1,44 @@
+#!/bin/sh
+# from https://github.com/searx/searx/blob/master/manage.sh
+
+BASE_DIR="$(dirname -- "`readlink -f -- "$0"`")"
+
+cd -- "$BASE_DIR"
+set -e
+
+# TODO : check the current geckodriver version
+set -e
+geckodriver -V > /dev/null 2>&1 || NOTFOUND=1
+set +e
+if [ -z "$NOTFOUND" ]; then
+    return
+fi
+GECKODRIVER_VERSION="v0.24.0"
+PLATFORM="`python -c "import six; import platform; six.print_(platform.system().lower(), platform.architecture()[0])"`"
+case "$PLATFORM" in
+    "linux 32bit" | "linux2 32bit") ARCH="linux32";;
+    "linux 64bit" | "linux2 64bit") ARCH="linux64";;
+    "windows 32 bit") ARCH="win32";;
+    "windows 64 bit") ARCH="win64";;
+    "mac 64bit") ARCH="macos";;
+esac
+GECKODRIVER_URL="https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-$ARCH.tar.gz";
+
+if [ -z "$1" ]; then
+    if [ -z "$VIRTUAL_ENV" ]; then
+        printf "geckodriver can't be installed because VIRTUAL_ENV is not set, you should download it from\n  %s" "$GECKODRIVER_URL"
+        exit
+    else
+        GECKODRIVER_DIR="$VIRTUAL_ENV/bin"
+    fi
+else
+    GECKODRIVER_DIR="$1"
+    mkdir -p -- "$GECKODRIVER_DIR"
+fi
+
+printf "Installing %s/geckodriver from\n  %s" "$GECKODRIVER_DIR" "$GECKODRIVER_URL"
+
+FILE="`mktemp`"
+wget -qO "$FILE" -- "$GECKODRIVER_URL" && tar xz -C "$GECKODRIVER_DIR" -f "$FILE" geckodriver
+rm -- "$FILE"
+chmod 777 -- "$GECKODRIVER_DIR/geckodriver"
