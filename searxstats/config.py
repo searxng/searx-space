@@ -29,3 +29,6 @@ DEFAULT_COOKIES = {
     'theme': 'oscar',
     'oscar-style': 'logicodev'
 }
+
+# Default cache file name
+DEFAULT_CACHE_FILE_NAME = '/tmp/searxstats.cache'

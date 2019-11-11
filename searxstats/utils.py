@@ -1,20 +1,12 @@
-import socket
-import ssl
+import traceback
+import inspect
 import asyncio
 import concurrent.futures
 import sys
 from urllib.parse import urlparse
-import h11._util
-import httpx
-import httpx.exceptions
 from lxml import html
 from lxml.etree import _ElementStringResult, _ElementUnicodeResult  # pylint: disable=no-name-in-module
 from searxstats.memoize import Memoize
-
-if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
-    from contextlib import asynccontextmanager  # pylint: disable=no-name-in-module
-else:
-    from searxstats.backport import asynccontextmanager
 
 
 THREADPOOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
@@ -69,48 +61,24 @@ def exception_to_str(ex):
     return result
 
 
-@asynccontextmanager
-async def new_session(*args, **kwargs):
-    """
-    Create a new httpx.AsyncClient
-
-    No HTTP/2 because h2 doesn't work with some instances
-    """
-    kwargs['http_versions'] = "HTTP/1.1"
-    async with httpx.AsyncClient(*args, **kwargs) as session:
-        yield session
-
-
-async def do_get(session, *args, **kwargs):
-    """
-    response, error = session.get(*args, **kwargs)
-
-    error is user friendly, or None is there is no error.
-
-    Doesn't trigger an exception.
-
-    No brotlipy because of httpx.exceptions.DecodingError
-    """
-    response = None
-    error = None
+def safe_func(func, *args, **kwargs):
     try:
-        response = await session.get(*args, **kwargs)
-    except ConnectionRefusedError:
-        error = 'Connection refused'
-    except (httpx.exceptions.ConnectTimeout, asyncio.TimeoutError):
-        error = 'Connection timed out'
-    except httpx.exceptions.ReadTimeout:
-        error = 'Read timeout'
-    except httpx.exceptions.DecodingError:
-        error = 'Decoding error'
-    except httpx.exceptions.RedirectLoop:
-        error = 'Redirect loop error'
-    except (h11._util.RemoteProtocolError,  # pylint: disable=protected-access
-            socket.gaierror, ssl.SSLError, ssl.CertificateError, OSError) as ex:
-        error = exception_to_str(ex)
-    except Exception as ex:
-        error = 'Exception ' + str(type(ex)) + ' ' + str(ex)
+        return func(*args, **kwargs)
+    except Exception:
+        traceback.print_exc(file=sys.stdout)
+
+
+async def safe_async_func(func, *args, **kwargs):
+    try:
+        return await func(*args, **kwargs)
+    except Exception:
+        traceback.print_exc(file=sys.stdout)
+
+
+def create_task(loop, function, *args, **kwargs):
+    if inspect.iscoroutinefunction(function):
+        # async task in the loop
+        return loop.create_task(safe_async_func(function, *args, **kwargs))
     else:
-        if response.status_code != 200:
-            error = 'HTTP status code ' + str(response.status_code)
-    return response, error
+        # run sync tasks in a thread pool
+        return loop.run_in_executor(None, safe_func, function, *args, **kwargs)

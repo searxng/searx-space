@@ -6,3 +6,4 @@ whois==0.9.4
 ipwhois==1.1.0
 lxml==4.4.1
 selenium==3.141.0
+pyyaml==5.1

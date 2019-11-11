@@ -10,6 +10,7 @@ from searxstats.config import BROWSER_LOAD_TIMEOUT
 from searxstats.data.well_kown_hashes import WELL_KNOWN_HASHES
 from searxstats.data.inline_hashes import INLINE_HASHES
 from searxstats.memoize import MemoizeToDisk
+from searxstats.model import SearxStatisticsResult
 
 
 WELL_KNOWN_HASHES.update(INLINE_HASHES)
@@ -31,9 +32,11 @@ def new_driver():
     options = Options()
     options.add_argument('--headless')
 
-    return webdriver.Firefox(options=options,
-                             firefox_profile=firefox_profile,
-                             service_log_path=os.path.devnull)
+    driver = webdriver.Firefox(options=options,
+                               firefox_profile=firefox_profile,
+                               service_log_path=os.path.devnull)
+    driver.set_page_load_timeout(BROWSER_LOAD_TIMEOUT)
+    return driver
 
 
 def get_relative_url(base_url, url):
@@ -55,8 +58,13 @@ def result_hash_iterator(result):
                     yield ressources[ressource_url], ressource_type
 
 
+# pylint: disable=unused-argument
+def fetch_ressource_hashes_js_key(url, driver=None):
+    return url
+
+
+@MemoizeToDisk(func_key=fetch_ressource_hashes_js_key)
 def fetch_ressource_hashes_js(url, driver=None):
-    print('⏳', end='', flush=True)
     try:
         # load page
         driver.get(url)
@@ -78,7 +86,6 @@ def fetch_ressource_hashes_js(url, driver=None):
                 wait_result = False
             else:
                 retry_count += 1
-                print('.', end='', flush=True)
         return ressources
     except Exception as ex:
         traceback.print_exc(file=sys.stdout)
@@ -203,40 +210,42 @@ def get_grade(ressources, hashes):
 
 # pylint: disable=unsubscriptable-object, unsupported-delete-operation, unsupported-assignment-operation
 # pylint thinks that ressource_desc is None
-def fetch(searx_json):
+def fetch(searx_stats_result: SearxStatisticsResult):
     ressource_hashes = {
         'index': 0
     }
-    instance_details = searx_json['instances']
 
     driver = new_driver()
-    driver.set_page_load_timeout(BROWSER_LOAD_TIMEOUT)
     try:
-        for url in instance_details:
-            version = instance_details[url].get('version')
-            if version is not None and len(version) > 0:
-                ressources = fetch_ressource_hashes(url, ressource_hashes, driver=driver)
-                instance_details[url]['html'] = {
-                    'ressources': ressources
-                }
-                print('\n🔗 {0:60} {1:3} external js {2:3} inline js'.format(url, len(
-                    ressources.get('script', [])), len(ressources.get('inline_script', []))))
+        for url, detail in searx_stats_result.iter_valid_instances():
+            ressources = fetch_ressource_hashes(url, ressource_hashes, driver=driver)
+            if 'error' in ressources:
+                # don't reuse the browser if there was an error
+                driver.quit()
+                driver = new_driver()
+            # temporary storage
+            detail['html'] = {
+                'ressources': ressources
+            }
+            # output progress
+            external_js = len(ressources.get('script', []))
+            inline_js = len(ressources.get('inline_script', []))
+            error_msg = ressources.get('error', '').strip()
+            print('🔗 {0:60} {1:3} external js {2:3} inline js  {3}'.\
+                format(url, external_js, inline_js, error_msg))
     finally:
-        print('', flush=True)
         driver.quit()
 
-    # optimize output
-    searx_json['hashes'] = [None] * ressource_hashes['index']
+    # create searx_json['hashes']
+    searx_stats_result.hashes = [None] * ressource_hashes['index']
     for ressource_hash, ressource_desc in ressource_hashes.items():
         if ressource_hash != 'index':
             i = ressource_desc['index']
             del ressource_desc['index']
             ressource_desc['hash'] = ressource_hash
-            searx_json['hashes'][i] = ressource_desc
+            searx_stats_result.hashes[i] = ressource_desc
 
     # get grade
-    for url in instance_details:
-        version = instance_details[url].get('version')
-        if version is not None and len(version) > 0:
-            instance_details[url]['html']['grade'] = get_grade(
-                instance_details[url]['html']['ressources'], searx_json['hashes'])
+    for url, detail in searx_stats_result.iter_valid_instances():
+        detail['html']['grade'] = get_grade(
+            detail['html']['ressources'], searx_stats_result.hashes)

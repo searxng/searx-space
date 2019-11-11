@@ -1,6 +1,9 @@
 import asyncio
-from searxstats.utils import new_session, exception_to_str, get_host
+from searxstats.utils import exception_to_str, get_host
+from searxstats.http_utils import new_session
 from searxstats.memoize import MemoizeToDisk
+from searxstats.model import SearxStatisticsResult
+
 
 # see https://github.com/ssllabs/ssllabs-scan/blob/master/ssllabs-api-docs-v3.md
 # API: https://github.com/mozilla/http-observatory/blob/master/httpobs/docs/api.md
@@ -16,7 +19,6 @@ TIME_BETWEEN_RETRY = 10
 
 @MemoizeToDisk()
 async def analyze(host):
-    print('\n📄 ' + host, end='')
     user_url = USER_ENDPOINT.format(host)
     try:
         async with new_session() as session:
@@ -30,7 +32,6 @@ async def analyze(host):
             remaining_tries = MAX_RETRY
             while not finished:
                 await asyncio.sleep(TIME_BETWEEN_RETRY)
-                print('.', end='', flush=True)
                 response = await session.get(API_GET.format(host), timeout=5)
                 json = response.json()
                 state = json.get('state', '')
@@ -56,12 +57,12 @@ async def analyze(host):
     return (grade, user_url)
 
 
-async def fetch(searx_json):
-    instance_details = searx_json['instances']
-    for url in instance_details:
-        if instance_details[url].get('version') is not None:
-            if 'http' not in instance_details[url]:
-                instance_details[url]['http'] = {}
-            instance_details[url]['http']['grade'], instance_details[url]['http']['gradeUrl'] =\
-                await analyze(get_host(url))
+async def fetch(searx_stats_result: SearxStatisticsResult):
+    for url, detail in searx_stats_result.iter_valid_instances():
+        if 'http' not in detail:
+            detail['http'] = {}
+        instance_host = get_host(url)
+        detail['http']['grade'], detail['http']['gradeUrl'] =\
+            await analyze(instance_host)
+        print('🔒 {0:30} {1}'.format(instance_host, detail['http']['grade']))
     return True

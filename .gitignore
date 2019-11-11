@@ -11,6 +11,10 @@ __pycache__/
 */*/*.py[cod]
 */*/*/*.py[cod]
 
+build/
+dist/
+*.egg-info/
+
 ve
 node_modules
 html/data

@@ -23,7 +23,7 @@ const COMMON_ERROR_MESSAGE = {
 };
 
 const SORT_CRITERIAS = ['http.status_code', 'error', 'version', 'tls.grade',
-    'html.grade', 'http.grade', 'timing.initial', 'url'];
+    'html.grade', 'timing.initial', 'http.grade', 'url'];
 
 function getValue(obj, key1, key2, f) {
     let value;
@@ -498,14 +498,18 @@ new Vue({
             result = applyStrFilter(result, this.filters.network_x_whois_1,
                 (f, detail) => {
                     for (const ipInfo of Object.values(detail.network)) {
-                        return (ipInfo.whois[1] || '').toLowerCase().indexOf(f) >= 0;
+                        if (ipInfo.whois) {
+                            return (ipInfo.whois[1] || '').toLowerCase().indexOf(f) >= 0;
+                        }
                     }
                     return false;
                 });
             result = applyStrFilter(result, this.filters.network_x_whois_2,
                 (f, detail) => {
                     for (const ipInfo of Object.values(detail.network)) {
-                        return ipInfo.whois[2].toLowerCase().indexOf(f) >= 0;
+                        if (ipInfo.whois) {
+                            return ipInfo.whois[2].toLowerCase().indexOf(f) >= 0;
+                        }
                     }
                     return false;
                 });

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+TMP_DIR=$(mktemp -d -t ci-XXXXXXXXXX)
+RAW_HASHES = "$TMP_DIR/hashes_raw.txt"
+UNIQ_HASHES = "$TMP_DIR/hashes_uniq.txt"
+
+cd "$TMP_DIR"
+
+git clone https://github.com/asciimoo/searx.git
+
+truncate -s 0 "$RAW_HASHES"
+
+cd searx
+
+# FIXME load previous version, and stop parsing where the last run stoped
+for commitid in $(git log --pretty=format:"%H"); do
+	echo $commitid
+	git checkout -q $commitid
+	find searx/static -type f | xargs -d '\n' sha256sum | grep -v "./less" | cut -f1 -d\  | sort | uniq >> "$RAW_HASHES"
+done
+
+git checkout master
+
+cd ..
+
+# FIXME store last commit
+sort "$RAW_HASHES" | uniq > "$UNIQ_HASHES"
+awk 'BEGIN { print "well_known_hashes = {" } { print "\"" $0 "\"," } END { print "}" }' "$UNIQ_HASHES" > well_kown_hashes.py
+
+rm -Rf "$TMP_DIR"

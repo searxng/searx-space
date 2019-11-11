@@ -1,7 +1,8 @@
 from itertools import chain
 from lxml import etree
 from searxstats.config import DEFAULT_HEADERS, DEFAULT_COOKIES
-from searxstats.utils import get_host, new_session, html_fromstring
+from searxstats.utils import get_host, html_fromstring
+from searxstats.http_utils import new_session
 
 
 INSTANCES_XPATH = etree.XPath(

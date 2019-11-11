@@ -4,13 +4,12 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Searx instances</title>
+    <title>Searx statistics</title>
 
     <link rel="stylesheet" href="assets/bootstrap.min.css"/>
     <link rel="stylesheet" href="assets/bootstrap-theme.min.css">
     <link rel="stylesheet" href="main.css">
     <script src="assets/vue.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/vue-nav-tabs/themes/vue-tabs.css">
   </head>
 
   <body>
@@ -112,8 +111,8 @@
             <p>From whois information of the IPs</p>
           </div>
           <div v-if="selected_tab === 'searxerrors'">
-          <div class="table-responsive">
-              <h2>Searx not found</h2>
+            <h2>Searx not found</h2>
+            <div class="table-responsive">
               <table class="table table-bordered table-striped">
                   <thead>
                     <tr>

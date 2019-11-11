@@ -1,52 +1,74 @@
 import argparse
 import asyncio
 
+from searxstats.memoize import bind_to_file_name
+from searxstats.config import DEFAULT_CACHE_FILE_NAME
 from searxstats.instances import SEARX_INSTANCES_URL
-from searxstats.searxstats import MODULE_DEFINITION, run_once, run_server, initialize
+from searxstats.fetcher import FETCHERS
+from searxstats import initialize, run_once, run_server, erase_memoize
 
 
-def run(server_mode, output_file, instance_urls=None, modules=None):
+# pylint: disable=too-many-arguments
+def run(server_mode: bool, output_file_name: str, cache_file_name: str,
+        instance_urls: list, selected_fetcher_names: list, update_fetcher_memoize_list: list):
     if server_mode:
         print('🤖 Server mode')
         run_function = run_server
     else:
         print('⚡ Single run')
         run_function = run_once
-    print('{0:15} : {1}'.format('Output file', output_file))
-    for module in MODULE_DEFINITION:
-        module_name = module['name']
-        value = 'yes' if module_name in modules else 'no'
-        print('{0:15} : {1}'.format(module_name, value))
+    print('{0:15} : {1}'.format('Output file', output_file_name))
+    print('{0:15} : {1}'.format('Cache file', cache_file_name))
+    for fetcher in FETCHERS:
+        fetcher_name = fetcher.name
+        value = 'yes' if fetcher_name in selected_fetcher_names else 'no'
+        if fetcher_name in update_fetcher_memoize_list:
+            value = value + ' (force update)'
+        print('{0:15} : {1}'.format(fetcher_name, value))
 
+    # initialize
     initialize()
 
+    # load cache
+    bind_to_file_name(cache_file_name)
+
+    # erase cache entries to update
+    erase_memoize(update_fetcher_memoize_list)
+
+    # run
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(run_function(output_file,
-                                         instance_urls=instance_urls,
-                                         modules=modules))
+    loop.run_until_complete(run_function(output_file_name, instance_urls, selected_fetcher_names))
 
 
-def run_from_command_line():
+def main():
     parser = argparse.ArgumentParser(description='Check searx instances.')
     parser.add_argument('--output', '-o',
-                        type=str, nargs='?', dest='output',
+                        type=str, nargs='?', dest='output_file_name',
                         help='JSON output file name',
                         default='html/data/instances.json')
+    parser.add_argument('--cache',
+                        type=str, nargs='?', dest='cache_file_name',
+                        help='Cache file',
+                        default=DEFAULT_CACHE_FILE_NAME)
     parser.add_argument('--server', '-s',
                         action='store_true', dest='server_mode',
                         help='Server mode, automatic check every day',
                         default=False)
     parser.add_argument('--all',
                         action='store_true', dest='all',
-                        help='Activate all modules',
+                        help='Activate all fetchers',
                         default=False)
-    for module in MODULE_DEFINITION:
-        parser.add_argument('--' + module['name'], dest=module['name'],
-                            help=module['help'], action='store_true',
+    for fetcher in FETCHERS:
+        parser.add_argument('--' + fetcher.name, dest=fetcher.name,
+                            help=fetcher.help_message, action='store_true',
                             default=False)
-    for module in MODULE_DEFINITION:
-        parser.add_argument('--update-' + module['name'], dest='update-' + module['name'],
-                            help='Same as --' + module['name']+ ' but ignore cache', action='store_true',
+    parser.add_argument('--update-all',
+                        action='store_true', dest='update_all',
+                        help='Update all fetchers',
+                        default=False)
+    for fetcher in FETCHERS:
+        parser.add_argument('--update-' + fetcher.name, dest='update_' + fetcher.name,
+                            help='Same as --' + fetcher.name+ ' but ignore the cached values', action='store_true',
                             default=False)
     parser.add_argument('instance_urls', metavar='instance_url', type=str, nargs='*',
                         help='instance URLs, otherwise fetch URLs from {0}'
@@ -55,19 +77,23 @@ def run_from_command_line():
     args = parser.parse_args()
     args_vars = vars(args)
 
-    selected_modules = set()
-    for module in MODULE_DEFINITION:
-        module_name = module['name']
-        if args_vars.get(module_name, False) or args.all:
-            selected_modules.add(module_name)
-        if args_vars.get('update-' + module_name, False) or args.all:
-            selected_modules.add(module_name)
+    selected_fetcher_names = set()
+    update_fetcher_memoize_list = set()
+    for fetcher in FETCHERS:
+        fetcher_name = fetcher.name
+        if args_vars.get(fetcher_name, False) or args.all:
+            selected_fetcher_names.add(fetcher_name)
+        if args_vars.get('update_' + fetcher_name, False) or args.update_all:
+            selected_fetcher_names.add(fetcher_name)
+            update_fetcher_memoize_list.add(fetcher_name)
 
     run(args.server_mode,
-        args.output,
-        instance_urls=args.instance_urls,
-        modules=list(selected_modules))
+        args.output_file_name,
+        args.cache_file_name,
+        args.instance_urls,
+        list(selected_fetcher_names),
+        list(update_fetcher_memoize_list))
 
 
 if __name__ == '__main__':
-    run_from_command_line()
+    main()

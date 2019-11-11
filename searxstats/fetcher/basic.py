@@ -2,9 +2,11 @@ import re
 import concurrent.futures
 from collections import OrderedDict
 from searxstats.ssl_utils import get_sslinfo
-from searxstats.utils import get_host, new_session, do_get
+from searxstats.utils import get_host
+from searxstats.http_utils import new_session, do_get
 from searxstats.config import DEFAULT_HEADERS
 from searxstats.memoize import MemoizeToDisk
+from searxstats.model import SearxStatisticsResult
 
 
 # in a HTML page produced by searx, regex to find the searx version
@@ -21,7 +23,7 @@ async def get_searx_version(response):
 
 @MemoizeToDisk()
 async def fetch_one(instance_url):
-    result = dict()
+    detail = dict()
     # no cookie ( cookies=DEFAULT_COOKIES,  )
     try:
         async with new_session() as session:
@@ -30,7 +32,7 @@ async def fetch_one(instance_url):
             # FIXME if status_code is 500 try without theme (but disable checking results)
             if response is not None:
                 version = await get_searx_version(response)
-                result = {
+                detail = {
                     'http': {
                         'status_code': response.status_code,
                         'error': error
@@ -45,10 +47,12 @@ async def fetch_one(instance_url):
                 if not response_url.endswith('/'):
                     response_url = response_url + '/'
                 if response_url != instance_url:
-                    result['redirect_from'] = [instance_url]
+                    if 'redirect_from' not in detail:
+                        detail['redirect_from'] = []
+                    detail['redirect_from'].append(instance_url)
                     instance_url = response_url
             else:
-                result = {
+                detail = {
                     'http': {
                     },
                     'version': None,
@@ -56,33 +60,32 @@ async def fetch_one(instance_url):
                     }
                 }
     except concurrent.futures.TimeoutError:
-        result['error'] = 'Timeout error'
+        # This exception occurs on new_session()
+        detail['error'] = 'Timeout error'
 
     if error is not None:
-        result['error'] = error
+        detail['error'] = error
 
-    result['tls'] = get_sslinfo(get_host(instance_url))
+    detail['tls'] = get_sslinfo(get_host(instance_url))
 
-    return instance_url, result
+    return instance_url, detail
 
 
-async def fetch_from_urls(instances):
+async def fetch_from_urls(searx_result: SearxStatisticsResult, instances: list):
     results = OrderedDict()
     for instance in instances:
         # basic checks
         # url may be different because of redirect
-        url, result = await fetch_one(instance)
-        if url in results:
-            results[url].update(result)
-        else:
-            results[url] = result
+        url, detail = await fetch_one(instance)
+        searx_result.update_instance(url, detail)
+
         # output
-        http_status_code = result.get('http').get('status_code', '')
-        searx_version = result.get('version', '') or ''
-        timing = result.get('timing', {}).get('initial') or None
-        cert_orgname = (result.get('tls') or {}).get(
+        http_status_code = detail.get('http').get('status_code', '')
+        searx_version = detail.get('version', '') or ''
+        timing = detail.get('timing', {}).get('initial') or None
+        cert_orgname = (detail.get('tls') or {}).get(
             'certificate', {}).get('organizationName', '')
-        error = result.get('error', '')
+        error = detail.get('error', '')
         if error != '':
             icon = '❌'
         elif searx_version == '':
