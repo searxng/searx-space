@@ -22,11 +22,11 @@ class CacheStorage:
     def __init__(self, *args, **kwargs):
         pass
 
-    # # pylint: disable=no-self-use
+    # pylint: disable=no-self-use
     def get(self, args):
         raise ValueError('Not Implemented')
 
-    # # pylint: disable=no-self-use
+    # pylint: disable=no-self-use
     def put(self, args, value):
         raise ValueError('Not Implemented')
 
@@ -83,6 +83,9 @@ class FileStorageBackend():
         self.storage = self._load_cache()
         atexit.register(self._write_cache)
 
+    def nobinding(self):
+        self.storage = {}
+
     def get_cache_storage(self, key, expire_time=None):
         if self.storage is None:
             raise ValueError('FileStorageBackend is not bound to a file')
@@ -96,7 +99,10 @@ class FileStorageBackend():
                 if os.path.exists(self.file_name):
                     print('\nLoading cache {}'.format(self.file_name))
                     with open(self.file_name, "r") as input_file:
-                        return yaml.load(input_file, Loader=Loader)
+                        content = yaml.load(input_file, Loader=Loader)
+                    if content is None:
+                        content = {}
+                    return content
                 else:
                     return {}
             except Exception as ex:
@@ -108,9 +114,12 @@ class FileStorageBackend():
     def _write_cache(self):
         if self.file_name is not None:
             print('\nSaving cache {}'.format(self.file_name))
-            with open(self.file_name, "w") as output_file:
-                output_content = yaml.dump(self.storage, Dumper=Dumper)
-                output_file.write(output_content)
+            try:
+                with open(self.file_name, "w") as output_file:
+                    output_content = yaml.dump(self.storage, Dumper=Dumper)
+                    output_file.write(output_content)
+            except Exception as ex:
+                print(ex)
 
     def erase_by_name(self, name_start):
         if self.storage is None:
@@ -186,9 +195,9 @@ class BaseMemoize:
         else:
             wrapped = wrapped_f
 
-        wrapped.no_memoize = func
-        wrapped.__name__ = func.__name__
-        wrapped.__doc__ = func.__doc__
+        wrapped.no_memoize = self._func
+        wrapped.__name__ = self.func.__name__
+        wrapped.__doc__ = self.func.__doc__
         return wrapped
 
 
@@ -197,6 +206,10 @@ DEFAULT_STORAGE_BACKEND = FileStorageBackend()
 
 def bind_to_file_name(file_name):
     DEFAULT_STORAGE_BACKEND.bind_to_file(file_name)
+
+
+def nobinding():
+    DEFAULT_STORAGE_BACKEND.nobinding()
 
 
 def erase_by_name(name_start):

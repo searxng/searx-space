@@ -1,3 +1,4 @@
+# FIXME: no magic values, store the actual content
 INLINE_HASHES = {
     "2c85ab1ba7a6c3c41c22baecc4ac0745365e1da6efa16a34f22d375da490bbb3",
     "b25fb6593b8a7b3ae11912f305b9431f499240e30522a921a1ad5e019aab61c7",

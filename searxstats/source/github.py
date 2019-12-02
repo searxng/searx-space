@@ -1,8 +1,8 @@
-from itertools import chain
 from lxml import etree
+
 from searxstats.config import DEFAULT_HEADERS, DEFAULT_COOKIES
-from searxstats.utils import get_host, html_fromstring
-from searxstats.http_utils import new_session
+from searxstats.common.html import html_fromstring, stringify_children
+from searxstats.common.http import get_host, new_session
 
 
 INSTANCES_XPATH = etree.XPath(
@@ -12,16 +12,7 @@ SEARX_INSTANCES_URL = 'https://github.com/asciimoo/searx/wiki/Searx-instances'
 REMOVE_BEFORE_LOWER_CASE = 'list of public searx instances'
 
 
-def stringify_children(node):
-    parts = ([node.text] +
-             list(chain(*([c.text, str(etree.tostring(c)), c.tail] for c in node.getchildren()))) +
-             [node.tail])
-    # filter removes possible Nones in texts and tails
-    return ''.join(filter(None, parts))
-
-
 async def get_instance_urls():
-
     instance_urls = []
 
     # fetch html page
@@ -40,10 +31,13 @@ async def get_instance_urls():
         ahref = aelement.get('href')
         if ahref.startswith('https://www.ssllabs.com/') or \
            ahref.startswith('https://hstspreload.org/') or \
-           ahref.startswith('https://geti2p.net/'):
+           ahref.startswith('https://geti2p.net/') or \
+           ahref.endswith('/cert/'):
             continue
         if ahref.endswith('/'):
             ahref = ahref[:-1]
+        if ahref.endswith('/search'):
+            ahref = ahref[:-7]
         # Remove .i2p / .onion
         host = get_host(ahref)
         if host.endswith('.i2p') or host.endswith('.onion'):

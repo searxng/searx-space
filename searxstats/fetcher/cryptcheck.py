@@ -1,19 +1,22 @@
+# pylint: disable=invalid-name
 import asyncio
 import time
 import datetime
 
-from searxstats.utils import exception_to_str, get_host
-from searxstats.http_utils import new_session
-from searxstats.memoize import MemoizeToDisk
-from searxstats.model import SearxStatisticsResult
+from searxstats.common.utils import exception_to_str
+from searxstats.common.http import new_session, get_host
+from searxstats.common.memoize import MemoizeToDisk
+from searxstats.model import create_fetch
 
+# Alternative solution: use https://github.com/aeris/cryptcheck and run
+# docker run --rm aeris22/cryptcheck https http://url -qj --no-ipv6
 
 REFRESH_API_ENDPOINT = 'https://tls.imirhil.fr/https/{0}/refresh'
 API_ENDPOINT = 'https://tls.imirhil.fr/https/{0}.json'
 USER_ENDPOINT = 'https://tls.imirhil.fr/https/{0}'
 TIMEOUT = 5
-MAX_RETRY = 12
-TIME_BETWEEN_RETRY = 5
+MAX_RETRY = 10
+TIME_BETWEEN_RETRY = 6
 CACHE_EXPIRE_TIME = 24*3600
 
 
@@ -62,7 +65,8 @@ async def pool_result(session, host):
 
 def validate_result(result):
     if isinstance(result, tuple):
-        return result[0] != '' and result[0] is not None
+        grade = result[0]
+        return grade is not None and grade != ''
     return True
 
 
@@ -85,7 +89,7 @@ async def analyze(host):
 
     try:
         if json is not None and json.get('result') is not None:
-            # get the grades from the different IPs
+            # get the grades from the different IPs
             hosts = json['result'].get('hosts', [])
             ranks = list(
                 set(map(lambda r: r.get('grade', {}).get('rank', '?'), hosts)))
@@ -101,11 +105,11 @@ async def analyze(host):
         return ('', user_url)
 
 
-async def fetch(searx_stats_result: SearxStatisticsResult):
-    for url, detail in searx_stats_result.iter_valid_instances():
-        if 'tls' not in detail:
-            detail['tls'] = {}
-        instance_host = get_host(url)
-        detail['tls']['grade'], detail['tls']['gradeUrl'] = await analyze(instance_host)
-        print('🔒 {0:30} {1}'.format(instance_host, detail['tls']['grade']))
-    return True
+async def fetch_one(url: str) -> dict:
+    instance_host = get_host(url)
+    grade, grade_url = await analyze(instance_host)
+    print('🔒 {0:30} {1}'.format(instance_host, grade))
+    return {'grade': grade, 'gradeUrl': grade_url}
+
+
+fetch = create_fetch(['tls'], fetch_one, valid_instance=True, limit=2)

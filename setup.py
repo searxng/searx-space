@@ -1,5 +1,3 @@
-# The following comment should be removed at some point in the future.
-
 import codecs
 import os
 import re
@@ -80,7 +78,6 @@ setup(
     },
     scripts=[
         'utils/install-geckodriver',
-        'utils/searxstats-updates-hashes'
     ],
 
     zip_safe=False,

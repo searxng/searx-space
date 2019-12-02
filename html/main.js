@@ -25,17 +25,21 @@ const COMMON_ERROR_MESSAGE = {
 const SORT_CRITERIAS = ['http.status_code', 'error', 'version', 'tls.grade',
     'html.grade', 'timing.initial', 'http.grade', 'url'];
 
-function getValue(obj, key1, key2, f) {
-    let value;
-    if (key1 == null) {
-        value = obj;
-    } else {
-        value = obj[key1];
+function getValue(f, obj, ...keys) {
+    let value = obj;
+    for(let i=0; i<keys.length; i++) {
+        const k = keys[i];
+        if (k === undefined) {
+            break;
+        }
+        if ((value === undefined)
+            || (!value.hasOwnProperty(k))) {
+            value = undefined;
+            break;
+        }
+        value = value[k];
     }
-    if (value !== undefined && key2 != null) {
-        value = value[key2];
-    }
-    if (value !== undefined && f != null) {
+    if (value !== undefined && f !== null) {
         value = f(value);
     }
     return value;
@@ -84,14 +88,20 @@ function normalizeGrade(grade) {
     return result;
 }
 
-function compareTool(a, b, key1, key2, f) {
-    const va = getValue(a, key1, key2, f);
-    const vb = getValue(b, key1, key2, f);
+function compareTool(a, b, f, ...keys) {
+    const va = getValue(f, a, ...keys);
+    const vb = getValue(f, b, ...keys);
     if (va === '' && vb !== '') {
         return 1;
     }
     if (vb === '' && va !== '') {
         return -1;
+    }
+    if (va === undefined && vb !== undefined) {
+        return -1;
+    }
+    if (va !== undefined && vb === undefined) {
+        return 1;
     }
     if (va < vb) {
         return 1;
@@ -106,7 +116,7 @@ function compareVersion(a, b) {
     const nsva = normalizeSearxVersion(a);
     const nsvb = normalizeSearxVersion(b);
     for (let i = 0; i < 3; i += 1) {
-        const result = compareTool(nsva, nsvb, i);
+        const result = compareTool(nsva, nsvb, null, i);
         if (result !== 0) {
             return result;
         }
@@ -115,18 +125,25 @@ function compareVersion(a, b) {
 }
 
 const CompareFunctionCriterias = {
-    'http.status_code': (a, b) => -compareTool(a, b, 'http', 'status_code'),
-    'error': (a, b) => -compareTool(a, b, 'error'),
+    'http.status_code': (a, b) => -compareTool(a, b, null, 'http', 'status_code'),
+    'error': (a, b) => -compareTool(a, b, null, 'error'),
     'version': (a, b) => compareVersion(a.version, b.version),
-    'tls.grade': (a, b) => compareTool(a, b, 'tls', 'grade', normalizeGrade),
-    'html.grade': (a, b) => compareTool(a, b, 'html', 'grade', normalizeGrade),
-    'http.grade': (a, b) => compareTool(a, b, 'http', 'grade', normalizeGrade),
-    'timing.initial': (a, b) => -compareTool(a, b, 'timing', 'initial'),
-    'url': (a, b) => -compareTool(a, b, 'url'),
+    'tls.grade': (a, b) => compareTool(a, b, normalizeGrade, 'tls', 'grade'),
+    'html.grade': (a, b) => compareTool(a, b, normalizeGrade, 'html', 'grade'),
+    'http.grade': (a, b) => compareTool(a, b, normalizeGrade, 'http', 'grade'),
+    'timing.initial': (a, b) => -compareTool(a, b, null, 'timing', 'initial'),
+    'timing.search_wp.server.median': (a, b) => -compareTool(a, b, null, 'timing', 'search_wp', 'server', 'median'),
+    'timing.search_wp.all.median': (a, b) => -compareTool(a, b, null, 'timing', 'search_wp', 'all', 'median'),
+    'url': (a, b) => -compareTool(a, b, null, 'url'),
 };
 
 function compareFunctionCompose(...criterias) {
     const criteriaFunctions = criterias.map((criteriaName) => CompareFunctionCriterias[criteriaName]);
+    for (let i = 0; i < criteriaFunctions.length; i += 1) {
+        if (typeof criteriaFunctions[i] !== 'function') {
+            throw "criteria #" + i + " " + criterias[i] + " is not a function (" + criteriaFunctions[i] + ")";
+        }
+    }
     return (a, b) => {
         for (let i = 0; i < criteriaFunctions.length; i += 1) {
             const result = criteriaFunctions[i](a, b);
@@ -152,6 +169,9 @@ function hslCss(h, s, l) {
 }
 
 function hslResponseTime(value, successRate) {
+    if (value === 'N/A') {
+        value = 2;
+    }
     const responseTimeInPercentage = translateValue(value, 0.1, 2, 0, 100, true);
     const successRateNormalized = translateValue(successRate || 100, 40, 90, 0, 100, false);
     const percentageShown = (responseTimeInPercentage / 100) * (successRateNormalized / 100) * 100;
@@ -184,7 +204,11 @@ function hslGradeHtml(grade) {
 }
 
 function formatResponseTime(value) {
-    return new Intl.NumberFormat('en', { maximumFractionDigits: 3, minimumFractionDigits: 3 }).format(value);
+    if (typeof value === 'number') {
+        return new Intl.NumberFormat('en', { maximumFractionDigits: 3, minimumFractionDigits: 3 }).format(value);
+    } else {
+        return value;
+    }
 }
 
 function createTooltip(h, e, tooltipContent) {
@@ -200,30 +224,92 @@ function createTooltip(h, e, tooltipContent) {
     ]);
 }
 
-Vue.component('time-component', {
+function tooltip_add_timing(h, tooltip_lines, timing, time_label) {
+    if (timing !== undefined) {
+        const median = timing.median || timing.value;
+        if (median !== undefined) {
+            tooltip_lines.push(h('p', `${time_label}: ${formatResponseTime(median)}`));
+        }
+    }
+}
+
+Vue.component('url-component', {
+    props: ['url', 'alternativeurls'],
+    render: function(h) {
+        if (this.url != null && this.url !== undefined) {
+            let tooltipLines = [];
+            if (this.alternativeurls !== undefined) {
+                for (const altUrl of Object.keys(this.alternativeurls)) {
+                    tooltipLines.push(h('tr', [
+                        h('td', altUrl),
+                    ]));
+                }
+            }
+            const ahrefElement = h('a', { attrs: {  href: this.url } }, this.url);
+            if (tooltipLines.length > 0) {
+                return createTooltip(h,
+                    ahrefElement,
+                    [ h('table', tooltipLines) ]
+                );
+            } else {
+                return ahrefElement;
+            }
+        }
+    },
+});
+
+Vue.component('http-status-component', {
     props: ['value'],
+    render: function (h) {
+        if (this.value != null && this.value !== undefined) {
+            const httpStatus = parseInt(this.value);
+            let cssClass = '';
+            if (httpStatus >= 200 && httpStatus < 300) {
+                cssClass = 'label-success';
+            } else if (httpStatus >= 300 && httpStatus < 400) {
+                cssClass = 'label-warning';
+            } else if (httpStatus >= 400 && httpStatus < 500) {
+                cssClass = 'label-danger';
+            } else if (httpStatus >= 500) {
+                cssClass = 'label-danger';
+            }
+            return h('span', { staticClass: `label ${cssClass}` }, this.value);
+        }
+        return undefined;
+    },
+});
+
+Vue.component('time-component', {
+    props: ['value', 'time_select'],
     render: function (h) {
         if (this.value != null) {
             let successRate = 100;
             let value;
-            let tooltip;
+            let tooltip_lines;
             if (typeof (this.value) === 'object') {
-                value = this.value.all.median;
-                if (value === undefined) {
-                    value = this.value.all.value;
+                const timing = this.value[this.time_select];
+                if (timing !== undefined) {
+                    value = this.value[this.time_select].median;
+                    if (value === undefined) {
+                        value = this.value[this.time_select].value;
+                    }
+                    successRate = this.value.success_percentage;
+                    tooltip_lines = [
+                        h('p', `${successRate}% success`),
+                    ];
+                    tooltip_add_timing(h, tooltip_lines, this.value.all, 'Total time');
+                    tooltip_add_timing(h, tooltip_lines, this.value.server, 'Server time');
+                    tooltip_add_timing(h, tooltip_lines, this.value.load, 'Load time');
+                    if (this.value.error !== undefined && this.value.error != 'Check failed') {
+                        tooltip_lines.push(h('p', `Error: ${this.value.error}`));
+                        if (value === undefined) {
+                            value = 'N/A';
+                        }
+                    }
                 }
-                successRate = this.value.success_percentage;
-                tooltip = [
-                    h('p', `${successRate}% success`),
-                ];
-                const serverTiming = this.value.server;
-                if (serverTiming !== undefined) {
-                    const serverMedian = serverTiming.median || serverTiming.value;
-                    tooltip.push(h('p', `server time: ${formatResponseTime(serverMedian)}`));
-                }
-            } else {
+            } else if (this.time_select === 'all') {
                 value = this.value;
-                tooltip = null;
+                tooltip_lines = null;
             }
             if (value !== undefined) {
                 return createTooltip(h,
@@ -232,10 +318,34 @@ Vue.component('time-component', {
                         attrs: {
                             style: `background-color:${hslResponseTime(value, successRate)}`,
                         },
-                    }, formatResponseTime(value)), tooltip);
+                    }, formatResponseTime(value)), tooltip_lines);
             }
         }
         return undefined;
+    },
+});
+
+Vue.component('engine-component', {
+    props: ['instance', 'engine'],
+    render: function(h) {
+        if (this.instance !== undefined && this.engine !== undefined) {
+            const engine = this.instance.engines[this.engine];
+            if (engine !== undefined) {
+                if (engine.status === true) {
+                    return h('span', {
+                        staticClass: 'item-check'
+                    }, '✔️');
+                } if (engine.status === false) {
+                    return createTooltip(h, h('span', {
+                        staticClass: 'item-uncheck'
+                    }, '❌'), engine.error);
+                } else {
+                    return h('span', {
+                        staticClass: 'item-unknow'
+                    }, '?');
+                }
+            }
+        }
     },
 });
 
@@ -270,7 +380,16 @@ Vue.component('html-component', {
                     if (unknownInlineScriptCount > 0) {
                         const attrs = {};
                         const msg = `${unknownInlineScriptCount} unknown inline scripts`;
-                        let msg2 = `one is used by ${unknownCountMin} instances`;
+                        let msg2;
+                        if (unknownCountMin === 1) {
+                            if (unknownInlineScriptCount == 1) {
+                                msg2 = 'unique to this instance';
+                            } else {
+                                msg2 = 'at least one is unique to this instance';
+                            }
+                        } else {
+                            msg2 = `at least one is used by ${unknownCountMin} instances`;
+                        }
                         if (unknownCountMin >= 5) {
                             attrs.style = `background-color:${hslGradeHtml('B')}; color:white`;
                         } else if (unknownCountMin >= 2) {
@@ -280,12 +399,13 @@ Vue.component('html-component', {
                             msg2 = 'one only on this instance';
                         }
                         r.push(h('tr', [
+                            h('td', { attrs: attrs }, ''),
                             h('td', { attrs: attrs }, `${msg}, ${msg2}`),
                             h('td', { attrs: attrs }, ''),
                         ]));
                     }
                     // external ressources
-                    for (const ressourceType of ['script', 'style', 'link', 'other', 'img']) {
+                    for (const ressourceType of ['iframe', 'script', 'style', 'link', 'other', 'img']) {
                         if (ressources[ressourceType] !== undefined) {
                             for (const [url, ressourceDetail] of Object.entries(ressources[ressourceType])) {
                                 const attrs = {};
@@ -300,7 +420,7 @@ Vue.component('html-component', {
                                     attrs.style = `background-color:${hslGradeHtml('?')}; color:white`;
                                     extraInfo = ressourceDetail.error;
                                 } else if (ressourceHash) {
-                                    extraInfo = ressourceHash.count;
+                                    extraInfo = '';
                                     if (ressourceHash.unknown) {
                                         addThisRessource = true;
                                         if (ressourceHash.count >= 5) {
@@ -313,8 +433,12 @@ Vue.component('html-component', {
                                     }
                                 }
                                 if (addThisRessource) {
+                                    let ressourceHRef = new URL(url, this.url).href;
                                     r.push(h('tr', [
-                                        h('td', { attrs: attrs }, new URL(url, this.url).href),
+                                        h('td', { attrs: attrs }, ressourceType),
+                                        h('td', { attrs: attrs }, [
+                                            h('a', { attrs: { href: ressourceHRef } }, ressourceHRef)
+                                        ]),
                                         h('td', { attrs: attrs }, extraInfo),
                                     ]));
                                 }
@@ -395,16 +519,28 @@ Vue.component('certificate-component', {
                 return createTooltip(h,
                     h('a', { attrs: { href: `https://crt.sh/?q=${hostname}` } },
                         [
-                            certificate.issuer.organizationName,
+                            certificate.issuer.organizationName || certificate.issuer.commonName,
                             ' (',
                             certificate.issuer.countryName,
                             ')',
                         ]), [
-                        h('p', certificate.issuer.commonName),
-                        h('p', `From: ${certificate.notBefore}`),
-                        h('p', `To: ${certificate.notAfter}`),
-                        h('p', `Serial number: ${certificate.serialNumber}`),
-                        h('p', `SHA256: ${certificate.sha256}`),
+                        h('table', [
+                            h('tr', [ h('td', [ h('b', [ 'Subject' ] ) ]) ]),
+                            h('tr', [ h('td', 'Name'), h('td', certificate.subject.commonName) ]),
+                            h('tr', [ h('td', 'AltName'), h('td', certificate.subject.altName) ]),
+                            h('tr', [ h('td', 'Country'), h('td', certificate.subject.countryName) ]),
+                            h('tr', [ h('td', 'Organization'), h('td', certificate.subject.organizationName)]),
+                            h('tr', [ h('td', [ h('b', [ 'Issuer' ] ) ]) ]),
+                            h('tr', [ h('td', 'Name'), h('td', certificate.issuer.commonName) ]),
+                            h('tr', [ h('td', 'Country'), h('td', certificate.issuer.countryName) ]),
+                            h('tr', [ h('td', 'Organization'), h('td', certificate.issuer.organizationName)]),
+                            h('tr', [ h('td', [ h('b', [ 'Validity' ] ) ]) ]),
+                            h('tr', [ h('td', 'From'), h('td', certificate.notBefore) ]),
+                            h('tr', [ h('td', 'To'), h('td', certificate.notAfter) ]),
+                            h('tr', [ h('td', [ h('b', [ 'Fingerprint' ] ) ]) ]),
+                            h('tr', [ h('td', 'Serial number'), h('td', certificate.serialNumber) ]),
+                            h('tr', [ h('td', 'SHA256'), h('td', certificate.sha256) ]),
+                        ]),
                     ]);
             }
         }
@@ -413,23 +549,25 @@ Vue.component('certificate-component', {
 });
 
 Vue.component('network-component', {
-    props: ['value', 'field'],
+    props: ['value', 'field', 'alternatefield'],
     render: function (h) {
-        if (this.value != null) {
-            if (this.value != null && Object.keys(this.value).length > 0) {
-                // element body
-                const networks = Object.keys(this.value).map((ip) => {
-                    if (this.value[ip].whois != null) {
-                        return this.value[ip].whois[this.field];
+        if ((this.value != null) && Object.keys(this.value).length > 0) {
+            // element body
+            const networks = Object.keys(this.value).map((ip) => {
+                if (this.value[ip].whois != null) {
+                    let fieldValue = this.value[ip].whois[this.field];
+                    if (fieldValue === null && this.alternatefield !== undefined) {
+                        fieldValue = this.value[ip].whois[this.alternatefield];
                     }
-                    return null;
-                });
-                const networksList = listUniq(networks).join(', ');
-                // tooltip
-                const reverseIpHosts = listUniq(Object.keys(this.value).map((ip) => this.value[ip].reverse || ip));
-                const reverseIpHostElements = reverseIpHosts.map((host) => h('p', host));
-                return createTooltip(h, h('span', networksList), [reverseIpHostElements]);
-            }
+                    return fieldValue;
+                }
+                return null;
+            });
+            const networksList = listUniq(networks).join(', ');
+            // tooltip
+            const reverseIpHosts = listUniq(Object.keys(this.value).map((ip) => this.value[ip].reverse || ip));
+            const reverseIpHostElements = reverseIpHosts.map((host) => h('p', host));
+            return createTooltip(h, h('span', networksList), [reverseIpHostElements]);
         }
         return undefined;
     },
@@ -465,6 +603,21 @@ function getErrorKey(errorMessage) {
     return 'Others';
 }
 
+function setComputedTimes(timing) {
+    if (timing.server !== undefined && timing.all !== undefined) {
+        timing.network = {
+            'median': timing.all.median - timing.server.median || undefined,
+            'value': timing.all.value - timing.server.value || undefined
+        }
+    }
+    if (timing.load !== undefined && timing.server !== undefined) {
+        timing.processing = {
+            'median': timing.server.median - timing.load.median || undefined,
+            'value': timing.server.value - timing.load.value || undefined
+        }
+    }
+}
+
 // eslint-disable-next-line no-new
 new Vue({
     el: '#searxinstances',
@@ -478,14 +631,18 @@ new Vue({
             network_x_whois_2: '',
             google: false,
         },
+        display: {
+            time_select: 'all'
+        },
         selected_tab: 'online',
         timestamp: undefined,
         instances: [],
         instances_nosearx: [],
         instances_ko: [],
-        instances_per_ips: {},
         hashes: [],
         engines: {},
+        categories: [],
+        selected_category: 'general',
     }),
     computed: {
         instances_filtered: function () {
@@ -521,6 +678,11 @@ new Vue({
             result.sort(compareInstance);
             return result;
         },
+        selected_engines: function() {
+            let result = Object.keys(this.engines).filter((engine) => (this.engines[engine].categories.includes(this.selected_category)));
+            result.sort();
+            return result;
+        },
     },
     created: function () {
         // eslint-disable-next-line arrow-body-style
@@ -531,7 +693,6 @@ new Vue({
                 const instances = [];
                 const instancesWithError = {};
                 const instancesWithoutSearx = [];
-                let instancesPerIps = {};
                 for (const [url, instance] of Object.entries(rawInstances)) {
                     instance.url = url;
 
@@ -548,13 +709,9 @@ new Vue({
                     setDefault(instance.timing.search_go, 'all', {});
                     setDefault(instance, 'html', {});
                     setDefault(instance.html, 'grade', '');
-
-                    // engines
-                    if (instance.status) {
-                        for (const engine of instance.status) {
-                            this.engines[engine] = true;
-                        }
-                    }
+                    setComputedTimes(instance.timing.index);
+                    setComputedTimes(instance.timing.search_wp);
+                    setComputedTimes(instance.timing.search_go);
 
                     // dispatch instance
                     if (instance.error === undefined) {
@@ -568,28 +725,7 @@ new Vue({
                         setDefault(instancesWithError, errorKey, []);
                         instancesWithError[errorKey].push(instance);
                     }
-
-                    // find instances sharing the same ip set
-                    // eslint-disable-next-line no-restricted-syntax
-                    for (const ip of Object.keys(instance.network)) {
-                        if (ip !== 'error') {
-                            setDefault(instancesPerIps, ip, []);
-                            instancesPerIps[ip].push(instance.url);
-                        }
-                    }
                 }
-
-                // find instances sharing the same ip set
-                instancesPerIps = Object.keys(instancesPerIps)
-                    .filter((ip) => instancesPerIps[ip].length > 1)
-                    .reduce((obj, key) => {
-                        instancesPerIps[key].sort();
-                        const value = instancesPerIps[key].join('|');
-                        setDefault(obj, value, []);
-                        // switch key and value: urls.join('|') as key, ips as value
-                        obj[value].push(key);
-                        return obj;
-                    }, {});
 
                 const compareInstance = compareFunctionCompose(...SORT_CRITERIAS);
                 instancesWithoutSearx.sort(compareInstance);
@@ -599,8 +735,10 @@ new Vue({
                 this.instances = instances;
                 this.instances_ko = instancesWithError;
                 this.instances_nosearx = instancesWithoutSearx;
-                this.instances_per_ips = instancesPerIps;
                 this.hashes = json.hashes;
+                this.engines = json.engines;
+                this.categories = json.categories;
+                this.selected_category = this.categories[0];
             });
         });
     },

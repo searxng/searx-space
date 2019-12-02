@@ -1,11 +1,10 @@
 import re
 import concurrent.futures
 from collections import OrderedDict
-from searxstats.ssl_utils import get_sslinfo
-from searxstats.utils import get_host
-from searxstats.http_utils import new_session, do_get
+from searxstats.common.ssl_utils import get_sslinfo
+from searxstats.common.http import new_session, get, get_host
+from searxstats.common.memoize import MemoizeToDisk
 from searxstats.config import DEFAULT_HEADERS
-from searxstats.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
 
 
@@ -27,9 +26,8 @@ async def fetch_one(instance_url):
     # no cookie ( cookies=DEFAULT_COOKIES,  )
     try:
         async with new_session() as session:
-            response, error = await do_get(session, instance_url,
-                                           headers=DEFAULT_HEADERS, timeout=5)
-            # FIXME if status_code is 500 try without theme (but disable checking results)
+            response, error = await get(session, instance_url,
+                                        headers=DEFAULT_HEADERS, timeout=10)
             if response is not None:
                 version = await get_searx_version(response)
                 detail = {
@@ -40,16 +38,19 @@ async def fetch_one(instance_url):
                     'version': version,
                     'timing': {
                         'initial': response.elapsed.total_seconds()
-                    }
+                    },
+                    'alternativeUrls': {
+                    },
                 }
-                # redirect
                 response_url = str(response.url)
+                # add trailing slash
                 if not response_url.endswith('/'):
                     response_url = response_url + '/'
+                # redirect
                 if response_url != instance_url:
                     if 'redirect_from' not in detail:
                         detail['redirect_from'] = []
-                    detail['redirect_from'].append(instance_url)
+                    detail['alternativeUrls'][instance_url] = 'redirect'
                     instance_url = response_url
             else:
                 detail = {
@@ -57,7 +58,9 @@ async def fetch_one(instance_url):
                     },
                     'version': None,
                     'timing': {
-                    }
+                    },
+                    'alternativeUrls': {
+                    },
                 }
     except concurrent.futures.TimeoutError:
         # This exception occurs on new_session()

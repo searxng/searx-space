@@ -1,8 +1,9 @@
+# pylint: disable=invalid-name
 import asyncio
-from searxstats.utils import exception_to_str, get_host
-from searxstats.http_utils import new_session
-from searxstats.memoize import MemoizeToDisk
-from searxstats.model import SearxStatisticsResult
+from searxstats.common.utils import exception_to_str
+from searxstats.common.http import new_session, get_host
+from searxstats.common.memoize import MemoizeToDisk
+from searxstats.model import create_fetch
 
 
 # see https://github.com/ssllabs/ssllabs-scan/blob/master/ssllabs-api-docs-v3.md
@@ -17,9 +18,34 @@ MAX_RETRY = 6
 TIME_BETWEEN_RETRY = 10
 
 
+async def analyze_tls(host):
+    '''
+    About Certificate
+
+    POST https://tls-observatory.services.mozilla.com/api/v1/scan
+    {
+        rescan	false
+        target	hostname
+    }
+
+    {"scan_id":xxx}
+
+    GET https://tls-observatory.services.mozilla.com/api/v1/results?id=xxx
+    yyy
+
+    {
+        cert_id: yyyy
+    }
+
+
+    Link to https://tls-observatory.services.mozilla.com/static/certsplainer.html?id=yyyy
+    '''
+    raise ValueError('Not implemented')
+
+
 @MemoizeToDisk()
 async def analyze(host):
-    user_url = USER_ENDPOINT.format(host)
+    grade_url = USER_ENDPOINT.format(host)
     try:
         async with new_session() as session:
             response = await session.post(API_NEW.format(host))
@@ -54,15 +80,14 @@ async def analyze(host):
     except Exception as ex:
         print(host, exception_to_str(ex))
         grade = None
-    return (grade, user_url)
+    return (grade, grade_url)
 
 
-async def fetch(searx_stats_result: SearxStatisticsResult):
-    for url, detail in searx_stats_result.iter_valid_instances():
-        if 'http' not in detail:
-            detail['http'] = {}
-        instance_host = get_host(url)
-        detail['http']['grade'], detail['http']['gradeUrl'] =\
-            await analyze(instance_host)
-        print('🔒 {0:30} {1}'.format(instance_host, detail['http']['grade']))
-    return True
+async def fetch_one(url: str) -> dict:
+    instance_host = get_host(url)
+    grade, grade_url = await analyze(instance_host)
+    print('📄 {0:30} {1}'.format(instance_host, grade))
+    return {'grade': grade, 'gradeUrl': grade_url}
+
+
+fetch = create_fetch(['http'], fetch_one, valid_instance=True, limit=2)

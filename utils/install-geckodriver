@@ -26,7 +26,7 @@ GECKODRIVER_URL="https://github.com/mozilla/geckodriver/releases/download/$GECKO
 
 if [ -z "$1" ]; then
     if [ -z "$VIRTUAL_ENV" ]; then
-        printf "geckodriver can't be installed because VIRTUAL_ENV is not set, you should download it from\n  %s" "$GECKODRIVER_URL"
+        printf "geckodriver can't be installed because VIRTUAL_ENV is not set, you should download it from\n  %s" "$GECKODRIVER_URL\n"
         exit
     else
         GECKODRIVER_DIR="$VIRTUAL_ENV/bin"
@@ -36,9 +36,10 @@ else
     mkdir -p -- "$GECKODRIVER_DIR"
 fi
 
-printf "Installing %s/geckodriver from\n  %s" "$GECKODRIVER_DIR" "$GECKODRIVER_URL"
+printf "Installing %s/geckodriver from\n  %s\n" "$GECKODRIVER_DIR" "$GECKODRIVER_URL"
 
 FILE="`mktemp`"
 wget -qO "$FILE" -- "$GECKODRIVER_URL" && tar xz -C "$GECKODRIVER_DIR" -f "$FILE" geckodriver
 rm -- "$FILE"
-chmod 777 -- "$GECKODRIVER_DIR/geckodriver"
+chown $(id -u):$(id -g) -- "$GECKODRIVER_DIR/geckodriver"
+chmod 755 -- "$GECKODRIVER_DIR/geckodriver"

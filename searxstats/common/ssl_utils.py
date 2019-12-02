@@ -15,12 +15,10 @@ class SystemCertSSLConfig(httpx.config.SSLConfig):
     def __init__(self, *args, **kwargs):
         super(SystemCertSSLConfig, self).__init__(*args, **kwargs)
 
-
     def _load_client_certs(self, ssl_context: ssl.SSLContext) -> None:
         """
         Loads client certificates into our SSLContext object
         """
-        print('aaaaa')
         ssl_context.load_default_certs()
 
 
@@ -28,13 +26,11 @@ def monkey_patch():
     original_start_tls = getattr(
         httpx.concurrency.asyncio.AsyncioBackend, 'open_tcp_stream')
 
-
     def concat_to_key(obj, key, value):
         if key in obj:
             obj[key] = obj[key] + ", " + value
         else:
             obj[key] = value
-
 
     def cert_to_obj(cert):
         obj = {
@@ -50,7 +46,6 @@ def monkey_patch():
                 obj[field] = cert.get(field)
         return obj
 
-
     def parse_sslobject(sslobj):
         global SSL_INFO, SSL_CERT  # pylint: disable=global-statement
         if sslobj is None:
@@ -62,11 +57,10 @@ def monkey_patch():
                 'version': sslobj.version(),
                 'certificate': cert_to_obj(cert_dict)
             }
+            # TODO python <= 3.6: convert IDN to ASCII
             SSL_CERT[sslobj.server_hostname] = cert_bin
 
-
     async def open_tcp_stream(*args, **kwargs):
-        # print(args[3].check_hostname)
         value = await original_start_tls(*args, **kwargs)
         sslobj = value.stream_reader._transport.get_extra_info("ssl_object")  # pylint: disable=protected-access
         parse_sslobject(sslobj)
@@ -80,10 +74,27 @@ def monkey_patch():
 
 def get_sslinfo(host):
     global SSL_INFO, SSL_CERT  # pylint: disable=global-statement
-    cert_obj = SSL_INFO.get(host, {})
+    ssl_obj = SSL_INFO.get(host, {})
     cert_bin = SSL_CERT.get(host, None)
-    if cert_bin is not None:
+    if cert_bin is not None and 'sha256' not in ssl_obj['certificate']:
         bincert = load_certificate(FILETYPE_ASN1, cert_bin)
-        cert_sha256 = bincert.digest("sha256")
-        cert_obj['certificate']['sha256'] = cert_sha256.decode('utf-8')
-    return cert_obj
+        cert_obj = ssl_obj['certificate']
+        cert_obj['sha256'] = bincert.digest('sha256').decode('utf-8')
+        cert_obj['notAfter'] = bincert.get_notAfter().decode('utf-8')
+        cert_obj['notBefore'] = bincert.get_notBefore().decode('utf-8')
+        cert_obj['signatureAlgorithm'] = bincert.get_signature_algorithm().decode('utf-8')
+        cert_obj['subject'] = {
+            'commonName': bincert.get_subject().commonName,
+            'countryName': bincert.get_subject().countryName,
+            'organizationName': bincert.get_subject().organizationName,
+        }
+        cert_obj['issuer'] = {
+            'commonName': bincert.get_issuer().commonName,
+            'countryName': bincert.get_issuer().countryName,
+            'organizationName': bincert.get_issuer().organizationName,
+        }
+        for i in range(0, bincert.get_extension_count()):
+            ex = bincert.get_extension(i)
+            if ex.get_short_name() == b'subjectAltName':
+                cert_obj['subject']['altName'] = str(ex)
+    return ssl_obj

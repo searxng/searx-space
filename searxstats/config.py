@@ -1,27 +1,29 @@
+import os
+
 # Use system certificates instead of certifi ?
 USE_SYSTEM_CERT = True
 
-# Request count to measure response time
+# Request count to measure response time
 REQUEST_COUNT = 6
 
-# fetcher.external_ressource: load page timeout, in seconds
+# Fetcher.external_ressource: load page timeout, in seconds
 BROWSER_LOAD_TIMEOUT = 20
 
-# default headers for all HTTP requests
+# Default headers for all HTTP requests
 DEFAULT_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Accept-Language': 'en-US,en;q=0.5',
     'DNT': '1',
     'Cache-Control': 'max-age=0',
     'Upgrade-Insecure-Requests': '1'
 }
 
-# default cookies for all HTTP requests
+# Default cookies for all HTTP requests
 DEFAULT_COOKIES = {
     'categories': 'general',
     'language': 'en-US',
-    'locale': 'fr',
+    'locale': 'en',
     'autocomplete': 'google',
     'image_proxy': '0',
     'method': 'GET',
@@ -30,5 +32,45 @@ DEFAULT_COOKIES = {
     'oscar-style': 'logicodev'
 }
 
-# Default cache file name
-DEFAULT_CACHE_FILE_NAME = '/tmp/searxstats.cache'
+# Default working directory
+CACHE_DIRECTORY = '/tmp'
+
+# File name of cache
+CACHE_FILE_NAME = 'searxstats-cache.yaml'
+
+# File name of the hashes (of static file in searx)
+HASHES_FILE_NAME = 'searxstats-well-known-hashes.yaml'
+
+# Directory where searx will be git clone
+SEARX_GIT_DIRECTORY = 'searxstats-git'
+
+# Git URL of searx (to fetch static file content hashes)
+SEARX_GIT_REPOSITORY = 'https://github.com/asciimoo/searx'
+
+# geckodriver log file name
+GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'
+
+
+def set_cache_directory(directory):
+    global CACHE_DIRECTORY  # pylint: disable=global-statement
+    CACHE_DIRECTORY = directory
+
+
+def get_cache_file_name():
+    global CACHE_DIRECTORY, CACHE_FILE_NAME  # pylint: disable=global-statement
+    return os.path.join(CACHE_DIRECTORY, CACHE_FILE_NAME)
+
+
+def get_hashes_file_name():
+    global CACHE_DIRECTORY, HASHES_FILE_NAME  # pylint: disable=global-statement
+    return os.path.join(CACHE_DIRECTORY, HASHES_FILE_NAME)
+
+
+def get_searx_repository_directory():
+    global CACHE_DIRECTORY, SEARX_GIT_DIRECTORY  # pylint: disable=global-statement
+    return os.path.join(CACHE_DIRECTORY, SEARX_GIT_DIRECTORY)
+
+
+def get_geckodriver_file_name():
+    global CACHE_DIRECTORY, GECKODRIVER_LOG_FILE_NAME  # pylint: disable=global-statement
+    return os.path.join(CACHE_DIRECTORY, 'geckodriver.log')

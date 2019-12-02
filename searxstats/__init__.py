@@ -1,28 +1,28 @@
 import logging
 import asyncio
-import uvloop
 
-from .memoize import erase_by_name
-from .ssl_utils import monkey_patch as ssl_utils_monkey_patch
-from .http_utils import monkey_patch as http_utils_monkey_patch
-from .instances import get_instance_urls
-from .fetcher import fetch, FETCHERS
+from .common import initialize as initialize_common, finalize as finalize_common
+from .source.github import get_instance_urls
+from .fetcher import fetch, initialize as initialize_fetcher, FETCHERS
 
 
-def initialize():
-    ssl_utils_monkey_patch()
-    http_utils_monkey_patch()
-    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+async def initialize():
+    await initialize_common()
     initialize_logging()
+
+
+async def finalize():
+    await finalize_common()
 
 
 def initialize_logging():
     logging.basicConfig(level=logging.DEBUG)
-    for logger_name in ('httpx.config', 'hpack.hpack', 'hpack.table',
+    for logger_name in ('httpx.client', 'httpx.config', 'hpack.hpack', 'hpack.table',
                         'httpx.dispatch.connection_pool', 'httpx.dispatch.connection',
                         'httpx.dispatch.http2', 'httpx.dispatch.http11',
                         'ipwhois.rdap', 'ipwhois.ipwhois', 'ipwhois.net', 'ipwhois.asn',
-                        'selenium.webdriver.remote', 'urllib3.connectionpool'):
+                        'selenium.webdriver.remote', 'urllib3.connectionpool',
+                        'git.cmd', 'git.repo'):
         logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 
@@ -30,6 +30,9 @@ async def run_once(output_file: str, instance_urls: list, selected_fetcher_names
     # select fetchers
     selected_fetchers = list(
         filter(lambda f: f.name in selected_fetcher_names, FETCHERS))
+
+    # initialize fetchers
+    await initialize_fetcher(selected_fetchers)
 
     # fetch instance list
     if instance_urls is None or len(instance_urls) == 0:
@@ -54,4 +57,3 @@ async def run_server(*args, **kwargs):
 def erase_memoize(fetcher_name_list: list):
     for fetcher in filter(lambda f: f.name in fetcher_name_list, FETCHERS):
         fetcher.erase_memoize()
- 

@@ -1,39 +1,48 @@
 import asyncio
-import sys
+import concurrent.futures
 
+from searxstats.common.utils import wait_get_results
 from searxstats.model import SearxStatisticsResult, Fetcher
-from .basic import fetch_from_urls
-from .external_ressources import fetch as fetch_external_ressources
-from .network import fetch as fetch_network
-from .selfreport import fetch as fetch_selfreport
-from .cryptcheck import fetch as fetch_cryptcheck
-from .mozillaobs import fetch as fetch_mozillaobs
-from .timing import fetch as fetch_timing
+
+from . import basic
+from . import external_ressources
+from . import network
+from . import selfreport
+from . import cryptcheck
+from . import mozillaobs
+from . import timing
 
 
 __all__ = ['FETCHERS', 'fetch']
 
 
+TASK_THREADPOOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
 FETCHERS = [
-    Fetcher('html-grade',
-            'Load page with a browser and check the used external ressources ⏳🔗',
-            fetch_external_ressources),
-    Fetcher('network',
-            'Fetch whois information 🌏',
-            fetch_network),
-    Fetcher('self-report',
-            'Fetch the /status and /config URLs 💡',
-            fetch_selfreport),
-    Fetcher('https-grade',
-            'Check the HTTPS / TLS grade 🔒',
-            fetch_cryptcheck),
-    Fetcher('csp-grade',
-            'Check the CSP grade 📄',
-            fetch_mozillaobs),
-    Fetcher('timing',
-            'Test the response time 🌊🏠🔎🔍🏁❌',
-            fetch_timing)
+    Fetcher(network,
+            'network',
+            'Fetch whois information 🌏'),
+    Fetcher(external_ressources,
+            'html-grade',
+            'Load page with a browser and check the used external ressources 🔗'),
+    Fetcher(selfreport,
+            'self-report',
+            'Fetch the /status and /config URLs 💡'),
+    Fetcher(timing,
+            'timing',
+            'Test the response time 🏠🔎🔍🏁❌'),
+    Fetcher(cryptcheck,
+            'https-grade',
+            'Check the HTTPS / TLS grade 🔒'),
+    Fetcher(mozillaobs,
+            'csp-grade',
+            'Check the CSP grade 📄'),
 ]
+
+
+async def initialize(selected_fetchers: list):
+    loop = asyncio.get_event_loop()
+    for fetcher in selected_fetchers:
+        await fetcher.create_initialize_task(loop, TASK_THREADPOOL)
 
 
 async def fetch_using_fetchers(searx_stats_result: SearxStatisticsResult, selected_fetchers: list):
@@ -42,20 +51,18 @@ async def fetch_using_fetchers(searx_stats_result: SearxStatisticsResult, select
     # create a task list from the selected fetchers
     tasks = []
     for fetcher in selected_fetchers:
-        task = fetcher.create_task(loop, searx_stats_result)
+        task = fetcher.create_fetch_task(loop, TASK_THREADPOOL, searx_stats_result)
         tasks.append(task)
 
     # check if there is a least one task
-    if len(tasks) > 0:
-        # run everything in parallel
-        await asyncio.wait({*tasks})
+    await wait_get_results(*tasks)
 
 
 async def fetch(instance_urls: list, selected_fetchers: list) -> SearxStatisticsResult:
     searx_stats_result = SearxStatisticsResult()
 
     # initial fetch
-    await fetch_from_urls(searx_stats_result, instance_urls)
+    await basic.fetch_from_urls(searx_stats_result, instance_urls)
 
     # fetch using the selected fetchers
     await fetch_using_fetchers(searx_stats_result, selected_fetchers)

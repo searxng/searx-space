@@ -6,14 +6,20 @@ import sys
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from searxstats.config import BROWSER_LOAD_TIMEOUT
-from searxstats.data.well_kown_hashes import WELL_KNOWN_HASHES
+from searxstats.config import BROWSER_LOAD_TIMEOUT, get_geckodriver_file_name
+from searxstats.data.well_kown_hashes import fetch_file_content_hashes
 from searxstats.data.inline_hashes import INLINE_HASHES
-from searxstats.memoize import MemoizeToDisk
+from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
 
 
-WELL_KNOWN_HASHES.update(INLINE_HASHES)
+WELL_KNOWN_HASHES = set()
+
+
+def initialize():
+    global WELL_KNOWN_HASHES  # pylint: disable=global-statement
+    WELL_KNOWN_HASHES.update(fetch_file_content_hashes())
+    WELL_KNOWN_HASHES.update(INLINE_HASHES)
 
 
 with open(os.path.dirname(os.path.realpath(__file__))
@@ -34,7 +40,7 @@ def new_driver():
 
     driver = webdriver.Firefox(options=options,
                                firefox_profile=firefox_profile,
-                               service_log_path=os.path.devnull)
+                               service_log_path=get_geckodriver_file_name())
     driver.set_page_load_timeout(BROWSER_LOAD_TIMEOUT)
     return driver
 
@@ -59,12 +65,12 @@ def result_hash_iterator(result):
 
 
 # pylint: disable=unused-argument
-def fetch_ressource_hashes_js_key(url, driver=None):
+def fetch_ressource_hashes_js_key(driver, url):
     return url
 
 
 @MemoizeToDisk(func_key=fetch_ressource_hashes_js_key)
-def fetch_ressource_hashes_js(url, driver=None):
+def fetch_ressource_hashes_js(driver, url):
     try:
         # load page
         driver.get(url)
@@ -101,6 +107,7 @@ def replace_hash_by_hashref(result, hashes):
 
     Return hashes of unknown ressources
     """
+    global WELL_KNOWN_HASHES  # pylint: disable=global-statement
     ressource_hashes = set()
     for ressource, _ in result_hash_iterator(result):
         ressource_hash = ressource.get('hash', None)
@@ -128,8 +135,8 @@ def replace_hash_by_hashref(result, hashes):
             del ressource['hash']
 
 
-def fetch_ressource_hashes(url, ressource_hashes, driver=None):
-    ressources = fetch_ressource_hashes_js(url, driver=driver)
+def fetch_ressource_hashes(driver, url, ressource_hashes):
+    ressources = fetch_ressource_hashes_js(driver, url)
     replace_hash_by_hashref(ressources, ressource_hashes)
     return ressources
 
@@ -154,7 +161,7 @@ def analyze_ressources(ressources, hashes):
                 break
             # otherwise : skip this ressource (may be dangerous)
             continue
-        # check if the hash exists = not error fetching the content
+        # check if the hash exists = not error fetching the content
         hash_ref = ressource.get('hashRef')
         if hash_ref is None:
             grade = '?'
@@ -218,7 +225,7 @@ def fetch(searx_stats_result: SearxStatisticsResult):
     driver = new_driver()
     try:
         for url, detail in searx_stats_result.iter_valid_instances():
-            ressources = fetch_ressource_hashes(url, ressource_hashes, driver=driver)
+            ressources = fetch_ressource_hashes(driver, url, ressource_hashes)
             if 'error' in ressources:
                 # don't reuse the browser if there was an error
                 driver.quit()
@@ -231,8 +238,7 @@ def fetch(searx_stats_result: SearxStatisticsResult):
             external_js = len(ressources.get('script', []))
             inline_js = len(ressources.get('inline_script', []))
             error_msg = ressources.get('error', '').strip()
-            print('🔗 {0:60} {1:3} external js {2:3} inline js  {3}'.\
-                format(url, external_js, inline_js, error_msg))
+            print('🔗 {0:60} {1:3} external js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
     finally:
         driver.quit()
 
