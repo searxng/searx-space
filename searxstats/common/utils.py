@@ -1,5 +1,3 @@
-# import sys
-# import traceback
 import inspect
 import asyncio
 import functools
@@ -27,6 +25,7 @@ def dict_update(dictionary: dict, keys: list, value):
         dictionary[keys[-1]] = value
 
 
+# pylint: disable=invalid-name
 def dict_merge(a, b, path=None):
     "merges b into a"
     if path is None:
@@ -37,7 +36,7 @@ def dict_merge(a, b, path=None):
             if isinstance(a[key], dict) and isinstance(b[key], dict):
                 dict_merge(a[key], b[key], path + [str(key)])
             elif a[key] == b[key]:
-                pass # same leaf value
+                pass  # same leaf value
             else:
                 raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
         else:
