@@ -32,7 +32,6 @@ async def new_session(*args, **kwargs):
 
     No HTTP/2 because h2 doesn't work with some instances
     """
-    kwargs['http_versions'] = "HTTP/1.1"
     async with httpx.Client(*args, **kwargs) as session:
         yield session
 

@@ -178,8 +178,7 @@ async def request_stat_with_exception(obj, key, *args, **kwargs):
 async def fetch_one(instance: str) -> dict:
     timings = {}
     try:
-        # FIXME httpx.exceptions.PoolTimeout but only one request at a time for the pool
-        user_pool_limits = httpx.PoolLimits(soft_limit=10, hard_limit=300, pool_timeout=5.0)
+        user_pool_limits = httpx.PoolLimits(soft_limit=10, hard_limit=300)
         async with new_session(pool_limits=user_pool_limits) as session:
             # check index with a new connection each time
             print('🏠 ' + instance)

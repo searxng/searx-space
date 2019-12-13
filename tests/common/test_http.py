@@ -14,8 +14,8 @@ def test_get_host():
 @pytest.mark.asyncio
 async def test_new_session():
     async with http.new_session() as session:
-        backend = session.concurrency_backend
-    assert backend is not None
+        cookies = session.cookies
+    assert cookies is not None
 
 
 @pytest.mark.asyncio
