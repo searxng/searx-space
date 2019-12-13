@@ -37,4 +37,4 @@ docker-run: # Run the container
 	    --all
 
 webserver:
-	cd $(ROOT_DIR)/html; python -m SimpleHTTPServer 8888
+	cd $(ROOT_DIR)/html; python -m http.server 8888
