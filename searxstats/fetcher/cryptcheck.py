@@ -11,9 +11,10 @@ from searxstats.model import create_fetch
 # Alternative solution: use https://github.com/aeris/cryptcheck and run
 # docker run --rm aeris22/cryptcheck https http://url -qj --no-ipv6
 
-REFRESH_API_ENDPOINT = 'https://tls.imirhil.fr/https/{0}/refresh'
-API_ENDPOINT = 'https://tls.imirhil.fr/https/{0}.json'
-USER_ENDPOINT = 'https://tls.imirhil.fr/https/{0}'
+BASE_URL = 'https://cryptcheck.fr/https/'
+REFRESH_API_ENDPOINT = BASE_URL + '{0}/refresh'
+API_ENDPOINT = BASE_URL + '{0}.json'
+USER_ENDPOINT = BASE_URL + '{0}'
 TIMEOUT = 5
 MAX_RETRY = 10
 TIME_BETWEEN_RETRY = 6
@@ -33,7 +34,7 @@ async def get_existing_result(session, host, expire_time):
     json = response.json()
     pending = json.get('pending', False)
     result = None
-    if pending:
+    if not pending:
         updated = json.get('updated_at', None)
         updated_dt = datetime.datetime.strptime(updated, '%Y-%m-%dT%H:%M:%S.%fZ')
         updated_ts = updated_dt.timestamp()
@@ -75,6 +76,7 @@ async def analyze(host):
     user_url = USER_ENDPOINT.format(host)
     json = None
     try:
+        # get the result from cryptcheck.fr
         async with new_session() as session:
             json, pending = await get_existing_result(session, host, CACHE_EXPIRE_TIME)
             if json is None:
@@ -84,25 +86,22 @@ async def analyze(host):
                     await refresh_result(session, host)
                 # pool the response
                 json = await pool_result(session, host)
-    except Exception as ex:
-        print(host, exception_to_str(ex))
 
-    try:
+        # get the ranks from the result
         if json is not None and json.get('result') is not None:
-            # get the grades from the different IPs
-            hosts = json['result'].get('hosts', [])
+            # get the grades from the different IPs (use a set to remove duplicates)
             ranks = list(
-                set(map(lambda r: r.get('grade', {}).get('rank', '?'), hosts)))
-            # concat all grade in one line, worse grade at first
+                set(map(lambda r: r.get('grade', '?'), json['result'])))
+            # concat all the grades in one line, worse grade in front
             ranks.sort(reverse=True)
             ranks = ', '.join(ranks)
             #
             return (ranks, user_url)
         else:
-            return ('', user_url)
+            return ('?', user_url)
     except Exception as ex:
         print(host, exception_to_str(ex))
-        return ('', user_url)
+        return ('?', user_url)
 
 
 async def fetch_one(url: str) -> dict:

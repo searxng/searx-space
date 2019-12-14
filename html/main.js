@@ -183,7 +183,7 @@ function hslResponseTime(value, successRate) {
 
 function hslGrade(grade) {
     const l = 54;
-    if (grade === -1) {
+    if (grade === -1 || grade === '?') {
         return hslCss(0, 0, l);
     }
     const value = Math.min(17, Math.max(0, normalizeGrade(grade) - 3));
