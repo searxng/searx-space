@@ -1,5 +1,5 @@
 pyOpenSSL==19.1.0
-httpx==0.9.3
+httpx==0.9.5
 uvloop==0.14.0
 dnspython==1.16.0
 whois==0.9.4
