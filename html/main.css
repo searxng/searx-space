@@ -18,6 +18,9 @@
   border: 1px solid black;
   background: white;
   font-family: monospace;
+  font-style: inherit;
+  font-variant: normal;
+  font-weight: normal;
   z-index: 1000000;
 }
 
@@ -89,7 +92,11 @@ input {
 }
 
 .column-certificate {
-  width: 32rem;
+  width: 29rem;
+}
+
+.column-network {
+  width: 29rem;
 }
 
 .column-responsetime {
@@ -129,6 +136,11 @@ input {
 
 .column-html {
   width: 6rem;
+}
+
+.value-network, .value-ipv6 {
+  display: block;
+  padding: 2px;
 }
 
 .value-responsetime {

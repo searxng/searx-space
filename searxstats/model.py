@@ -2,22 +2,33 @@ import inspect
 import calendar
 import datetime
 import json
+from enum import Enum
 
 from .common.memoize import erase_by_name
 from .common.utils import dict_update, create_task
 from .common.foreach import for_each
 
 
+class AsnPrivacy(Enum):
+    BAD = -1
+    UNKNOWN = 0
+    GOOD = 1
+
+
 class SearxStatisticsResult:
 
-    __slots__ = 'timestamp', 'instances', 'engines', 'categories', 'hashes'
+    __slots__ = 'metadata', 'instances', 'engines', 'categories', 'hashes', 'asns'
 
     def __init__(self):
-        self.timestamp = calendar.timegm(datetime.datetime.now().utctimetuple())
+        self.metadata = {
+            'timestamp': calendar.timegm(datetime.datetime.now().utctimetuple()),
+            'ips': {},
+        }
         self.instances = {}
         self.engines = {}
         self.categories = []
         self.hashes = []
+        self.asns = {}
 
     @staticmethod
     def _is_valid_instance(detail):
@@ -52,11 +63,12 @@ class SearxStatisticsResult:
 
     def write(self, output_file_name):
         searx_json = {
-            'timestamp': self.timestamp,
+            'metadata': self.metadata,
             'instances': self.instances,
             'engines': self.engines,
             'categories': self.categories,
-            'hashes': self.hashes
+            'hashes': self.hashes,
+            'asns': self.asns,
         }
         with open(output_file_name, "w") as output_file:
             json.dump(searx_json, output_file, indent=4, ensure_ascii=False)

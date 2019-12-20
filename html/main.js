@@ -127,6 +127,7 @@ function compareVersion(a, b) {
 const CompareFunctionCriterias = {
     'http.status_code': (a, b) => -compareTool(a, b, null, 'http', 'status_code'),
     'error': (a, b) => -compareTool(a, b, null, 'error'),
+    'network.asn_privacy': (a, b) => compareTool(a, b, null, 'network', 'asn_privacy'),
     'version': (a, b) => compareVersion(a.version, b.version),
     'tls.grade': (a, b) => compareTool(a, b, normalizeGrade, 'tls', 'grade'),
     'html.grade': (a, b) => compareTool(a, b, normalizeGrade, 'html', 'grade'),
@@ -548,26 +549,95 @@ Vue.component('certificate-component', {
     },
 });
 
-Vue.component('network-component', {
-    props: ['value', 'field', 'alternatefield'],
+Vue.component('ipv6-component', {
+    props: ['value'],
     render: function (h) {
-        if ((this.value != null) && Object.keys(this.value).length > 0) {
+        if (this.value != null) {
+            let text = '?';
+            let grade = null;
+            if (this.value.ipv6 === true) {
+                text = 'Yes';
+            }
+            if (this.value.ipv6 === false) {
+                text = 'No';
+                grade = 'F-';
+            }
+            if (text !== null) {
+                const attrs = {};
+                if (grade !== null) {
+                    attrs.style = `background-color:${hslGradeHtml(grade)}; color:white`;
+                }
+                return h('span', { class: 'value-ipv6', attrs: attrs }, text);
+            }
+        }
+        return undefined;
+    },
+});
+
+Vue.component('network-country-component', {
+    props: ['value', 'asns'],
+    render: function (h) {
+        if ((this.value.ips != null) && Object.keys(this.value.ips).length > 0) {
             // element body
-            const networks = Object.keys(this.value).map((ip) => {
-                if (this.value[ip].whois != null) {
-                    let fieldValue = this.value[ip].whois[this.field];
-                    if (fieldValue === null && this.alternatefield !== undefined) {
-                        fieldValue = this.value[ip].whois[this.alternatefield];
+            const countries = Object.keys(this.value.ips).map((ip) => {
+                const ipinfo = this.value.ips[ip];
+                if (ipinfo !== undefined && ipinfo.asn != null) {
+                    const ip_asn = this.asns[ipinfo.asn];
+                    if (ip_asn !== undefined) {
+                        let fieldValue = ip_asn.network_country;
+                        if (fieldValue === null) {
+                            fieldValue = ip_asn.asn_country_code;
+                        }
+                        return fieldValue;
                     }
-                    return fieldValue;
                 }
                 return null;
             });
-            const networksList = listUniq(networks).join(', ');
+            const countryList = listUniq(countries.filter((v) => v !== null)).join(', ');
+            return h('span', countryList);
+        }
+        return undefined;
+    },
+});
+
+Vue.component('network-name-component', {
+    props: ['value', 'asns'],
+    render: function (h) {
+        if ((this.value.ips != null) && Object.keys(this.value.ips).length > 0) {
+            // element body
+            const networks = Object.keys(this.value.ips).map((ip) => {
+                const ipinfo = this.value.ips[ip];
+                if (ipinfo !== undefined && ipinfo.asn != null) {
+                    const ip_asn = this.asns[ipinfo.asn];
+                    if (ip_asn !== undefined) {
+                        let fieldValue = ip_asn.asn_description;
+                        if (fieldValue === null) {
+                            fieldValue = ip_asn.network_name;
+                        }
+                        return fieldValue;
+                    }
+                }
+                return null;
+            });
+            const networksList = listUniq(networks.filter((v) => v !== null)).join(', ');
             // tooltip
-            const reverseIpHosts = listUniq(Object.keys(this.value).map((ip) => this.value[ip].reverse || ip));
+            const reverseIpHosts = listUniq(Object.keys(this.value.ips).map((ip) => this.value.ips[ip].reverse || ip));
             const reverseIpHostElements = reverseIpHosts.map((host) => h('p', host));
-            return createTooltip(h, h('span', networksList), [reverseIpHostElements]);
+            //
+            let privacyGrade = undefined;
+            switch (this.value.asn_privacy) {
+                case -1:
+                    privacyGrade = 'F-';
+                    break;
+                case 1:
+                    privacyGrade = 'A+';
+                    break;
+            }
+            const attrs = {};
+            if (privacyGrade !== undefined) {
+                attrs.style = `background-color:${hslGradeHtml(privacyGrade)}; color:white`;
+            }
+            return createTooltip(h, h('span', { class: 'value-network', attrs: attrs }, networksList), [reverseIpHostElements]);
         }
         return undefined;
     },
@@ -627,8 +697,10 @@ new Vue({
             html_grade: '',
             csp_grade: '',
             tls_grade: '',
-            network_x_whois_1: '',
-            network_x_whois_2: '',
+            ipv6: false,
+            asn_privacy: false,
+            network_name: '',
+            network_country: '',
             google: false,
         },
         display: {
@@ -642,6 +714,7 @@ new Vue({
         hashes: [],
         engines: {},
         categories: [],
+        asns: {},
         selected_category: 'general',
     }),
     computed: {
@@ -652,24 +725,34 @@ new Vue({
             result = applyStrFilter(result, this.filters.tls_grade, (f, detail) => filterIndexOf(f, detail.tls.grade));
             result = applyStrFilter(result, this.filters.html_grade,
                 (f, detail) => filterIndexOf(f, detail.html.grade));
-            result = applyStrFilter(result, this.filters.network_x_whois_1,
+            result = applyStrFilter(result, this.filters.network_name,
                 (f, detail) => {
-                    for (const ipInfo of Object.values(detail.network)) {
-                        if (ipInfo.whois) {
-                            return (ipInfo.whois[1] || '').toLowerCase().indexOf(f) >= 0;
+                    for (const ipInfo of Object.values(detail.network.ips)) {
+                        if (ipInfo.asn) {
+                            const asn_info = this.asns[ipInfo.asn];
+                            const network = asn_info.network_name || asn_info.asn_description || '';
+                            return network.toLowerCase().indexOf(f) >= 0;
                         }
                     }
                     return false;
                 });
-            result = applyStrFilter(result, this.filters.network_x_whois_2,
+            result = applyStrFilter(result, this.filters.network_country,
                 (f, detail) => {
-                    for (const ipInfo of Object.values(detail.network)) {
-                        if (ipInfo.whois) {
-                            return ipInfo.whois[2].toLowerCase().indexOf(f) >= 0;
+                    for (const ipInfo of Object.values(detail.network.ips)) {
+                        if (ipInfo.asn) {
+                            const asn_info = this.asns[ipInfo.asn]
+                            const country = asn_info.network_country || asn_info.network_country || '';
+                            return country.toLowerCase().indexOf(f) >= 0;
                         }
                     }
                     return false;
                 });
+            if (this.filters.ipv6) {
+                result = result.filter((detail) => detail.network.ipv6 == true);
+            }
+            if (this.filters.asn_privacy) {
+                result = result.filter((detail) => detail.network.asn_privacy >= 0);
+            }
             if (this.filters.google) {
                 result = result.filter((detail) => detail.timing.search_go.success_percentage > 0);
             }
@@ -738,6 +821,7 @@ new Vue({
                 this.hashes = json.hashes;
                 this.engines = json.engines;
                 this.categories = json.categories;
+                this.asns = json.asns;
                 this.selected_category = this.categories[0];
             });
         });
