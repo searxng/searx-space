@@ -185,7 +185,7 @@ function hslResponseTime(value, successRate) {
 function hslGrade(grade) {
     const l = 54;
     if (grade === -1 || grade === '?') {
-        return hslCss(0, 0, l);
+        return hslCss(0, 0, l + 20);
     }
     const value = Math.min(17, Math.max(0, normalizeGrade(grade) - 3));
     const h = translateValue(value, 0, 17, 0, 128, false);

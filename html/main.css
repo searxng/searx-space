@@ -1,3 +1,9 @@
+.table-responsive {
+  max-width: min-content;
+  max-width: fit-content;
+  max-width: -moz-fit-content;
+}
+
 .help,
 .help:hover {
   vertical-align: super;
@@ -31,6 +37,7 @@
 .info-tooltip td {
   padding: 0.25rem;
   overflow: hidden;
+  text-align: left;
   text-overflow: ellipsis;
   word-break: keep-all;
   white-space: nowrap;
@@ -72,27 +79,59 @@ input {
 }
 
 .column-url {
-  width: 25rem;
-}
-
-.column-status {
-  width: 3rem;
-}
-
-.column-version {
-  width: 16rem;
-}
-
-.column-tls {
-  width: 6rem;
-}
-
-.column-country {
-  width: 6rem;
+  max-width: 26rem;
+  width: 26rem;
 }
 
 .column-certificate {
+  max-width: 29rem;
   width: 29rem;
+}
+
+tbody .column-url:hover, tbody .column-certificate:hover {
+  max-width: 100rem;
+}
+
+tbody .column-url, tbody .column-certificate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+tbody .column-url:hover, tbody .column-certificate:hover {
+  position: absolute;
+  background: white;
+  border: none;
+  width: auto;
+  overflow: visible;
+  text-overflow: inherit;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.column-status {
+  max-width: 6rem;
+  width: 6rem;
+  text-align: center;
+}
+
+.column-version {
+  max-width: 16rem;
+  min-width: 16rem;
+  width: 16rem;
+}
+
+.column-csp, .column-tls, .column-html, .column-ipv6 {
+  max-width: 7rem;
+  width: 7rem;
+  text-align: center;
+}
+
+.column-country {
+  max-width: 9rem;
+  width: 9rem;
+  text-align: center;
 }
 
 .column-network {
@@ -100,13 +139,28 @@ input {
 }
 
 .column-responsetime {
+  max-width: 9rem;
   width: 9rem;
   text-align: right;
 }
 
+div.table-responsive table th.column-responsetime {
+  white-space: normal;
+}
+
+tbody .column-responsetime {
+  line-break: loose;
+}
+
 .column-engine-status {
+  max-width: 4rem;
   width: 4rem;
   text-align: center;
+}
+
+.column-error {
+  max-width: auto;
+  width: 60rem;
 }
 
 .value-tls {
@@ -121,10 +175,6 @@ input {
   display: block;
   text-align: center;
   margin: 0;
-}
-
-.column-csp {
-  width: 6rem;
 }
 
 .value-html {
@@ -146,11 +196,7 @@ input {
 .value-responsetime {
   color: white;
   display: block;
-  padding: 2px;
-}
-
-.column-error {
-  width: 40%;
+  padding: 0.1rem 0.5rem 0.1rem 0.1rem;
 }
 
 .urls,

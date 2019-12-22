@@ -88,7 +88,7 @@
                 <tbody>
                   <tr v-for="detail in instances_filtered">
                     <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
-                    <td class="network-country">{{detail.version}}</td>
+                    <td class="column-version">{{detail.version}}</td>
                     <td class="column-csp"><csp-component :value="detail.http"></csp-component></td>
                     <td class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
                     <td class="column-tls"><tls-component :value="detail.tls"></tls-component></td>
@@ -177,7 +177,7 @@
                         <th class="column-certificate">Certificate</th>
                         <th class="column-tls">Country</th>
                         <th class="column-network">Network</th>
-                        <th>Error</th>
+                        <th class="column-error">Error</th>
                       </tr>
                     </thead>
                     <tbody>
