@@ -1,0 +1,104 @@
+## Configuration file for a typical Tor user
+## Last updated 22 December 2017 for Tor 0.3.2.8-rc.
+## (may or may not work for much older or much newer versions of Tor.)
+##
+## Lines that begin with "## " try to explain what's going on. Lines
+## that begin with just "#" are disabled commands: you can enable them
+## by removing the "#" symbol.
+##
+## See 'man tor', or https://www.torproject.org/docs/tor-manual.html,
+## for more options you can use in this file.
+##
+## Tor will look for this file in various places based on your platform:
+## https://www.torproject.org/docs/faq#torrc
+
+ClientOnly 1
+
+## Tor opens a SOCKS proxy on port 9050 by default -- even if you don't
+## configure one below. Set "SOCKSPort 0" if you plan to run Tor only
+## as a relay, and not make any local application connections yourself.
+SOCKSPort 127.0.0.1:9050
+HTTPTunnelPort 127.0.0.1:9051
+
+## Entry policies to allow/deny SOCKS requests based on IP address.
+## First entry that matches wins. If no SOCKSPolicy is set, we accept
+## all (and only) requests that reach a SOCKSPort. Untrusted users who
+## can access your SOCKSPort may be able to learn about the connections
+## you make.
+SOCKSPolicy accept 127.0.0.1/32
+SOCKSPolicy reject *
+
+## Logs go to stdout at level "notice" unless redirected by something
+## else, like one of the below lines. You can have as many Log lines as
+## you want.
+##
+## We advise using "notice" in most cases, since anything more verbose
+## may provide sensitive information to an attacker who obtains the logs.
+##
+## Send all messages of level 'notice' or higher to /var/log/tor/notices.log
+#Log notice file /var/log/tor/notices.log
+## Send every possible message to /var/log/tor/debug.log
+#Log debug file /var/log/tor/debug.log
+## Use the system log instead of Tor's logfiles
+#Log notice syslog
+## To send all messages to stderr:
+#Log debug stderr
+
+## Uncomment this to start the process in the background... or use
+## --runasdaemon 1 on the command line. This is ignored on Windows;
+## see the FAQ entry if you want Tor to run as an NT service.
+RunAsDaemon 1
+
+## The directory for keeping all the keys/etc. By default, we store
+## things in $HOME/.tor on Unix, and in Application Data\tor on Windows.
+#DataDirectory /var/lib/tor
+
+## Uncomment this if you do *not* want your relay to allow any exit traffic.
+## (Relays allow exit traffic by default.)
+ExitRelay 0
+
+## Uncomment this if you want your relay to allow IPv6 exit traffic.
+## (Relays only allow IPv4 exit traffic by default.)
+#IPv6Exit 1
+
+## A comma-separated list of exit policies. They're considered first
+## to last, and the first match wins.
+##
+## If you want to allow the same ports on IPv4 and IPv6, write your rules
+## using accept/reject *. If you want to allow different ports on IPv4 and
+## IPv6, write your IPv6 rules using accept6/reject6 *6, and your IPv4 rules
+## using accept/reject *4.
+##
+## If you want to _replace_ the default exit policy, end this with either a
+## reject *:* or an accept *:*. Otherwise, you're _augmenting_ (prepending to)
+## the default exit policy. Leave commented to just use the default, which is
+## described in the man page or at
+## https://www.torproject.org/documentation.html
+##
+## Look at https://www.torproject.org/faq-abuse.html#TypicalAbuses
+## for issues you might encounter if you use the default exit policy.
+##
+## If certain IPs and ports are blocked externally, e.g. by your firewall,
+## you should update your exit policy to reflect this -- otherwise Tor
+## users will be told that those destinations are down.
+##
+## For security, by default Tor rejects connections to private (local)
+## networks, including to the configured primary public IPv4 and IPv6 addresses,
+## and any public IPv4 and IPv6 addresses on any interface on the relay.
+## See the man page entry for ExitPolicyRejectPrivate if you want to allow
+## "exit enclaving".
+##
+#ExitPolicy accept *:6660-6667,reject *:* # allow irc ports on IPv4 and IPv6 but no more
+#ExitPolicy accept *:119 # accept nntp ports on IPv4 and IPv6 as well as default exit policy
+#ExitPolicy accept *4:119 # accept nntp ports on IPv4 only as well as default exit policy
+#ExitPolicy accept6 *6:119 # accept nntp ports on IPv6 only as well as default exit policy
+#ExitPolicy reject *:* # no exits allowed
+
+## Bridge relays (or "bridges") are Tor relays that aren't listed in the
+## main directory. Since there is no complete public list of them, even an
+## ISP that filters connections to all the known Tor relays probably
+## won't be able to block all the bridges. Also, websites won't treat you
+## differently because they won't know you're running Tor. If you can
+## be a real relay, please do; but if not, be a bridge!
+BridgeRelay 0
+

@@ -7,6 +7,7 @@ from enum import Enum
 from .common.memoize import erase_by_name
 from .common.utils import dict_update, create_task
 from .common.foreach import for_each
+from .common.http import get_network_type, NetworkType
 
 
 class AsnPrivacy(Enum):
@@ -34,20 +35,15 @@ class SearxStatisticsResult:
     def _is_valid_instance(detail):
         return detail.get('version', None) is not None and 'error' not in detail
 
-    def iter_valid_instances(self):
+    def iter_instances(self, only_valid=False, network_type=NetworkType):
+        if isinstance(network_type, NetworkType):
+            network_type = [network_type]
         for instance, detail in self.instances.items():
-            if self._is_valid_instance(detail):
-                yield instance, detail
-
-    def iter_all_instances(self):
-        for instance, detail in self.instances.items():
+            if only_valid and not self._is_valid_instance(detail):
+                continue
+            if get_network_type(instance) not in network_type:
+                continue
             yield instance, detail
-
-    def iter_instances(self, valid=False):
-        if valid:
-            return self.iter_valid_instances()
-        else:
-            return self.iter_all_instances()
 
     def get_instance(self, url):
         return self.instances[url]
@@ -107,7 +103,7 @@ class Fetcher:
         return None
 
 
-def create_fetch(keys, fetch_one, valid_instance=False, limit=1):
+def create_fetch(keys, fetch_one, only_valid=False, network_type=NetworkType, limit=1):
 
     async def fetch_and_set_async(url, detail, *args, **kwargs):
         result = await fetch_one(url, *args, **kwargs)
@@ -122,11 +118,11 @@ def create_fetch(keys, fetch_one, valid_instance=False, limit=1):
             fetch_and_set = fetch_and_set_async
         else:
             fetch_and_set = fetch_and_set_function
-        instance_iterator = searx_stats_result.iter_instances(valid_instance)
+        instance_iterator = searx_stats_result.iter_instances(only_valid=only_valid, network_type=network_type)
         await for_each(instance_iterator, fetch_and_set,
                        limit=limit)
 
-    fetch.__name__ = 'fetch({}, {}, valid_instance={}, limit={})'.\
-        format(str(keys), fetch_one.__name__, valid_instance, limit)
+    fetch.__name__ = 'fetch({}, {}, only_valid={}, network_type={}, limit={})'.\
+        format(str(keys), fetch_one.__name__, only_valid, network_type, limit)
 
     return fetch

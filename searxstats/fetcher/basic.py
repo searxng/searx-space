@@ -2,7 +2,7 @@ import re
 import concurrent.futures
 from collections import OrderedDict
 from searxstats.common.ssl_utils import get_sslinfo
-from searxstats.common.http import new_session, get, get_host
+from searxstats.common.http import new_session, get, get_host, get_network_type, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.config import DEFAULT_HEADERS
 from searxstats.model import SearxStatisticsResult
@@ -25,12 +25,14 @@ async def fetch_one(instance_url):
     detail = dict()
     # no cookie ( cookies=DEFAULT_COOKIES,  )
     try:
-        async with new_session() as session:
+        network_type = get_network_type(instance_url)
+        async with new_session(network_type=network_type) as session:
             response, error = await get(session, instance_url,
                                         headers=DEFAULT_HEADERS, timeout=10)
             if response is not None:
                 version = await get_searx_version(response)
                 detail = {
+                    'network_type': network_type.name.lower(),
                     'http': {
                         'status_code': response.status_code,
                         'error': error
@@ -54,7 +56,10 @@ async def fetch_one(instance_url):
                     instance_url = response_url
             else:
                 detail = {
+                    'network_type': network_type.name.lower(),
                     'http': {
+                        'status_code': None,
+                        'error': error
                     },
                     'version': None,
                     'timing': {
@@ -69,7 +74,8 @@ async def fetch_one(instance_url):
     if error is not None:
         detail['error'] = error
 
-    detail['tls'] = get_sslinfo(get_host(instance_url))
+    if network_type == NetworkType.NORMAL:
+        detail['tls'] = get_sslinfo(get_host(instance_url))
 
     return instance_url, detail
 
@@ -83,7 +89,7 @@ async def fetch_from_urls(searx_result: SearxStatisticsResult, instances: list):
         searx_result.update_instance(url, detail)
 
         # output
-        http_status_code = detail.get('http').get('status_code', '')
+        http_status_code = detail.get('http').get('status_code', '') or ''
         searx_version = detail.get('version', '') or ''
         timing = detail.get('timing', {}).get('initial') or None
         cert_orgname = (detail.get('tls') or {}).get(

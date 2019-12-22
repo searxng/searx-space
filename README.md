@@ -10,7 +10,7 @@ https://searx.space/instances/
 
 Install packages:
 ```
-apt install firefox wget git build-essential python3-dev virtualenv python3-virtualenv libxslt-dev zlib1g-dev libffi-dev libssl-dev
+apt install firefox wget git build-essential python3-dev virtualenv python3-virtualenv libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev
 ```
 
 Install searxstats:

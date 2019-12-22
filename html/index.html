@@ -22,7 +22,8 @@
                 <a class="navbar-brand" href="#">Searx statistics</a>
               </div>
               <ul class="nav navbar-nav" role="tablist">
-                <li :class="selected_tab=='online'?'active':''"><a href="#" v-on:click="selected_tab='online'">Online</a></li>
+                <li :class="selected_tab=='online_https'?'active':''"><a href="#" v-on:click="selected_tab='online_https'">Online HTTPS</a></li>
+                <li :class="selected_tab=='online_tor'?'active':''"><a href="#" v-on:click="selected_tab='online_tor'">Online Tor</a></li>
                 <li :class="selected_tab=='searxerrors'?'active':''"><a href="#" v-on:click="selected_tab='searxerrors'">Offline & error</a></li>
               </ul>
               <p class="navbar-text">|</p>
@@ -36,7 +37,7 @@
           </nav>        
       </header>
       <main role="main" class="container theme-showcase" v-if="instances.length > 0">
-        <div v-if="selected_tab === 'online'">
+        <div v-if="selected_tab === 'online_https'">
           <h2>{{instances_filtered.length}} online instances</h2>
           <p class="text-right">
               Displayed time:<a class="help" href="#help-timing">?</a>
@@ -141,6 +142,45 @@
               The instances have to send the <a href="https://www.w3.org/TR/server-timing/">Server-Timing header</a> to providing the Server, Load, Network and Processing times.
               See the searx commit <a href="https://github.com/asciimoo/searx/commit/554a21e1d07f3b434b5097b4e3d49e1403be7527">554a21e1d07f3b43</a>.
             </p>
+          </div>
+          <div v-if="selected_tab === 'online_tor'">
+            <h2>{{instances_tor.length}} online instances</h2>
+            <p class="text-right">
+                Displayed time:<a class="help" href="#help-timing">?</a>
+              <select name="time-select" id="time-select" v-model="display.time_select">
+                <option value="all">Total</option>
+                <option value="server">Server</option>
+                <option value="load">Load</option>
+                <option value="network">Network</option>
+                <option value="processing">Processing</option>
+              </select>
+            </p>
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped table-hover">
+                  <thead>
+                    <tr>
+                      <th class="column-url">URL</th>
+                      <th class="column-version">Version</th>
+                      <th class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
+                      <th class="column-responsetime">Initial response time</th>
+                      <th class="column-responsetime">Index response time</th>
+                      <th class="column-responsetime">Wikipedia response time</th>
+                      <th class="column-responsetime">Google response time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="detail in instances_tor">
+                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                      <td class="column-version">{{detail.version}}</td>
+                      <td class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
+                      <td class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
+                      <td class="column-responsetime"><time-component :value="detail.timing.index" :time_select="$root.display.time_select"></time-component></td>
+                      <td class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
+                      <td class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
           </div>
           <div v-if="selected_tab === 'searxerrors'">
             <h2>Searx not found</h2>

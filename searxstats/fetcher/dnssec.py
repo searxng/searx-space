@@ -10,7 +10,7 @@ import dns.resolver
 import dns.rdatatype
 
 from searxstats.model import create_fetch
-from searxstats.common.http import get_host
+from searxstats.common.http import get_host, NetworkType
 
 
 class DnsSecError(Exception):
@@ -98,4 +98,4 @@ def fetch_one(url: str) -> dict:
     return dnssec_result
 
 
-fetch = create_fetch(['network', 'dnssec'], fetch_one)
+fetch = create_fetch(['network', 'dnssec'], fetch_one, only_valid=False, network_type=NetworkType.NORMAL)

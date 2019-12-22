@@ -3,7 +3,7 @@ import json
 from urllib.parse import urljoin
 from searxstats.common.utils import dict_merge
 from searxstats.common.foreach import for_each
-from searxstats.common.http import new_session, get
+from searxstats.common.http import new_session, get, get_network_type
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
 
@@ -70,7 +70,8 @@ async def get_config(session, instance_url):
 
 
 async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail):
-    async with new_session() as session:
+    network_type = get_network_type(url)
+    async with new_session(network_type=network_type) as session:
         # get config and config
         result_status = await get_status(session, url)
         result_config, result_instance = await get_config(session, url)
@@ -94,4 +95,4 @@ async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail)
 
 
 async def fetch(searx_stats_result: SearxStatisticsResult):
-    await for_each(searx_stats_result.iter_instances(True), fetch_one, searx_stats_result)
+    await for_each(searx_stats_result.iter_instances(only_valid=True), fetch_one, searx_stats_result)

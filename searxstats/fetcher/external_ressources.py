@@ -6,9 +6,11 @@ import sys
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from searxstats.config import BROWSER_LOAD_TIMEOUT, get_geckodriver_file_name
+from searxstats.config import BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT,\
+                              get_geckodriver_file_name
 from searxstats.data.well_kown_hashes import fetch_file_content_hashes
 from searxstats.data.inline_hashes import INLINE_HASHES
+from searxstats.common.http import get_network_type, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
 
@@ -27,14 +29,20 @@ with open(os.path.dirname(os.path.realpath(__file__))
     FETCH_RESSOURCE_HASHES_JS = f.read()
 
 
-def new_driver():
+def new_driver(network_type=NetworkType.NORMAL):
     firefox_profile = webdriver.FirefoxProfile()
-    firefox_profile.set_preference("browser.preferences.instantApply", True)
-    firefox_profile.set_preference("browser.helperApps.alwaysAsk.force", False)
-    firefox_profile.set_preference(
-        "browser.download.manager.showWhenStarting", False)
-    firefox_profile.set_preference("browser.download.folderList", 0)
-
+    firefox_profile.set_preference('browser.preferences.instantApply', True)
+    firefox_profile.set_preference('browser.helperApps.alwaysAsk.force', False)
+    firefox_profile.set_preference('browser.download.manager.showWhenStarting', False)
+    firefox_profile.set_preference('browser.download.folderList', 0)
+    if network_type == NetworkType.NORMAL:
+        pass
+    elif network_type == NetworkType.TOR:
+        firefox_profile.set_preference('network.proxy.type', 1)
+        firefox_profile.set_preference('network.proxy.socks', TOR_SOCKS_PROXY_HOST)
+        firefox_profile.set_preference('network.proxy.socks_port', TOR_SOCKS_PROXY_PORT)
+        firefox_profile.set_preference('network.proxy.socks_remote_dns', True)
+    firefox_profile.update_preferences()
     options = Options()
     options.add_argument('--headless')
 
@@ -215,6 +223,29 @@ def get_grade(ressources, hashes):
     return grade
 
 
+def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: NetworkType, ressource_hashes):
+    driver = new_driver(network_type=network_type)
+    try:
+        for url, detail in searx_stats_result.iter_instances(only_valid=True, network_type=network_type):
+            if get_network_type(url) == network_type:
+                ressources = fetch_ressource_hashes(driver, url, ressource_hashes)
+                if 'error' in ressources:
+                    # don't reuse the browser if there was an error
+                    driver.quit()
+                    driver = new_driver(network_type=network_type)
+                # temporary storage
+                detail['html'] = {
+                    'ressources': ressources
+                }
+                # output progress
+                external_js = len(ressources.get('script', []))
+                inline_js = len(ressources.get('inline_script', []))
+                error_msg = ressources.get('error', '').strip()
+                print('🔗 {0:60} {1:3} external js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
+    finally:
+        driver.quit()
+
+
 # pylint: disable=unsubscriptable-object, unsupported-delete-operation, unsupported-assignment-operation
 # pylint thinks that ressource_desc is None
 def fetch(searx_stats_result: SearxStatisticsResult):
@@ -222,25 +253,8 @@ def fetch(searx_stats_result: SearxStatisticsResult):
         'index': 0
     }
 
-    driver = new_driver()
-    try:
-        for url, detail in searx_stats_result.iter_valid_instances():
-            ressources = fetch_ressource_hashes(driver, url, ressource_hashes)
-            if 'error' in ressources:
-                # don't reuse the browser if there was an error
-                driver.quit()
-                driver = new_driver()
-            # temporary storage
-            detail['html'] = {
-                'ressources': ressources
-            }
-            # output progress
-            external_js = len(ressources.get('script', []))
-            inline_js = len(ressources.get('inline_script', []))
-            error_msg = ressources.get('error', '').strip()
-            print('🔗 {0:60} {1:3} external js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
-    finally:
-        driver.quit()
+    for network_type in NetworkType:
+        fetch_instances(searx_stats_result, network_type, ressource_hashes)
 
     # create searx_json['hashes']
     searx_stats_result.hashes = [None] * ressource_hashes['index']
@@ -252,6 +266,7 @@ def fetch(searx_stats_result: SearxStatisticsResult):
             searx_stats_result.hashes[i] = ressource_desc
 
     # get grade
-    for url, detail in searx_stats_result.iter_valid_instances():
-        detail['html']['grade'] = get_grade(
-            detail['html']['ressources'], searx_stats_result.hashes)
+    for _, detail in searx_stats_result.iter_instances(only_valid=True):
+        if 'html' in detail:
+            html = detail['html']
+            html['grade'] = get_grade(html['ressources'], searx_stats_result.hashes)

@@ -16,8 +16,8 @@ COPY requirements.txt ./
 
 RUN apt-get update \
  && apt-get -y --no-install-recommends install \
-    firefox-esr wget git build-essential python3-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev \
-    tini \
+    firefox-esr wget git build-essential python3-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev \
+    tor tini \
  && pip3 install --upgrade pip \
  && pip3 install --no-cache -r requirements.txt \
  && apt-get -y purge build-essential python3-dev libxslt1-dev zlib1g-dev \
@@ -32,4 +32,4 @@ RUN /usr/local/searxstats/utils/install-geckodriver /usr/local/bin \
  && chown searxstats:searxstats /usr/local/searxstats/cache
 
 USER searxstats
-ENTRYPOINT [ "/usr/bin/tini", "--", "python3", "-msearxstats" ]
+ENTRYPOINT [ "/usr/bin/tini", "--", "/usr/local/searxstats/docker-entrypoint.sh" ]

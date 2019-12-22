@@ -5,7 +5,7 @@ import dns.reversename
 import ipwhois
 from searxstats.data.asn import ASN_PRIVACY
 from searxstats.common.utils import exception_to_str
-from searxstats.common.http import get_host, get, new_session
+from searxstats.common.http import get_host, get, new_session, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.common.foreach import for_each
 from searxstats.model import SearxStatisticsResult, AsnPrivacy
@@ -215,13 +215,14 @@ def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail):
 
 
 async def _fetch_network(searx_stats_result: SearxStatisticsResult):
-    await for_each(searx_stats_result.iter_instances(False), fetch_one, searx_stats_result)
+    await for_each(searx_stats_result.iter_instances(only_valid=False, network_type=NetworkType.NORMAL),
+                   fetch_one, searx_stats_result)
 
 
 async def _find_similar_instances(searx_stats_result: SearxStatisticsResult):
     # group instance urls per ip set
     all_ips_set = dict()
-    for url, detail in searx_stats_result.iter_instances(False):
+    for url, detail in searx_stats_result.iter_instances(only_valid=False, network_type=NetworkType.NORMAL):
         ips = set(detail.get('network', {}).get('ips', {}).keys())
         # at least one IP
         if len(ips) > 0:

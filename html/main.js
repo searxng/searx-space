@@ -20,6 +20,7 @@ const COMMON_ERROR_MESSAGE = {
     '[Errno -2] Name does not resolve': 'Unknown host',
     'certificate verify failed': 'Certificate verify failed',
     'hostname \'': 'Hostname doesn\'t match certificate',
+    'Tor Error: ': 'Tor Error'
 };
 
 const SORT_CRITERIAS = ['http.status_code', 'error', 'version', 'tls.grade',
@@ -706,11 +707,12 @@ new Vue({
         display: {
             time_select: 'all'
         },
-        selected_tab: 'online',
+        selected_tab: 'online_https',
         timestamp: undefined,
         instances: [],
         instances_nosearx: [],
         instances_ko: [],
+        instances_tor: [],
         hashes: [],
         engines: {},
         categories: [],
@@ -776,6 +778,7 @@ new Vue({
                 const instances = [];
                 const instancesWithError = {};
                 const instancesWithoutSearx = [];
+                const instancesTor = [];
                 for (const [url, instance] of Object.entries(rawInstances)) {
                     instance.url = url;
 
@@ -797,16 +800,20 @@ new Vue({
                     setComputedTimes(instance.timing.search_go);
 
                     // dispatch instance
-                    if (instance.error === undefined) {
-                        if (instance.version !== null) {
-                            instances.push(instance);
-                        } else {
-                            instancesWithoutSearx.push(instance);
-                        }
-                    } else {
+                    if (instance.error !== undefined) {
                         const errorKey = getErrorKey(instance.error);
                         setDefault(instancesWithError, errorKey, []);
                         instancesWithError[errorKey].push(instance);
+                    } else {
+                        if (instance.version !== null) {
+                            if (instance.network_type == 'tor') {
+                                instancesTor.push(instance)
+                            } else {
+                                instances.push(instance);
+                            }
+                        } else {
+                            instancesWithoutSearx.push(instance);
+                        }
                     }
                 }
 
@@ -815,9 +822,11 @@ new Vue({
                 for (const instanceList of Object.values(instancesWithError)) {
                     instanceList.sort(compareInstance);
                 }
+                instancesTor.sort(compareInstance);
                 this.instances = instances;
                 this.instances_ko = instancesWithError;
                 this.instances_nosearx = instancesWithoutSearx;
+                this.instances_tor = instancesTor;
                 this.hashes = json.hashes;
                 this.engines = json.engines;
                 this.categories = json.categories;

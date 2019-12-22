@@ -38,9 +38,9 @@ async def get_instance_urls():
             ahref = ahref[:-1]
         if ahref.endswith('/search'):
             ahref = ahref[:-7]
-        # Remove .i2p / .onion
+        # Remove .i2p (keep .onion URL)
         host = get_host(ahref)
-        if host.endswith('.i2p') or host.endswith('.onion'):
+        if host.endswith('.i2p'):
             continue
         ahref = ahref + '/'
         instance_urls.append(ahref)

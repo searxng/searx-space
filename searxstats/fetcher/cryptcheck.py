@@ -4,7 +4,7 @@ import time
 import datetime
 
 from searxstats.common.utils import exception_to_str
-from searxstats.common.http import new_session, get_host
+from searxstats.common.http import new_session, get_host, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import create_fetch
 
@@ -111,4 +111,4 @@ async def fetch_one(url: str) -> dict:
     return {'grade': grade, 'gradeUrl': grade_url}
 
 
-fetch = create_fetch(['tls'], fetch_one, valid_instance=True, limit=2)
+fetch = create_fetch(['tls'], fetch_one, only_valid=True, network_type=NetworkType.NORMAL, limit=2)
