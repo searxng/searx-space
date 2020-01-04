@@ -5,10 +5,10 @@ import asyncio
 from urllib.parse import urlparse
 from enum import Enum
 
-import h11._util
 import httpx
 import httpx.decoders
 import httpx.exceptions
+import httpx.backends.asyncio
 
 from .utils import exception_to_str
 from .queuecalls import UseQueue
@@ -42,6 +42,8 @@ TOR_PROXY_ERROR = {
     504: "Gateway Timeout",
 }
 
+HTTPX_BACKEND = httpx.backends.asyncio.AsyncioBackend()
+
 
 @Memoize(None)
 def get_host(instance):
@@ -66,17 +68,10 @@ async def new_session(*args, **kwargs):
             network_type = kwargs['network_type']
             kwargs['proxies'] = NETWORK_PROXIES.get(network_type, None)
         del kwargs['network_type']
+    kwargs['backend'] = HTTPX_BACKEND
     async with httpx.Client(*args, **kwargs) as session:
         session._network_type = network_type  # pylint: disable=protected-access
         yield session
-
-
-def patch_request(args, kwargs):
-    if get_host(args[0]) == 'searx.be':
-        if 'headers' not in kwargs:
-            kwargs['headers'] = {}
-        headers = kwargs['headers']
-        headers['Accept-Encoding'] = 'identity'
 
 
 async def _request_unsafe(*args, **kwargs):
@@ -98,28 +93,30 @@ async def request(method, *args, **kwargs):
 
     Doesn't trigger an exception.
     """
-    patch_request(args, kwargs)
     response = None
     error = None
     try:
         response = await method(*args, **kwargs)
     except ConnectionRefusedError:
         error = 'Connection refused'
-    except (httpx.exceptions.ConnectTimeout, asyncio.TimeoutError):
+    except httpx.exceptions.ConnectTimeout:
         error = 'Connection timed out'
+    except asyncio.TimeoutError:
+        error = 'Connection timed out (asyncio)'
     except httpx.exceptions.ReadTimeout:
         error = 'Read timeout'
     except httpx.exceptions.DecodingError:
         error = 'Decoding error'
     except httpx.exceptions.RedirectLoop:
         error = 'Redirect loop error'
+    except httpx.exceptions.ProtocolError:
+        error = 'Protocol error'
     except (ssl.CertificateError, ssl.SSLError) as ex:
         if kwargs.get('verify', True):
             # get the certficate even if it is not validated.
             response = await _request_unsafe(*args, **kwargs)
         error = exception_to_str(ex)
-    except (h11._util.RemoteProtocolError,  # pylint: disable=protected-access
-            OSError, socket.gaierror) as ex:
+    except (OSError, socket.gaierror) as ex:
         error = exception_to_str(ex)
     except httpx.exceptions.ProxyError as ex:
         error = exception_to_str(ex)

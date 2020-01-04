@@ -1,6 +1,6 @@
 import ssl
 import httpx.config
-import httpx.concurrency.asyncio
+import httpx.backends.asyncio
 from OpenSSL.crypto import load_certificate, FILETYPE_ASN1
 from searxstats.config import USE_SYSTEM_CERT
 
@@ -24,7 +24,7 @@ class SystemCertSSLConfig(httpx.config.SSLConfig):
 
 def monkey_patch():
     original_start_tls = getattr(
-        httpx.concurrency.asyncio.AsyncioBackend, 'open_tcp_stream')
+        httpx.backends.asyncio.AsyncioBackend, 'open_tcp_stream')
 
     def concat_to_key(obj, key, value):
         if key in obj:
@@ -46,7 +46,7 @@ def monkey_patch():
                 obj[field] = cert.get(field)
         return obj
 
-    def parse_sslobject(sslobj):
+    def parse_sslobject(sslobj: ssl.SSLObject):
         global SSL_INFO, SSL_CERT  # pylint: disable=global-statement
         if sslobj is None:
             return
@@ -62,11 +62,11 @@ def monkey_patch():
 
     async def open_tcp_stream(*args, **kwargs):
         value = await original_start_tls(*args, **kwargs)
-        sslobj = value.stream_reader._transport.get_extra_info("ssl_object")  # pylint: disable=protected-access
+        sslobj = value.stream_reader._transport.get_extra_info('ssl_object')  # pylint: disable=protected-access
         parse_sslobject(sslobj)
         return value
     # monkey patch to record certificates
-    setattr(httpx.concurrency.asyncio.AsyncioBackend, 'open_tcp_stream', open_tcp_stream)
+    setattr(httpx.backends.asyncio.AsyncioBackend, 'open_tcp_stream', open_tcp_stream)
     # use system certificate
     if USE_SYSTEM_CERT:
         httpx.config.DEFAULT_SSL_CONFIG = SystemCertSSLConfig(cert=None, verify=True)

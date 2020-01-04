@@ -1,8 +1,7 @@
 pyOpenSSL==19.1.0
-httpx==0.9.5
+httpx==0.10.0
 uvloop==0.14.0
 dnspython==1.16.0
-whois==0.9.4
 ipwhois==1.1.0
 lxml==4.4.2
 selenium==3.141.0

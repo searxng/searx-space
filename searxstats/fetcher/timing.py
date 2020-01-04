@@ -141,9 +141,8 @@ async def request_stat(session, url, count, between_a, and_b, check_results, **k
             response, error = await get(session, url, **kwargs)
         if error is not None:
             break
-        await response.read()
+        await response.aread()
         if (not check_results) or (check_results and (await check_results(response))):
-            # see https://github.com/encode/httpx/issues/655
             all_timings.append(response.elapsed.total_seconds())
             server_timing_values = parse_server_timings(response.headers.get('server-timing', ''))
             server_time = server_timing_values.get('total', {}).get('dur', None)
