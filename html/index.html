@@ -258,6 +258,13 @@
                     </tr>
                 </tbody>
             </table>
+            <h4 id="help-http-grade">Icons:</h4>
+            <ul>
+              <li>? - No self-checking, the engine hasn't returned results since the searx instance has started. Perhaps the engine has been used.</li>
+              <li>🟡 - No self-checking, the engine has returned results since the searx instance has started. Maybe it doesn't work anymore.</li>
+              <li>❌ - After self-check, the engine does not return a result.</li>
+              <li>✔️ - After a self-check, the engine returns results.</li>
+            </ul>
           </div>
           <div v-if="selected_tab === 'about'">
             <h2>About</h2>

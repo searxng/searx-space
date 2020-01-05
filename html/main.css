@@ -214,26 +214,25 @@ tbody .column-responsetime {
   margin: 0;
 }
 
-.item-check {
+.column-engine-status {
+  padding: 0.9rem;
+}
+
+.item-check, .item-unknow, .item-maybe {
   display: inline-block;
-  transform: rotate(45deg);
-  height: 1rem;
-  width: 0.5rem;
-  border-bottom: 2px solid #78b13f;
-  border-right: 2px solid #78b13f;
-  text-indent: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  margin: 0.2rem;
+  height: 2rem;
+  width: 2rem;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.item-unknow {
+  color: lightgray;
 }
 
 .item-nocheck  {
   display: none;
-}
-
-.item-unknow {
-  display: inline-block;
-  color: lightgray;
 }
 
 .table-striped-column td, .table-striped-column th {

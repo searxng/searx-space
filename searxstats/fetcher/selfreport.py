@@ -1,11 +1,19 @@
 # pylint: disable=invalid-name
 import json
 from urllib.parse import urljoin
+from lxml import etree
 from searxstats.common.utils import dict_merge
 from searxstats.common.foreach import for_each
 from searxstats.common.http import new_session, get, get_network_type
+from searxstats.common.html import html_fromstring, extract_text
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
+
+
+STATS_ENGINES_XPATH = etree.XPath(
+    "//div[@class='col-xs-12 col-sm-12 col-md-6'][3]//div[@class='row']")
+STATS_ENGINES_NAME_XPATH = etree.XPath("div[@class='col-sm-4 col-md-4'][1]")
+STATS_ENGINES_COUNT_XPATH = etree.XPath("div[@class='col-sm-8 col-md-8'][1]")
 
 
 # pylint: disable=unused-argument
@@ -30,6 +38,43 @@ async def get_status(session, instance_url):
                     if engine['error'] is None:
                         del engine['error']
     return result
+
+
+async def get_stats(session, instance_url):
+    result = set()
+    response, error = await get(session, urljoin(instance_url, 'stats'), timeout=5)
+    if response is not None and error is None:
+        html = await html_fromstring(response.text)
+        for e in STATS_ENGINES_XPATH(html):
+            engine_name = extract_text(STATS_ENGINES_NAME_XPATH(e))
+            result_count = extract_text(STATS_ENGINES_COUNT_XPATH(e))
+            if result_count not in ['', '0.00'] and engine_name is not None:
+                result.add(engine_name)
+    return result
+
+
+@MemoizeToDisk(func_key=get_usable_engines_key)
+async def get_stats_multi(session, instance_url):
+    result = set()
+    # fetch the stats four times because of uwsgi
+    # may be not enough to get the statistics from all the uwsgi processes
+    # still better than only once
+    # see https://github.com/asciimoo/searx/issues/162
+    # and https://github.com/asciimoo/searx/issues/199
+    for _ in range(4):
+        result = result.union(await get_stats(session, instance_url))
+    return result
+
+
+def get_status_from_stats(stats):
+    if len(stats) == 0:
+        return None
+    else:
+        status = {}
+        for engine_name in stats:
+            engine_status = status.setdefault(engine_name, {})
+            engine_status['stats'] = True
+        return status
 
 
 @MemoizeToDisk(func_key=get_usable_engines_key)
@@ -75,6 +120,9 @@ async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail)
         # get config and config
         result_status = await get_status(session, url)
         result_config, result_instance = await get_config(session, url)
+        if result_status is None:
+            result_stats = await get_stats_multi(session, url)
+            result_status = get_status_from_stats(result_stats)
 
         # update config and status for the instance
         detail_engines = detail.setdefault('engines', dict())

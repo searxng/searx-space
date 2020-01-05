@@ -337,10 +337,14 @@ Vue.component('engine-component', {
                     return h('span', {
                         staticClass: 'item-check'
                     }, '✔️');
-                } if (engine.status === false) {
+                } else if (engine.status === false) {
                     return createTooltip(h, h('span', {
                         staticClass: 'item-uncheck'
                     }, '❌'), engine.error);
+                } else if (engine.stats === true) {
+                    return createTooltip(h, h('span', {
+                        staticClass: 'item-maybe'
+                    }, '🟡'), engine.error);
                 } else {
                     return h('span', {
                         staticClass: 'item-unknow'
