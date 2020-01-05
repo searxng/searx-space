@@ -1,8 +1,8 @@
 import re
 import concurrent.futures
 from collections import OrderedDict
-from searxstats.common.ssl_utils import get_sslinfo
 from searxstats.common.http import new_session, get, get_host, get_network_type, NetworkType
+from searxstats.common.ssl_info import get_ssl_info
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.config import DEFAULT_HEADERS
 from searxstats.model import SearxStatisticsResult
@@ -75,8 +75,7 @@ async def fetch_one(instance_url):
         detail['error'] = error
 
     if network_type == NetworkType.NORMAL:
-        detail['tls'] = get_sslinfo(get_host(instance_url))
-
+        detail['tls'] = get_ssl_info(get_host(instance_url))
     return instance_url, detail
 
 

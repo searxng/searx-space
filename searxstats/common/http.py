@@ -13,6 +13,7 @@ import httpx.backends.asyncio
 from .utils import exception_to_str
 from .queuecalls import UseQueue
 from .memoize import Memoize
+from .ssl_info import get_httpx_backend
 from ..config import TOR_HTTP_PROXY
 
 if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
@@ -42,8 +43,6 @@ TOR_PROXY_ERROR = {
     504: "Gateway Timeout",
 }
 
-HTTPX_BACKEND = httpx.backends.asyncio.AsyncioBackend()
-
 
 @Memoize(None)
 def get_host(instance):
@@ -68,7 +67,8 @@ async def new_session(*args, **kwargs):
             network_type = kwargs['network_type']
             kwargs['proxies'] = NETWORK_PROXIES.get(network_type, None)
         del kwargs['network_type']
-    kwargs['backend'] = HTTPX_BACKEND
+    if 'backend' not in kwargs:
+        kwargs['backend'] = get_httpx_backend()
     async with httpx.Client(*args, **kwargs) as session:
         session._network_type = network_type  # pylint: disable=protected-access
         yield session
@@ -92,6 +92,8 @@ async def request(method, *args, **kwargs):
     HTTP status code different from 200 is an error.
 
     Doesn't trigger an exception.
+
+    See the `initialize` function
     """
     response = None
     error = None

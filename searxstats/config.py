@@ -1,8 +1,5 @@
 import os
 
-# Use system certificates instead of certifi ?
-USE_SYSTEM_CERT = True
-
 # Tor
 TOR_HTTP_PROXY = "http://127.0.0.1:9051"
 TOR_SOCKS_PROXY_HOST = "127.0.0.1"
