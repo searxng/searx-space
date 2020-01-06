@@ -4,7 +4,7 @@ import asyncio
 from .common.memoize import bind_to_file_name
 from .config import CACHE_DIRECTORY, set_cache_directory, get_cache_file_name
 from .fetcher import FETCHERS
-from .source.github import SEARX_INSTANCES_URL
+from .source import SEARX_INSTANCES_URL
 from . import initialize, run_once, run_server, erase_memoize, finalize
 
 

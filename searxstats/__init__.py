@@ -2,7 +2,7 @@ import logging
 import asyncio
 
 from .common import initialize as initialize_common, finalize as finalize_common
-from .source.github import get_instance_urls
+from .source import get_instance_urls
 from .fetcher import fetch, initialize as initialize_fetcher, FETCHERS
 
 
