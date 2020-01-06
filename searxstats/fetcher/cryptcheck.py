@@ -4,7 +4,7 @@ import time
 import datetime
 
 from searxstats.common.utils import exception_to_str
-from searxstats.common.http import new_session, get_host, NetworkType
+from searxstats.common.http import new_client, get_host, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import create_fetch
 
@@ -77,7 +77,7 @@ async def analyze(host):
     json = None
     try:
         # get the result from cryptcheck.fr
-        async with new_session() as session:
+        async with new_client() as session:
             json, pending = await get_existing_result(session, host, CACHE_EXPIRE_TIME)
             if json is None:
                 # no existing result or too old

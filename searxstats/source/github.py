@@ -2,7 +2,7 @@ from lxml import etree
 
 from searxstats.config import DEFAULT_HEADERS, DEFAULT_COOKIES
 from searxstats.common.html import html_fromstring, stringify_children
-from searxstats.common.http import get_host, new_session
+from searxstats.common.http import get_host, new_client
 
 
 INSTANCES_XPATH = etree.XPath(
@@ -16,7 +16,7 @@ async def get_instance_urls():
     instance_urls = []
 
     # fetch html page
-    async with new_session() as session:
+    async with new_client() as session:
         response = await session.get(SEARX_INSTANCES_URL,
                                      headers=DEFAULT_HEADERS, cookies=DEFAULT_COOKIES, timeout=10)
     html = await html_fromstring(response.text)

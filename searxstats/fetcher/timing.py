@@ -8,7 +8,7 @@ import httpx
 from lxml import etree
 from searxstats.common.utils import exception_to_str
 from searxstats.common.html import extract_text, html_fromstring
-from searxstats.common.http import new_session, get, get_network_type
+from searxstats.common.http import new_client, get, get_network_type
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.config import REQUEST_COUNT, DEFAULT_COOKIES, DEFAULT_HEADERS
 from searxstats.model import create_fetch
@@ -180,7 +180,7 @@ async def fetch_one(instance: str) -> dict:
     try:
         user_pool_limits = httpx.PoolLimits(soft_limit=10, hard_limit=300)
         network_type = get_network_type(instance)
-        async with new_session(pool_limits=user_pool_limits, network_type=network_type) as session:
+        async with new_client(pool_limits=user_pool_limits, network_type=network_type) as session:
             # check index with a new connection each time
             print('🏠 ' + instance)
             await request_stat_with_exception(timings, 'index',

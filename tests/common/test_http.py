@@ -12,8 +12,8 @@ def test_get_host():
 
 
 @pytest.mark.asyncio
-async def test_new_session():
-    async with http.new_session() as session:
+async def test_new_client():
+    async with http.new_client() as session:
         cookies = session.cookies
     assert cookies is not None
 
@@ -23,7 +23,7 @@ async def test_do_get_ok(httpserver: pytest_httpserver.HTTPServer):
     httpserver.expect_request('/index.html').\
         respond_with_data('OK', content_type='text/html')
 
-    async with http.new_session() as session:
+    async with http.new_client() as session:
         response, error = await http.get(session, httpserver.url_for('/index.html'))
 
     assert response.text == 'OK'
@@ -35,7 +35,7 @@ async def test_do_get_404(httpserver: pytest_httpserver.HTTPServer):
     httpserver.expect_request('/404.html').\
         respond_with_data('Not Found', content_type='text/html', status=404)
 
-    async with http.new_session() as session:
+    async with http.new_client() as session:
         response, error = await http.get(session, httpserver.url_for('/404.html'))
 
     assert response.text == 'Not Found'
@@ -49,7 +49,7 @@ async def test_do_get_connection_refused(httpserver: pytest_httpserver.HTTPServe
     # close HTTP server on purpose: make sure the connection will be refused
     httpserver.stop()
     try:
-        async with http.new_session() as session:
+        async with http.new_client() as session:
             response, error = await http.get(session, httpserver.url_for('/index.html'))
     finally:
         # start again to avoid side effect

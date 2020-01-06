@@ -5,7 +5,7 @@ import dns.reversename
 import ipwhois
 from searxstats.data.asn import ASN_PRIVACY
 from searxstats.common.utils import exception_to_str
-from searxstats.common.http import get_host, get, new_session, NetworkType
+from searxstats.common.http import get_host, get, new_client, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.common.foreach import for_each
 from searxstats.model import SearxStatisticsResult, AsnPrivacy
@@ -247,7 +247,7 @@ async def _find_similar_instances(searx_stats_result: SearxStatisticsResult):
 
 async def _check_connectivity(searx_stats_result: SearxStatisticsResult):
     async def get_ip(url):
-        async with new_session() as session:
+        async with new_client() as session:
             response, error = await get(session, url)
         if error is None:
             return response.text, None

@@ -57,7 +57,7 @@ def get_network_type(url):
 
 
 @asynccontextmanager
-async def new_session(*args, **kwargs):
+async def new_client(*args, **kwargs):
     """
     Create a new httpx.AsyncClient
     """
@@ -76,7 +76,7 @@ async def new_session(*args, **kwargs):
 
 async def _request_unsafe(*args, **kwargs):
     try:
-        async with new_session(verify=False) as unsafe_session:
+        async with new_client(verify=False) as unsafe_session:
             return await unsafe_session.get(*args, **kwargs)
     except Exception:
         pass

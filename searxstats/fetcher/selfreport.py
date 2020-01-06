@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 from lxml import etree
 from searxstats.common.utils import dict_merge
 from searxstats.common.foreach import for_each
-from searxstats.common.http import new_session, get, get_network_type
+from searxstats.common.http import new_client, get, get_network_type
 from searxstats.common.html import html_fromstring, extract_text
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
@@ -116,7 +116,7 @@ async def get_config(session, instance_url):
 
 async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail):
     network_type = get_network_type(url)
-    async with new_session(network_type=network_type) as session:
+    async with new_client(network_type=network_type) as session:
         # get config and config
         result_status = await get_status(session, url)
         result_config, result_instance = await get_config(session, url)

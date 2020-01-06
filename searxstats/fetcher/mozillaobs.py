@@ -1,7 +1,7 @@
 # pylint: disable=invalid-name
 import asyncio
 from searxstats.common.utils import exception_to_str
-from searxstats.common.http import new_session, get_host, NetworkType
+from searxstats.common.http import new_client, get_host, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import create_fetch
 
@@ -47,7 +47,7 @@ async def analyze_tls(host):
 async def analyze(host):
     grade_url = USER_ENDPOINT.format(host)
     try:
-        async with new_session() as session:
+        async with new_client() as session:
             response = await session.post(API_NEW.format(host))
             json = response.json()
             if json.get('error') == 'rescan-attempt-too-soon':
