@@ -12,6 +12,8 @@ jobs:
     name: Python ${{ matrix.python-version }} QA
     steps:
     - uses: actions/checkout@v1
+    - name: Install Ubuntu packages
+      run: sudo apt-get install -y firefox wget git build-essential python3-dev libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev
     - name: Set up Python
       uses: actions/setup-python@v1
       with:
