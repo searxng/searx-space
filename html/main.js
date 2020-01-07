@@ -24,7 +24,7 @@ const COMMON_ERROR_MESSAGE = {
 };
 
 const SORT_CRITERIAS = ['http.status_code', 'error', 'version', 'tls.grade',
-    'html.grade', 'timing.initial', 'http.grade', 'url'];
+    'http.grade', 'html.grade', 'timing.initial', 'url'];
 
 function getValue(f, obj, ...keys) {
     let value = obj;
