@@ -31,8 +31,7 @@ async def test_for_each(limit):
     async def f_async(i):
         generic_routine = f_generic(i)
         next(generic_routine)
-        asyncio.sleep(0.5)
-        time.sleep(0.5)
+        await asyncio.sleep(0.5)
         next(generic_routine, None)
 
     await for_each(input_list, f_func, limit=limit)
