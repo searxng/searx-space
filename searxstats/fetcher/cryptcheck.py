@@ -9,15 +9,17 @@ from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import create_fetch
 
 # Alternative solution: use https://github.com/aeris/cryptcheck and run
-# docker run --rm aeris22/cryptcheck https http://url -qj --no-ipv6
+# docker run --rm aeris22/cryptcheck https <hostname> -qj --no-ipv6
 
 BASE_URL = 'https://cryptcheck.fr/https/'
 REFRESH_API_ENDPOINT = BASE_URL + '{0}/refresh'
 API_ENDPOINT = BASE_URL + '{0}.json'
 USER_ENDPOINT = BASE_URL + '{0}'
-TIMEOUT = 5
-MAX_RETRY = 10
-TIME_BETWEEN_RETRY = 6
+HTTP_REQUEST_TIMEOUT = 5
+# searx-stats wait for cryptcheck
+# timeout = MAX_RETRY * TIME_BETWEEN_RETRY = 18*10 = 180 seconds = 3 minutes
+MAX_RETRY = 18
+TIME_BETWEEN_RETRY = 10
 CACHE_EXPIRE_TIME = 24*3600
 
 
@@ -30,7 +32,7 @@ async def get_existing_result(session, host, expire_time):
     pending is True if the next result is pending
     """
     api_url = API_ENDPOINT.format(host)
-    response = await session.get(api_url, timeout=TIMEOUT)
+    response = await session.get(api_url, timeout=HTTP_REQUEST_TIMEOUT)
     json = response.json()
     pending = json.get('pending', False)
     result = None
@@ -45,8 +47,8 @@ async def get_existing_result(session, host, expire_time):
 
 async def refresh_result(session, host):
     refresh_url = REFRESH_API_ENDPOINT.format(host)
-    await session.get(refresh_url, timeout=TIMEOUT)
-    await asyncio.sleep(5)
+    await session.get(refresh_url, timeout=HTTP_REQUEST_TIMEOUT)
+    await asyncio.sleep(TIME_BETWEEN_RETRY)
 
 
 async def pool_result(session, host):
@@ -54,7 +56,7 @@ async def pool_result(session, host):
     remaining_tries = MAX_RETRY
     result = None
     while result is None and remaining_tries > 0:
-        response = await session.get(api_url, timeout=TIMEOUT)
+        response = await session.get(api_url, timeout=HTTP_REQUEST_TIMEOUT)
         json = response.json()
         if json['pending']:
             remaining_tries = remaining_tries - 1
