@@ -328,28 +328,28 @@ Vue.component('time-component', {
 });
 
 Vue.component('engine-component', {
-    props: ['instance', 'engine'],
+    props: ['instance', 'instance_url', 'engine'],
     render: function(h) {
         if (this.instance !== undefined && this.engine !== undefined) {
             const engine = this.instance.engines[this.engine];
             if (engine !== undefined) {
+                const href= this.instance.url + 'search?q=!' + this.engine.replace(' ', '_') + ' time&theme=oscar&language=en';
+                let staticClass = 'item-unknow';
+                let text = '?';
                 if (engine.status === true) {
-                    return h('span', {
-                        staticClass: 'item-check'
-                    }, '✔️');
+                    staticClass = 'item-check';
+                    text = '✔️';
                 } else if (engine.status === false) {
-                    return createTooltip(h, h('span', {
-                        staticClass: 'item-uncheck'
-                    }, '❌'), engine.error);
+                    staticClass = 'item-uncheck';
+                    text = '❌';
                 } else if (engine.stats === true) {
-                    return createTooltip(h, h('span', {
-                        staticClass: 'item-maybe'
-                    }, '🟡'), engine.error);
-                } else {
-                    return h('span', {
-                        staticClass: 'item-unknow'
-                    }, '?');
+                    staticClass = 'item-maybe';
+                    text = '🟡';
                 }
+                return createTooltip(h, h('a', {
+                    staticClass: staticClass,
+                    attrs: { href: href },
+                }, text), engine.error);
             }
         }
     },
