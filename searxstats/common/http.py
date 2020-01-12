@@ -1,5 +1,4 @@
 import sys
-import socket
 import ssl
 import asyncio
 from urllib.parse import urlparse
@@ -28,9 +27,9 @@ class NetworkType(Enum):
 
 
 NETWORK_PROXIES = {
-    NetworkType.TOR: httpx.HTTPProxy(
-        proxy_url=TOR_HTTP_PROXY,
-        proxy_mode="TUNNEL_ONLY"  # Tor is a tunnel only proxy
+    NetworkType.TOR: httpx.Proxy(
+        url=TOR_HTTP_PROXY,
+        mode="TUNNEL_ONLY"  # Tor is a tunnel only proxy
     )
 }
 
@@ -69,7 +68,7 @@ async def new_client(*args, **kwargs):
         del kwargs['network_type']
     if 'backend' not in kwargs:
         kwargs['backend'] = get_httpx_backend()
-    async with httpx.Client(*args, **kwargs) as session:
+    async with httpx.AsyncClient(*args, **kwargs) as session:
         session._network_type = network_type  # pylint: disable=protected-access
         yield session
 
@@ -99,8 +98,6 @@ async def request(method, *args, **kwargs):
     error = None
     try:
         response = await method(*args, **kwargs)
-    except ConnectionRefusedError:
-        error = 'Connection refused'
     except httpx.exceptions.ConnectTimeout:
         error = 'Connection timed out'
     except asyncio.TimeoutError:
@@ -113,13 +110,13 @@ async def request(method, *args, **kwargs):
         error = 'Redirect loop error'
     except httpx.exceptions.ProtocolError:
         error = 'Protocol error'
-    except (ssl.CertificateError, ssl.SSLError) as ex:
-        if kwargs.get('verify', True):
-            # get the certficate even if it is not validated.
-            response = await _request_unsafe(*args, **kwargs)
-        error = exception_to_str(ex)
-    except (OSError, socket.gaierror) as ex:
-        error = exception_to_str(ex)
+    except httpx.exceptions.NetworkError as ex:
+        # args[0] is the wrapped exception
+        wrapped_ex = ex.args[0]
+        if isinstance(wrapped_ex, ConnectionRefusedError):
+            error = 'Connection refused'
+        else:  # socket.gaierror, ssl.SSLError, h11._util.RemoteProtocolError
+            error = exception_to_str(wrapped_ex)
     except httpx.exceptions.ProxyError as ex:
         error = exception_to_str(ex)
         session = getattr(method, '__self__', None)
@@ -128,6 +125,11 @@ async def request(method, *args, **kwargs):
             network_type = getattr(session, '_network_type', NetworkType.NORMAL)
         if ex.response and network_type == NetworkType.TOR:
             error = 'Tor Error: ' + TOR_PROXY_ERROR.get(ex.response.status_code, error)
+    except ssl.CertificateError as ex:
+        if kwargs.get('verify', True):
+            # get the certficate even if it is not validated.
+            response = await _request_unsafe(*args, **kwargs)
+        error = exception_to_str(ex)
     except Exception as ex:
         error = 'Exception ' + str(type(ex)) + ' ' + str(ex)
     else:
