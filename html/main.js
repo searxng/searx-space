@@ -26,6 +26,36 @@ const COMMON_ERROR_MESSAGE = {
 const SORT_CRITERIAS = ['http.status_code', 'error', 'version', 'tls.grade',
     'http.grade', 'html.grade', 'timing.initial', 'url'];
 
+const HTML_GRADE_MAPPING = {
+    'V': 3,
+    'V, ?': 3,
+    'V, js?': 3,
+
+    'C': 3,
+    'C, ?': 3,
+    'C, js?': 3,
+
+    'Cjs': 3,
+    'Cjs, ?': 3,
+    'Cjs, js?': 3,
+
+    'E': 0,
+    'E, ?': 0,
+    'E, js?': 0,
+
+    '?': -1,
+    'js?': -1,
+}
+
+const HTML_GRADE_LABEL = {
+    'V': 'Vanilla',
+    'C': 'Customized, vanilla JS',
+    'Cjs': 'Customized, including JS',
+    'E': 'External ressources',
+    '?': 'Unknow',
+    'js?': 'Unloaded script',
+}
+
 function getValue(f, obj, ...keys) {
     let value = obj;
     for(let i=0; i<keys.length; i++) {
@@ -89,6 +119,17 @@ function normalizeGrade(grade) {
     return result;
 }
 
+function normalizeHtmlGrade(grade) {
+    if (grade === undefined || grade === null) {
+        return -1;
+    }
+    const ngrade = HTML_GRADE_MAPPING[grade];
+    if (ngrade === undefined) {
+        return -1;
+    }
+    return ngrade;
+}
+
 function compareTool(a, b, f, ...keys) {
     const va = getValue(f, a, ...keys);
     const vb = getValue(f, b, ...keys);
@@ -131,7 +172,7 @@ const CompareFunctionCriterias = {
     'network.asn_privacy': (a, b) => compareTool(a, b, null, 'network', 'asn_privacy'),
     'version': (a, b) => compareVersion(a.version, b.version),
     'tls.grade': (a, b) => compareTool(a, b, normalizeGrade, 'tls', 'grade'),
-    'html.grade': (a, b) => compareTool(a, b, normalizeGrade, 'html', 'grade'),
+    'html.grade': (a, b) => compareTool(a, b, normalizeHtmlGrade, 'html', 'grade'),
     'http.grade': (a, b) => compareTool(a, b, normalizeGrade, 'http', 'grade'),
     'timing.initial': (a, b) => -compareTool(a, b, null, 'timing', 'initial'),
     'timing.search_wp.server.median': (a, b) => -compareTool(a, b, null, 'timing', 'search_wp', 'server', 'median'),
@@ -194,15 +235,19 @@ function hslGrade(grade) {
     return hslCss(h, s, l);
 }
 
-function hslGradeHtml(grade) {
+function hslNormalizedGradeHtml(ngrade) {
     const l = 54;
-    if (grade === '?') {
+    if (ngrade ===-1) {
         return hslCss(0, 0, l + 20);
     }
-    const value = Math.min(100, Math.max(0, normalizeGrade(grade) - 3));
-    const h = translateValue(value, 0, 17, 0, 128, false);
-    const s = translateValue(value, 0, 17, 39, 54, true);
+    const value = Math.min(3, Math.max(0, ngrade));
+    const h = translateValue(value, 0, 3, 0, 128, false);
+    const s = translateValue(value, 0, 3, 39, 54, true);
     return hslCss(h, s, l);
+}
+
+function hslGradeHtml(grade) {
+    return hslNormalizedGradeHtml(normalizeHtmlGrade(grade));
 }
 
 function formatResponseTime(value) {
@@ -371,6 +416,16 @@ Vue.component('html-component', {
                 const r = [];
                 const { link: ressourceLink, inline_script: ressourceInlineScripts, error } = ressources;
                 if (ressourceLink) {
+                    //
+                    const label = HTML_GRADE_LABEL[grade.split(',')[0]]
+                    const attrs = {
+                        style: `background-color:${hslGradeHtml(grade)}; color:white`
+                    }
+                    r.push(h('tr', [
+                        h('td', { attrs: attrs }, ''),
+                        h('td', { attrs: attrs }, label),
+                        h('td', { attrs: attrs }, ''),
+                    ]));
                     // inline scripts
                     let unknownCountMin = 1000000;
                     let unknownInlineScriptCount = 0;
@@ -384,7 +439,9 @@ Vue.component('html-component', {
                         }
                     }
                     if (unknownInlineScriptCount > 0) {
-                        const attrs = {};
+                        const attrs = {
+                            style: `background-color:${hslNormalizedGradeHtml(1)}; color:white`
+                        };
                         const msg = `${unknownInlineScriptCount} unknown inline scripts`;
                         let msg2;
                         if (unknownCountMin === 1) {
@@ -395,14 +452,6 @@ Vue.component('html-component', {
                             }
                         } else {
                             msg2 = `at least one is used by ${unknownCountMin} instances`;
-                        }
-                        if (unknownCountMin >= 5) {
-                            attrs.style = `background-color:${hslGradeHtml('B')}; color:white`;
-                        } else if (unknownCountMin >= 2) {
-                            attrs.style = `background-color:${hslGradeHtml('D')}; color:white`;
-                        } else {
-                            attrs.style = `background-color:${hslGradeHtml('E')}; color:white`;
-                            msg2 = 'one only on this instance';
                         }
                         r.push(h('tr', [
                             h('td', { attrs: attrs }, ''),
@@ -420,22 +469,16 @@ Vue.component('html-component', {
                                 let addThisRessource = false;
                                 if (ressourceDetail.external) {
                                     addThisRessource = true;
-                                    attrs.style = `background-color:${hslGradeHtml('F-')}; color:white`;
+                                    attrs.style = `background-color:${hslNormalizedGradeHtml(0)}; color:white`;
                                 } else if (ressourceDetail.notFetched) {
                                     addThisRessource = true;
-                                    attrs.style = `background-color:${hslGradeHtml('?')}; color:white`;
+                                    attrs.style = `background-color:${hslNormalizedGradeHtml(-1)}; color:white`;
                                     extraInfo = ressourceDetail.error;
                                 } else if (ressourceHash) {
                                     extraInfo = '';
                                     if (ressourceHash.unknown) {
                                         addThisRessource = true;
-                                        if (ressourceHash.count >= 5) {
-                                            attrs.style = `background-color:${hslGradeHtml('B')}; color:white`;
-                                        } else if (ressourceHash.count >= 2) {
-                                            attrs.style = `background-color:${hslGradeHtml('D')}; color:white`;
-                                        } else {
-                                            attrs.style = `background-color:${hslGradeHtml('E')}; color:white`;
-                                        }
+                                        attrs.style = `background-color:${hslNormalizedGradeHtml(1)}; color:white`;
                                     }
                                 }
                                 if (addThisRessource) {
