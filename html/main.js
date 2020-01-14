@@ -49,11 +49,11 @@ const HTML_GRADE_MAPPING = {
 
 const HTML_GRADE_LABEL = {
     'V': 'Vanilla',
-    'C': 'Customized, vanilla JS',
-    'Cjs': 'Customized, including JS',
-    'E': 'External ressources',
+    'C': 'Customized, vanilla Javascript',
+    'Cjs': 'Customized, including Javascript',
+    'E': 'External resources',
     '?': 'Unknow',
-    'js?': 'Unloaded script',
+    'js?': 'Unloaded Javascript',
 }
 
 function getValue(f, obj, ...keys) {
@@ -417,10 +417,8 @@ Vue.component('html-component', {
                 const { link: ressourceLink, inline_script: ressourceInlineScripts, error } = ressources;
                 if (ressourceLink) {
                     //
-                    const label = HTML_GRADE_LABEL[grade.split(',')[0]]
-                    const attrs = {
-                        style: `background-color:${hslGradeHtml(grade)}; color:white`
-                    }
+                    const label = HTML_GRADE_LABEL[grade.split(',')[0]];
+                    const attrs = {};
                     r.push(h('tr', [
                         h('td', { attrs: attrs }, ''),
                         h('td', { attrs: attrs }, label),
