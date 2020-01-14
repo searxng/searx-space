@@ -115,11 +115,10 @@
             <h4 id="help-http-grade">HTTP grade</h4>
             <p>When the page is loaded by Firefox, are the scripts well-known ?</p>
             <ul>
-              <li>A - only well known scripts from the git repository (may be some unknown css or images)</li>
-              <li>B - some unknown content, but at least 4 other instances have the same content</li>
-              <li>D - some unknown content and only another instance has it</li>
-              <li>E - some unknown content, and only this instance has it</li>
-              <li>F - external link</li>
+              <li>V - Vanilla instance: all static files comes from the searx git repository.</li>
+              <li>C - Some static files have been modified, but the Javascripts comes from the searx git repository.</li>
+              <li>Cjs - Some static files have been modified including Javascript files.</li>
+              <li>E - The instance includes file from another domain.</li>
             </ul>
             <p>Be aware that only inline and external ( &lt;script src="...") scripts are checked.
             There are many other ways to leak information.</p>
