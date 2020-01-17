@@ -149,78 +149,86 @@ def fetch_ressource_hashes(driver, url, ressource_hashes):
     return ressources
 
 
+class AnalyzeRessourcesResult:
+
+    __slots__ = 'count', 'well_known', 'unknown', 'unknown_js', 'unfetched', 'unfetched_js', 'external'
+
+    def __init__(self):
+        self.count = 0
+        self.well_known = 0
+        self.unknown = 0
+        self.unknown_js = 0
+        self.unfetched = 0
+        self.unfetched_js = 0
+        self.external = 0
+
+
 def analyze_ressources(ressources, hashes):
-    # FIXME return only values, not grade
-    ressource_count = 0
-    well_known_count = 0
-    one_unknown_is_used_by_x_instances = None
-    grade = None
+    result = AnalyzeRessourcesResult()
     for ressource, ressource_type in result_hash_iterator(ressources):
-        ressource_count = ressource_count + 1
-        # Check external URL, if yes grade F
-        if ressource.get('external'):
-            grade = 'F'
-            break
-        # unfetched ressource
-        if ressource.get('notFetched', False):
-            if ressource_type in ['script', 'inline_script']:
-                # unfetched script : impossible to know the grade
-                grade = '?'
-                break
-            # otherwise : skip this ressource (may be dangerous)
-            continue
-        # check if the hash exists = not error fetching the content
         hash_ref = ressource.get('hashRef')
-        if hash_ref is None:
-            grade = '?'
-            break
-        # update one_unknown_is_used_by_x_instances or well_known_count
-        res_hash = hashes[hash_ref]
-        if res_hash.get('unknown'):
+        result.count += 1
+        if ressource.get('external'):
+            result.external += 1
+        elif ressource.get('notFetched', False) or hash_ref is None:
+            # if the hashRef does not exists, there was an error fetching the content
+            result.unfetched += 1
             if ressource_type in ['script', 'inline_script']:
-                # check the unknown content only for the scripts (external, internal)
-                if one_unknown_is_used_by_x_instances is None:
-                    one_unknown_is_used_by_x_instances = res_hash['count']
-                else:
-                    one_unknown_is_used_by_x_instances = min(one_unknown_is_used_by_x_instances, res_hash['count'])
+                result.unfetched_js += 1
         else:
-            well_known_count = well_known_count + 1
-    return grade, ressource_count, one_unknown_is_used_by_x_instances, well_known_count
+            # update one_unknown_is_used_by_x_instances or well_known_count
+            res_hash = hashes[hash_ref]
+            if res_hash.get('unknown'):
+                result.unknown += 1
+                if ressource_type in ['script', 'inline_script']:
+                    result.unknown_js += 1
+            else:
+                result.well_known += 1
+    return result
 
 
 def get_grade(ressources, hashes):
     """
-    A - Only well known content
-
-    B - At least 4 other instances share the same content
-
-    D - At least another instance shares the same content
-
-    E - Only this instance has a content
-
-    F - There is an external link
+    tags:
+    - vanilla: only well known ressources
+    - customize: modified ressource, but well known JS
+    - customize js: modified ressource including JS
+    - external
     """
-    grade, ressource_count, one_unknown_is_used_by_x_instances, well_known_count =\
-        analyze_ressources(ressources, hashes)
+    result = analyze_ressources(ressources, hashes)
 
-    if grade is None:
-        if ressource_count == 0:
-            # Nothing, most problably a problem occured while fetching the ressources
-            # FIXME check if there is no ressources at all
-            grade = '?'
-        elif one_unknown_is_used_by_x_instances is None and well_known_count > 0:
-            # Only well known content
-            grade = 'A'
-        elif one_unknown_is_used_by_x_instances >= 5:
-            # At least 4 other instances share the same content
-            grade = 'B'
-        elif one_unknown_is_used_by_x_instances >= 2:
-            # At least another instances share the same content
-            grade = 'D'
-        elif one_unknown_is_used_by_x_instances == 1:
-            # Only this instance has a content
-            grade = 'E'
-    return grade
+    grade = []
+
+    if result.well_known == result.count:
+        # All ressources are well known
+        grade.append('V')
+    elif result.count == 0:
+        # Nothing, most problably a problem occured while fetching the ressources
+        # FIXME check if there is no ressources at all
+        grade.append('?')
+    elif result.external > 0:
+        # At least one external ressource
+        grade.append('E')
+    elif result.unknown_js > 0:
+        # Reference to an external javascript (another host)
+        grade.append('Cjs')
+    elif result.unknown > 0:
+        # Reference to an external ressource (another host)
+        grade.append('C')
+    elif result.unfetched > 0:
+        # Error fetching some ressources
+        # Deal with it later
+        pass
+    else:
+        # Algorithm error: must not happen
+        grade.append('Err')
+
+    if result.unfetched_js > 0:
+        grade.append('js?')
+    elif result.unfetched > 0 and '?' not in grade:
+        grade.append('?')
+
+    return ', '.join(grade)
 
 
 def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: NetworkType, ressource_hashes):
@@ -241,7 +249,7 @@ def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: Net
                 external_js = len(ressources.get('script', []))
                 inline_js = len(ressources.get('inline_script', []))
                 error_msg = ressources.get('error', '').strip()
-                print('🔗 {0:60} {1:3} external js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
+                print('🔗 {0:60} {1:3} loaded js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
     finally:
         driver.quit()
 
