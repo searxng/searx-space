@@ -611,7 +611,7 @@ Vue.component('ipv6-component', {
             if (text !== null) {
                 const attrs = {};
                 if (grade !== null) {
-                    attrs.style = `background-color:${hslGradeHtml(grade)}; color:white`;
+                    attrs.style = `background-color:${hslGrade(grade)}; color:white`;
                 }
                 return h('span', { class: 'value-ipv6', attrs: attrs }, text);
             }
@@ -681,7 +681,7 @@ Vue.component('network-name-component', {
             }
             const attrs = {};
             if (privacyGrade !== undefined) {
-                attrs.style = `background-color:${hslGradeHtml(privacyGrade)}; color:white`;
+                attrs.style = `background-color:${hslGrade(privacyGrade)}; color:white`;
             }
             return createTooltip(h, h('span', { class: 'value-network', attrs: attrs }, networksList), [reverseIpHostElements]);
         }
