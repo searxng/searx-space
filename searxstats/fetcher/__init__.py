@@ -8,7 +8,7 @@ from . import basic
 from . import external_ressources
 from . import network
 from . import selfreport
-from . import cryptcheck
+from . import cryptcheck_backend
 from . import mozillaobs
 from . import timing
 
@@ -30,7 +30,7 @@ FETCHERS = [
     Fetcher(timing,
             'timing',
             'Test the response time 🏠🔎🔍🏁❌'),
-    Fetcher(cryptcheck,
+    Fetcher(cryptcheck_backend,
             'https-grade',
             'Check the HTTPS / TLS grade 🔒'),
     Fetcher(mozillaobs,
