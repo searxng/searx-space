@@ -1,6 +1,7 @@
 # pylint: disable=unused-argument, redefined-outer-name
 
 import hashlib
+import base64
 
 import pytest
 import pytest_httpserver
@@ -44,11 +45,19 @@ main:first-child {
 }
 """
 
+FAVICON_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAA0AAAAlCAYAAACZFGMnAAAAIklEQVR42mMUWPv2PwOJgHFU06imUU2jmkY1jW" +\
+                 "oa1UQXTQCsFGKTXwPYFgAAAABJRU5ErkJggg=="
+FAVICON_BINARY = base64.b64decode(FAVICON_BASE64)
+
+
+def get_sha256_binary(binary):
+    sha256_hash = hashlib.sha256()
+    sha256_hash.update(binary)
+    return sha256_hash.hexdigest()
+
 
 def get_sha256(content):
-    sha256_hash = hashlib.sha256()
-    sha256_hash.update(content.encode('utf-8'))
-    return sha256_hash.hexdigest()
+    return get_sha256_binary(content.encode('utf-8'))
 
 
 def find_sha256_info(ressource_hashes, content) -> dict:
@@ -69,6 +78,8 @@ def fake_httpserver(httpserver):
             DATA_INDEX_JS, content_type='application/javascript; charset=utf-8')
     httpserver.expect_request('/index.css').\
         respond_with_data(DATA_INDEX_CSS, content_type='text/css')
+    httpserver.expect_request('/favicon.ico').\
+        respond_with_data(FAVICON_BINARY, content_type='image/png')
     yield httpserver
 
 
@@ -107,6 +118,7 @@ def test_fetch_ressource_hashes_js(selenium_driver, fake_httpserver: pytest_http
     assert ressources['inline_script'][0]['hash'] == get_sha256(DATA_INLINE_JS)
     assert list(ressources['link'].values())[0]['hash'] == get_sha256(DATA_INDEX_CSS)
     assert list(ressources['script'].values())[0]['hash'] == get_sha256(DATA_INDEX_JS)
+    assert list(ressources['other'].values())[0]['hash'] == get_sha256_binary(FAVICON_BINARY)
 
     ressource_hashes = {
         'index': 0,
