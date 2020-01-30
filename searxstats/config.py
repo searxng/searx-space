@@ -49,8 +49,12 @@ HASHES_FILE_NAME = 'searxstats-well-known-hashes.yaml'
 # Directory where searx will be git clone
 SEARX_GIT_DIRECTORY = 'searxstats-git'
 
+SEARXINSTANCES_GIT_DIRECTORY = 'searxinstances-git'
+
 # Git URL of searx (to fetch static file content hashes)
 SEARX_GIT_REPOSITORY = 'https://github.com/asciimoo/searx'
+
+SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/dalf/searx-instances'
 
 # geckodriver log file name
 GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'
@@ -74,6 +78,11 @@ def get_hashes_file_name():
 def get_searx_repository_directory():
     global CACHE_DIRECTORY, SEARX_GIT_DIRECTORY  # pylint: disable=global-statement
     return os.path.join(CACHE_DIRECTORY, SEARX_GIT_DIRECTORY)
+
+
+def get_searxinstances_repository_directory():
+    global CACHE_DIRECTORY, SEARXINSTANCES_GIT_DIRECTORY  # pylint: disable=global-statement
+    return os.path.join(CACHE_DIRECTORY, SEARXINSTANCES_GIT_DIRECTORY)
 
 
 def get_geckodriver_file_name():
