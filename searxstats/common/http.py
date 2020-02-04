@@ -146,23 +146,10 @@ async def post(session, *args, **kwargs):
     return await request(session.post, *args, **kwargs)
 
 
-def monkey_patch():
-    # brotlipy is installed by selenium package
-    # brotlipy causes "Decoding Error" with some instances
-    # so disable brotli
-    if "br" in httpx.decoders.SUPPORTED_DECODERS:
-        httpx.decoders.SUPPORTED_DECODERS.pop("br")
-        # pylint: disable=consider-iterating-dictionary
-        httpx.decoders.ACCEPT_ENCODING = ", ".join(
-            [key for key in httpx.decoders.SUPPORTED_DECODERS.keys() if key !=
-             "identity"]
-        )
-
-
 # pylint: disable=global-variable-undefined, invalid-name
 async def initialize(loop=None):
     """
-    call `monkey_patch` and do the equivalent of
+    do the equivalent of
     ```
     @UseQueue(count=1, loop=loop)
     async def request(method, *args, **kwargs):
@@ -172,4 +159,3 @@ async def initialize(loop=None):
     """
     global request
     request = UseQueue(worker_count=1, loop=loop)(request)
-    monkey_patch()
