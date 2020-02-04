@@ -113,12 +113,14 @@ def test_fetch_ressource_hashes_js(selenium_driver, fake_httpserver: pytest_http
         selenium_driver, fake_httpserver.url_for('/index.html'))
 
     assert isinstance(ressources, dict)
-    for hashes_key in ['inline_script', 'inline_style', 'link', 'other', 'script']:
+    for hashes_key in ['inline_script', 'inline_style', 'link', 'script']:
         assert hashes_key in ressources
     assert ressources['inline_script'][0]['hash'] == get_sha256(DATA_INLINE_JS)
     assert list(ressources['link'].values())[0]['hash'] == get_sha256(DATA_INDEX_CSS)
     assert list(ressources['script'].values())[0]['hash'] == get_sha256(DATA_INDEX_JS)
-    assert list(ressources['other'].values())[0]['hash'] == get_sha256_binary(FAVICON_BINARY)
+    if 'other' in ressources:
+        # Firefox may not load the favicon, no deterministic behavior
+        assert list(ressources['other'].values())[0]['hash'] == get_sha256_binary(FAVICON_BINARY)
 
     ressource_hashes = {
         'index': 0,
