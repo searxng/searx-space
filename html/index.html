@@ -88,7 +88,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="detail in instances_filtered">
-                    <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                    <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                     <td class="column-version">{{detail.version}}</td>
                     <td class="column-tls"><tls-component :value="detail.tls"></tls-component></td>
                     <td class="column-csp"><csp-component :value="detail.http"></csp-component></td>
@@ -169,7 +169,7 @@
                   </thead>
                   <tbody>
                     <tr v-for="detail in instances_tor">
-                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                       <td class="column-version">{{detail.version}}</td>
                       <td class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
                       <td class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
@@ -196,7 +196,7 @@
                   </thead>
                   <tbody>
                     <tr v-for="detail in instances_nosearx">
-                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                       <td class="column-status"><http-status-component :value="detail.http.status_code"></http-status-component></td>
                       <td class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
                       <td class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
@@ -221,7 +221,7 @@
                     </thead>
                     <tbody>
                       <tr v-for="detail in instanceList">
-                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                         <td class="column-status"><http-status-component :value="detail.http.status_code"></http-status-component></td>
                         <td class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
                         <td class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
@@ -252,7 +252,7 @@
                 </thead>
                 <tbody>
                     <tr v-for="detail in instances_filtered" v-if="detail.engines">
-                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                         <td class="column-engine-status" v-for="engine in selected_engines"><engine-component :instance='detail' :engine='engine'></engine-component></td>
                     </tr>
                 </tbody>

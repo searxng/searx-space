@@ -18,24 +18,35 @@ __all__ = ['FETCHERS', 'fetch']
 
 TASK_THREADPOOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
 FETCHERS = [
-    Fetcher(network,
-            'network',
-            'Fetch whois information 🌏'),
+    Fetcher(basic,
+            'basic',
+            'Fetch basic information 🍰👽❌',
+            'basic',
+            True),
     Fetcher(external_ressources,
             'html-grade',
-            'Load page with a browser and check the used external ressources 🔗'),
+            'Load page with a browser and check the used external ressources 🔗',
+            'browser'),
+    Fetcher(network,
+            'network',
+            'Fetch whois information 🌏',
+            'other'),
     Fetcher(selfreport,
             'self-report',
-            'Fetch the /status and /config URLs 💡'),
-    Fetcher(timing,
-            'timing',
-            'Test the response time 🏠🔎🔍🏁❌'),
+            'Fetch the /status and /config URLs 💡',
+            'other'),
     Fetcher(cryptcheck_backend,
             'https-grade',
-            'Check the HTTPS / TLS grade 🔒'),
+            'Check the HTTPS / TLS grade 🔒',
+            'other'),
     Fetcher(mozillaobs,
             'csp-grade',
-            'Check the CSP grade 📄'),
+            'Check the CSP grade 📄',
+            'other'),
+    Fetcher(timing,
+            'timing',
+            'Test the response time 🏠🔎🔍🏁❌',
+            'timing'),
 ]
 
 
@@ -45,26 +56,24 @@ async def initialize(selected_fetchers: list):
         await fetcher.create_initialize_task(loop, TASK_THREADPOOL)
 
 
-async def fetch_using_fetchers(searx_stats_result: SearxStatisticsResult, selected_fetchers: list):
+async def fetch(searx_stats_result: SearxStatisticsResult, selected_fetchers: list):
+    # fetch using the selected fetchers
     loop = asyncio.get_event_loop()
 
     # create a task list from the selected fetchers
-    tasks = []
-    for fetcher in selected_fetchers:
-        task = fetcher.create_fetch_task(loop, TASK_THREADPOOL, searx_stats_result)
-        tasks.append(task)
+    tasks_for_group = []
+    current_group_name = None
+    for fetcher in FETCHERS:
+        if fetcher in selected_fetchers or fetcher.mandatory:
+            # if fetcher is from a different group name, wait for the current tasks
+            if current_group_name != fetcher.group_name:
+                await wait_get_results(*tasks_for_group)
+                tasks_for_group = []
 
-    # check if there is a least one task
-    await wait_get_results(*tasks)
+            # add to the list
+            current_group_name = fetcher.group_name
+            task = fetcher.create_fetch_task(loop, TASK_THREADPOOL, searx_stats_result)
+            tasks_for_group.append(task)
 
-
-async def fetch(instance_urls: list, selected_fetchers: list) -> SearxStatisticsResult:
-    searx_stats_result = SearxStatisticsResult()
-
-    # initial fetch
-    await basic.fetch_from_urls(searx_stats_result, instance_urls)
-
-    # fetch using the selected fetchers
-    await fetch_using_fetchers(searx_stats_result, selected_fetchers)
-
-    return searx_stats_result
+    # execute the last task list
+    await wait_get_results(*tasks_for_group)

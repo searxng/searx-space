@@ -4,7 +4,7 @@ import git.exc
 
 
 def get_repository(directory, url):
-    print(f'{directory}: update {url}')
+    print(f'{directory}: update from {url}')
     # check if directory is a directory
     if not os.path.isdir(directory):
         if not os.path.exists(directory):

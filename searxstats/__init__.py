@@ -2,8 +2,8 @@ import logging
 import asyncio
 
 from .common import initialize as initialize_common, finalize as finalize_common
-from .source import get_instance_urls
 from .fetcher import fetch, initialize as initialize_fetcher, FETCHERS
+from .searx_instances import get_searx_stats_result, get_searx_stats_result_from_list
 
 
 async def initialize():
@@ -36,11 +36,13 @@ async def run_once(output_file: str, instance_urls: list, selected_fetcher_names
 
     # fetch instance list
     if instance_urls is None or len(instance_urls) == 0:
-        instance_urls = await get_instance_urls()
-    print('\n{0} instance(s)\n'.format(len(instance_urls)))
+        searx_stats_result = await get_searx_stats_result()
+    else:
+        searx_stats_result = await get_searx_stats_result_from_list(instance_urls)
+    print('\n{0} instance(s)\n'.format(len(searx_stats_result.instances.keys())))
 
     # fetch
-    searx_stats_result = await fetch(instance_urls, selected_fetchers)
+    await fetch(searx_stats_result, selected_fetchers)
 
     # write results
     searx_stats_result.write(output_file)
