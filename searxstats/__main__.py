@@ -2,9 +2,8 @@ import argparse
 import asyncio
 
 from .common.memoize import bind_to_file_name
-from .config import CACHE_DIRECTORY, set_cache_directory, get_cache_file_name
+from .config import CACHE_DIRECTORY, SEARXINSTANCES_GIT_REPOSITORY, set_cache_directory, get_cache_file_name
 from .fetcher import FETCHERS
-from .source import SEARX_INSTANCES_URL
 from . import initialize, run_once, run_server, erase_memoize, finalize
 
 
@@ -67,9 +66,10 @@ def main():
                         help='Activate all fetchers',
                         default=False)
     for fetcher in FETCHERS:
-        parser.add_argument('--' + fetcher.name, dest=fetcher.name,
-                            help=fetcher.help_message, action='store_true',
-                            default=False)
+        if not fetcher.mandatory:
+            parser.add_argument('--' + fetcher.name, dest=fetcher.name,
+                                help=fetcher.help_message, action='store_true',
+                                default=False)
     parser.add_argument('--update-all',
                         action='store_true', dest='update_all',
                         help='Update all fetchers',
@@ -79,8 +79,7 @@ def main():
                             help='Same as --' + fetcher.name + ' but ignore the cached values', action='store_true',
                             default=False)
     parser.add_argument('instance_urls', metavar='instance_url', type=str, nargs='*',
-                        help='instance URLs, otherwise fetch URLs from {0}'
-                        .format(SEARX_INSTANCES_URL))
+                        help='instance URLs, otherwise use {0}'.format(SEARXINSTANCES_GIT_REPOSITORY))
 
     args = parser.parse_args()
     args_vars = vars(args)
@@ -89,7 +88,7 @@ def main():
     update_fetcher_memoize_list = set()
     for fetcher in FETCHERS:
         fetcher_name = fetcher.name
-        if args_vars.get(fetcher_name, False) or args.all:
+        if args_vars.get(fetcher_name, False) or args.all or fetcher.mandatory:
             selected_fetcher_names.add(fetcher_name)
         if args_vars.get('update_' + fetcher_name, False) or args.update_all:
             selected_fetcher_names.add(fetcher_name)

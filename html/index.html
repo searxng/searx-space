@@ -37,10 +37,9 @@
           </nav>        
       </header>
       <main role="main" class="container theme-showcase" v-if="instances.length > 0">
-        <div v-if="selected_tab === 'online_https'">
-          <h2>{{instances_filtered.length}} online instances</h2>
-          <p class="text-right">
-              Displayed time:<a class="help" href="#help-timing">?</a>
+        <p style="float:right" v-if="['online_https', 'online_tor', 'searxerrors'].indexOf(selected_tab) >= 0">
+          <span >Show comments <input type="checkbox" v-model="display.comments"></span>
+          <span>Displayed time:<a class="help" href="#help-timing">?</a>
             <select name="time-select" id="time-select" v-model="display.time_select">
               <option value="all">Total</option>
               <option value="server">Server</option>
@@ -48,59 +47,74 @@
               <option value="network">Network</option>
               <option value="processing">Processing</option>
             </select>
-          </p>
+          </span>
+        </p>
+        <div v-if="selected_tab === 'online_https'">
+          <h2>{{instances_filtered.length}} online instances</h2>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover">
                 <thead>
                   <tr>
                     <th class="column-url">URL</th>
                     <th class="column-version">Version</th>
-                    <th class="column-tls">TLS<a class="help" href="#help-tls-grade">?</a></th>
-                    <th class="column-csp">CSP<a class="help" href="#help-csp-grade">?</a></th>
-                    <th class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
-                    <th class="column-certificate">Certificate</th>
-                    <th class="column-ipv6">IPv6<a class="help" href="#help-ipv6">?</a></th>
-                    <th class="column-country">Country<a class="help" href="#help-country">?</a></th>
-                    <th class="column-network">Network</th>
-                    <th class="column-responsetime">Initial response time</th>
-                    <th class="column-responsetime">Index response time</th>
-                    <th class="column-responsetime">Wikipedia response time</th>
-                    <th class="column-responsetime">Google response time</th>
+                    <th v-if="!display.comments" class="column-tls">TLS<a class="help" href="#help-tls-grade">?</a></th>
+                    <th v-if="!display.comments" class="column-csp">CSP<a class="help" href="#help-csp-grade">?</a></th>
+                    <th v-if="!display.comments" class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
+                    <th v-if="!display.comments" class="column-certificate">Certificate</th>
+                    <th v-if="!display.comments" class="column-ipv6">IPv6<a class="help" href="#help-ipv6">?</a></th>
+                    <th v-if="!display.comments" class="column-country">Country<a class="help" href="#help-country">?</a></th>
+                    <th v-if="!display.comments" class="column-network">Network</th>
+                    <th v-if="!display.comments" class="column-responsetime">Initial response time</th>
+                    <th v-if="!display.comments" class="column-responsetime">Index response time</th>
+                    <th v-if="!display.comments" class="column-responsetime">Wikipedia response time</th>
+                    <th v-if="!display.comments" class="column-responsetime">Google response time</th>
+                    <th v-if="display.comments" class="column-comments">Comments</th>
+                    <th v-if="display.comments" class="column-alternativeurls">Alternative URLs</th>
                   </tr>
                   <tr>
                       <th class="column-url"></th>
                       <th class="column-version"><input v-model="filters.version"/></th>
-                      <th class="column-tls"><input v-model="filters.tls_grade"/></th>
-                      <th class="column-csp"><input v-model="filters.csp_grade"/></th>
-                      <th class="column-html"><input v-model="filters.html_grade"/></th>
-                      <th class="column-certificate"></th>
-                      <th class="column-ipv6"><input v-model="filters.ipv6" type="checkbox" /></th>
-                      <th class="column-country"><input v-model="filters.network_country"/></th>
-                      <th class="column-network"><input v-model="filters.network_name" style="width: 90%" />
+                      <th v-if="!display.comments" class="column-tls"><input v-model="filters.tls_grade"/></th>
+                      <th v-if="!display.comments" class="column-csp"><input v-model="filters.csp_grade"/></th>
+                      <th v-if="!display.comments" class="column-html"><input v-model="filters.html_grade"/></th>
+                      <th v-if="!display.comments" class="column-certificate"></th>
+                      <th v-if="!display.comments" class="column-ipv6"><input v-model="filters.ipv6" type="checkbox" /></th>
+                      <th v-if="!display.comments" class="column-country"><input v-model="filters.network_country"/></th>
+                      <th v-if="!display.comments" class="column-network"><input v-model="filters.network_name" style="width: 90%" />
                         <span><input v-model="filters.asn_privacy" type="checkbox" style="margin: 0 0.25em;vertical-align: middle; width:auto;" /></span>
                         <span class="info-tooltip">Hide networks with privacy issue</span>
                       </th>
-                      <th class="column-responsetime"></th>
-                      <th class="column-responsetime"></th>
-                      <th class="column-responsetime"></th>
-                      <th class="column-responsetime"><input v-model="filters.google" type="checkbox" /></th>
+                      <th v-if="!display.comments" class="column-responsetime"></th>
+                      <th v-if="!display.comments" class="column-responsetime"></th>
+                      <th v-if="!display.comments" class="column-responsetime"></th>
+                      <th v-if="!display.comments" class="column-responsetime"><input v-model="filters.google" type="checkbox" /></th>
+                      <th v-if="display.comments" class="column-comments"></th>
+                      <th v-if="display.comments" class="column-alternativeurls"></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="detail in instances_filtered">
-                    <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                    <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                     <td class="column-version">{{detail.version}}</td>
-                    <td class="column-tls"><tls-component :value="detail.tls"></tls-component></td>
-                    <td class="column-csp"><csp-component :value="detail.http"></csp-component></td>
-                    <td class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
-                    <td class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
-                    <td class="column-ipv6"><ipv6-component :value="detail.network"></ipv6-component></td>
-                    <td class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
-                    <td class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
-                    <td class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
-                    <td class="column-responsetime"><time-component :value="detail.timing.index" :time_select="$root.display.time_select"></time-component></td>
-                    <td class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
-                    <td class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
+                    <td v-if="!display.comments" class="column-tls"><tls-component :value="detail.tls"></tls-component></td>
+                    <td v-if="!display.comments" class="column-csp"><csp-component :value="detail.http"></csp-component></td>
+                    <td v-if="!display.comments" class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
+                    <td v-if="!display.comments" class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
+                    <td v-if="!display.comments" class="column-ipv6"><ipv6-component :value="detail.network"></ipv6-component></td>
+                    <td v-if="!display.comments" class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
+                    <td v-if="!display.comments" class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
+                    <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
+                    <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.index" :time_select="$root.display.time_select"></time-component></td>
+                    <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
+                    <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
+                    <td v-if="display.comments" class="column-comments">
+                      <p v-for="comment in detail.comments">{{comment}}</p>
+                    </td>
+                    <td v-if="display.comments" class="column-alternativeurls">
+                      <p v-for="(comment,url) in detail.alternativeUrls">
+                          <url-component :url="url"></url-component> - {{comment}}
+                      </p>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -144,38 +158,38 @@
           </div>
           <div v-if="selected_tab === 'online_tor'">
             <h2>{{instances_tor.length}} online instances</h2>
-            <p class="text-right">
-                Displayed time:<a class="help" href="#help-timing">?</a>
-              <select name="time-select" id="time-select" v-model="display.time_select">
-                <option value="all">Total</option>
-                <option value="server">Server</option>
-                <option value="load">Load</option>
-                <option value="network">Network</option>
-                <option value="processing">Processing</option>
-              </select>
-            </p>
             <div class="table-responsive">
               <table class="table table-bordered table-striped table-hover">
                   <thead>
                     <tr>
                       <th class="column-url">URL</th>
                       <th class="column-version">Version</th>
-                      <th class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
-                      <th class="column-responsetime">Initial response time</th>
-                      <th class="column-responsetime">Index response time</th>
-                      <th class="column-responsetime">Wikipedia response time</th>
-                      <th class="column-responsetime">Google response time</th>
+                      <th v-if="!display.comments" class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
+                      <th v-if="!display.comments" class="column-responsetime">Initial response time</th>
+                      <th v-if="!display.comments" class="column-responsetime">Index response time</th>
+                      <th v-if="!display.comments" class="column-responsetime">Wikipedia response time</th>
+                      <th v-if="!display.comments" class="column-responsetime">Google response time</th>
+                      <th v-if="display.comments" class="column-comments">Comments</th>
+                      <th v-if="display.comments" class="column-alternativeurls">Alternative URLs</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="detail in instances_tor">
-                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                       <td class="column-version">{{detail.version}}</td>
-                      <td class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
-                      <td class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
-                      <td class="column-responsetime"><time-component :value="detail.timing.index" :time_select="$root.display.time_select"></time-component></td>
-                      <td class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
-                      <td class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
+                      <td v-if="!display.comments" class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
+                      <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
+                      <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.index" :time_select="$root.display.time_select"></time-component></td>
+                      <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
+                      <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
+                      <td v-if="display.comments" class="column-comments">
+                        <p v-for="comment in detail.comments">{{comment}}</p>
+                      </td>
+                      <td v-if="display.comments" class="column-alternativeurls">
+                        <p v-for="(comment,url) in detail.alternativeUrls">
+                            <url-component :url="url"></url-component> - {{comment}}
+                        </p>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -188,19 +202,29 @@
                   <thead>
                     <tr>
                       <th class="column-url">URL</th>
-                      <th class="column-status">Status</th>
-                      <th class="column-certificate">Certificate</th>
-                      <th class="column-tls">Country</th>
-                      <th class="column-network">Network</th>
+                      <th v-if="!display.comments" class="column-status">Status</th>
+                      <th v-if="!display.comments" class="column-certificate">Certificate</th>
+                      <th v-if="!display.comments" class="column-tls">Country</th>
+                      <th v-if="!display.comments" class="column-network">Network</th>
+                      <th v-if="display.comments" class="column-comments">Comments</th>
+                      <th v-if="display.comments" class="column-alternativeurls">Alternative URLs</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="detail in instances_nosearx">
-                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
-                      <td class="column-status"><http-status-component :value="detail.http.status_code"></http-status-component></td>
-                      <td class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
-                      <td class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
-                      <td class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
+                      <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
+                      <td v-if="!display.comments" class="column-status"><http-status-component :value="detail.http.status_code"></http-status-component></td>
+                      <td v-if="!display.comments" class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
+                      <td v-if="!display.comments" class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
+                      <td v-if="!display.comments" class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
+                      <td v-if="display.comments" class="column-comments">
+                        <p v-for="comment in detail.comments">{{comment}}</p>
+                      </td>
+                      <td v-if="display.comments" class="column-alternativeurls">
+                        <p v-for="(comment,url) in detail.alternativeUrls">
+                            <url-component :url="url"></url-component> - {{comment}}
+                        </p>
+                      </td>
                     </tr>
                   </tbody>
               </table>
@@ -212,21 +236,31 @@
                     <thead>
                       <tr>
                         <th class="column-url">URL</th>
-                        <th class="column-status">Status</th>
-                        <th class="column-certificate">Certificate</th>
-                        <th class="column-tls">Country</th>
-                        <th class="column-network">Network</th>
-                        <th class="column-error">Error</th>
+                        <th v-if="!display.comments" class="column-status">Status</th>
+                        <th v-if="!display.comments" class="column-certificate">Certificate</th>
+                        <th v-if="!display.comments" class="column-tls">Country</th>
+                        <th v-if="!display.comments" class="column-network">Network</th>
+                        <th v-if="!display.comments" class="column-error">Error</th>
+                        <th v-if="display.comments" class="column-comments">Comments</th>
+                        <th v-if="display.comments" class="column-alternativeurls">Alternative URLs</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="detail in instanceList">
-                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
-                        <td class="column-status"><http-status-component :value="detail.http.status_code"></http-status-component></td>
-                        <td class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
-                        <td class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
-                        <td class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
-                        <td class="column-error">{{detail.error}}</td>
+                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
+                        <td v-if="!display.comments" class="column-status"><http-status-component :value="detail.http.status_code"></http-status-component></td>
+                        <td v-if="!display.comments" class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
+                        <td v-if="!display.comments" class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
+                        <td v-if="!display.comments" class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
+                        <td v-if="!display.comments" class="column-error">{{detail.error}}</td>
+                        <td v-if="display.comments" class="column-comments">
+                          <p v-for="comment in detail.comments">{{comment}}</p>
+                        </td>
+                        <td v-if="display.comments" class="column-alternativeurls">
+                          <p v-for="(comment,url) in detail.alternativeUrls">
+                              <url-component :url="url"></url-component> - {{comment}}
+                          </p>
+                        </td>
                       </tr>
                     </tbody>
                 </table>
@@ -252,7 +286,7 @@
                 </thead>
                 <tbody>
                     <tr v-for="detail in instances_filtered" v-if="detail.engines">
-                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls"></url-component></td>
+                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                         <td class="column-engine-status" v-for="engine in selected_engines"><engine-component :instance='detail' :engine='engine'></engine-component></td>
                     </tr>
                 </tbody>
@@ -267,7 +301,9 @@
           </div>
           <div v-if="selected_tab === 'about'">
             <h2>About</h2>
-            <p><a href="https://github.com/dalf/searx-stats2">https://github.com/dalf/searx-stats2</a></p>
+            <p>Informations about the <a href="https://github.com/asciimoo/searx">searx</a> instances</p>
+            <p>You can add / remove / edit / comments the searx instance list: <a href="https://github.com/dalf/searx-instances">searx-instances</a></p>
+            <p>The source code of this project: <a href="https://github.com/dalf/searx-stats2">https://github.com/dalf/searx-stats2</a></p>
           </div>
       </main>
     </div>

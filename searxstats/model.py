@@ -72,12 +72,15 @@ class SearxStatisticsResult:
 
 class Fetcher:
 
-    __slots__ = 'name', 'help_message', 'fetch_module'
+    __slots__ = 'name', 'help_message', 'fetch_module', 'group_name', 'mandatory'
 
-    def __init__(self, fetch_module, name, help_message):
+    # pylint: disable=too-many-arguments
+    def __init__(self, fetch_module, name, help_message, group_name=None, mandatory=False):
         self.fetch_module = fetch_module
         self.name = name
         self.help_message = help_message
+        self.group_name = group_name
+        self.mandatory = mandatory
 
     def create_fetch_task(self, loop, executor, searx_stats_result: SearxStatisticsResult):
         fetch = self.get_function('fetch')

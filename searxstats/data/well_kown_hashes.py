@@ -1,45 +1,12 @@
 import os
 import hashlib
-import git
-import git.exc
 import yaml
 
+import searxstats.common.git_tool as git_tool
 from searxstats.config import get_hashes_file_name, get_searx_repository_directory, SEARX_GIT_REPOSITORY
 
 
 __all__ = ['fetch_file_content_hashes']
-
-
-def get_repository(directory, url):
-    # check if directory is a directory
-    if not os.path.isdir(directory):
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        else:
-            raise Exception(directory + ' is not a directory')
-
-    # is it a git repository ?
-    repo = None
-    try:
-        repo = git.Repo(directory)
-        print('Use existing git repository')
-
-    except git.exc.GitError as ex:
-        print('exception', ex)
-
-    if repo is None:
-        # it is not a git repository
-        print('Clone repository from {}'.format(url))
-        repo = git.Repo.clone_from(url, directory)
-    else:
-        # it is a git repository
-        # so pull the master branch without additional files
-        repo.git.reset('--hard')
-        repo.git.clean('-xdf')
-        repo.git.checkout('master')
-        repo.git.pull()
-
-    return repo
 
 
 def get_filename_list(directory):
@@ -128,7 +95,7 @@ def get_new_commit_list(all_commits, existing_hexsha_list):
 
 def _fetch_file_content_hashes(cache_file, repo_directory, repo_url):
     # get (or initialize) the git repository
-    repo = get_repository(repo_directory, repo_url)
+    repo = git_tool.get_repository(repo_directory, repo_url)
 
     # load existing hashes / commits
     result = load(cache_file)

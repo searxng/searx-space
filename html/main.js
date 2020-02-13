@@ -281,14 +281,27 @@ function tooltip_add_timing(h, tooltip_lines, timing, time_label) {
 }
 
 Vue.component('url-component', {
-    props: ['url', 'alternativeurls'],
+    props: ['url', 'alternativeurls', 'comments'],
     render: function(h) {
         if (this.url != null && this.url !== undefined) {
             let tooltipLines = [];
-            if (this.alternativeurls !== undefined) {
-                for (const altUrl of Object.keys(this.alternativeurls)) {
+            if (this.comments !== undefined) {
+                for (const comment of this.comments) {
+                    tooltipLines.push(h('tr', [
+                        h('td', comment),
+                    ]));
+                }
+            }
+            if (this.alternativeurls !== undefined && Object.keys(this.alternativeurls).length > 0) {
+                if (this.comments !== undefined && this.comments.length > 0) {
+                    tooltipLines.push(h('tr', [
+                        h('td', ''),
+                    ]));
+                }
+                for (const [altUrl, altComment] of Object.entries(this.alternativeurls)) {
                     tooltipLines.push(h('tr', [
                         h('td', altUrl),
+                        h('td', altComment)
                     ]));
                 }
             }
@@ -750,7 +763,8 @@ new Vue({
             google: false,
         },
         display: {
-            time_select: 'all'
+            time_select: 'all',
+            comments: false,
         },
         selected_tab: 'online_https',
         timestamp: undefined,

@@ -16,7 +16,7 @@ BROWSER_LOAD_TIMEOUT = 20
 
 # Default headers for all HTTP requests
 DEFAULT_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.5',
     'DNT': '1',
@@ -49,8 +49,12 @@ HASHES_FILE_NAME = 'searxstats-well-known-hashes.yaml'
 # Directory where searx will be git clone
 SEARX_GIT_DIRECTORY = 'searxstats-git'
 
+SEARXINSTANCES_GIT_DIRECTORY = 'searxinstances-git'
+
 # Git URL of searx (to fetch static file content hashes)
 SEARX_GIT_REPOSITORY = 'https://github.com/asciimoo/searx'
+
+SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/dalf/searx-instances'
 
 # geckodriver log file name
 GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'
@@ -74,6 +78,11 @@ def get_hashes_file_name():
 def get_searx_repository_directory():
     global CACHE_DIRECTORY, SEARX_GIT_DIRECTORY  # pylint: disable=global-statement
     return os.path.join(CACHE_DIRECTORY, SEARX_GIT_DIRECTORY)
+
+
+def get_searxinstances_repository_directory():
+    global CACHE_DIRECTORY, SEARXINSTANCES_GIT_DIRECTORY  # pylint: disable=global-statement
+    return os.path.join(CACHE_DIRECTORY, SEARXINSTANCES_GIT_DIRECTORY)
 
 
 def get_geckodriver_file_name():
