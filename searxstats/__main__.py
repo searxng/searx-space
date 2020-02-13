@@ -88,7 +88,7 @@ def main():
     update_fetcher_memoize_list = set()
     for fetcher in FETCHERS:
         fetcher_name = fetcher.name
-        if args_vars.get(fetcher_name, False) or args.all:
+        if args_vars.get(fetcher_name, False) or args.all or fetcher.mandatory:
             selected_fetcher_names.add(fetcher_name)
         if args_vars.get('update_' + fetcher_name, False) or args.update_all:
             selected_fetcher_names.add(fetcher_name)

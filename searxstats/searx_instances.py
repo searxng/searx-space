@@ -18,7 +18,7 @@ def add_slash(url: str) -> str:
         return url
 
 
-def add_slash_dict(dictionnary: dict) -> dict:
+def copy_dict_slash(dictionnary: dict) -> dict:
     result = dict()
     for ourl, ocomment in dictionnary.items():
         result[add_slash(ourl)] = ocomment
@@ -32,12 +32,12 @@ async def get_searx_stats_result() -> SearxStatisticsResult:
         url = add_slash(url)
         searx_stats_result.update_instance(url, {
             'comments': instance.comments,
-            'alternativeUrls': add_slash_dict(instance.additional_urls),
+            'alternativeUrls': copy_dict_slash(instance.additional_urls),
             'main': True,
         })
         for aurl, comment in instance.additional_urls.items():
             aurl = add_slash(aurl)
-            a_aurls = add_slash_dict(instance.additional_urls)
+            a_aurls = copy_dict_slash(instance.additional_urls)
             a_aurls[url] = ''
             if aurl in a_aurls:
                 del a_aurls[aurl]
