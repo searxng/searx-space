@@ -64,7 +64,7 @@ span:hover + .info-tooltip,
 sup {
   font-size: 60%;
 }
-input {
+th input {
   width: 100%;
   border: 1px solid lightgray;
 }
@@ -86,6 +86,14 @@ input {
 .column-certificate {
   max-width: 29rem;
   width: 29rem;
+}
+
+.column-comments {
+  min-width: 40rem;
+}
+
+.column-alternativeurls {
+  min-width: 40rem;
 }
 
 tbody .column-url:hover, tbody .column-certificate:hover {

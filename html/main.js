@@ -763,7 +763,8 @@ new Vue({
             google: false,
         },
         display: {
-            time_select: 'all'
+            time_select: 'all',
+            comments: false,
         },
         selected_tab: 'online_https',
         timestamp: undefined,
