@@ -18,6 +18,13 @@ def add_slash(url: str) -> str:
         return url
 
 
+def add_slash_dict(dictionnary: dict) -> dict:
+    result = dict()
+    for ourl, ocomment in dictionnary.items():
+        result[add_slash(ourl)] = ocomment
+    return result
+
+
 async def get_searx_stats_result() -> SearxStatisticsResult:
     searx_stats_result = SearxStatisticsResult()
     searx_instances = load_searx_instances()
@@ -25,19 +32,18 @@ async def get_searx_stats_result() -> SearxStatisticsResult:
         url = add_slash(url)
         searx_stats_result.update_instance(url, {
             'comments': instance.comments,
-            'alternativeUrls': instance.additional_urls
+            'alternativeUrls': add_slash_dict(instance.additional_urls),
+            'main': True,
         })
         for aurl, comment in instance.additional_urls.items():
             aurl = add_slash(aurl)
-            aurls_for_aurl = dict()
-            for ourl, ocomment in instance.additional_urls.items():
-                if ourl != aurl:
-                    aurls_for_aurl[add_slash(ourl)] = ocomment
-            aurls_for_aurl[url] = ''
-
+            a_aurls = add_slash_dict(instance.additional_urls)
+            a_aurls[url] = ''
+            if aurl in a_aurls:
+                del a_aurls[aurl]
             searx_stats_result.update_instance(aurl, {
                 'comments': [comment],
-                'alternativeUrls': aurls_for_aurl,
+                'alternativeUrls': a_aurls
             })
 
     return searx_stats_result

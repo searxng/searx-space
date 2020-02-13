@@ -241,8 +241,8 @@ async def _find_similar_instances(searx_stats_result: SearxStatisticsResult):
                     detail['alternativeUrls'] = dict()
 
                 for url2 in urls:
-                    if url2 != url:
-                        detail['alternativeUrls'][url2] = 'sameIps'
+                    if url2 != url and url2 not in detail['alternativeUrls']:
+                        detail['alternativeUrls'][url2] = 'same IP'
 
 
 async def _check_connectivity(searx_stats_result: SearxStatisticsResult):
