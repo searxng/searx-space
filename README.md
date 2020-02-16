@@ -1,10 +1,6 @@
 # searx-stats2
 
-Statistics on [searx](https://asciimoo.github.io/searx/) instances
-
-## Example
-
-https://searx.space/instances/
+Statistics on the [searx](https://asciimoo.github.io/searx/) instances: https://searx.space/
 
 ## Installation
 
@@ -52,4 +48,9 @@ Run (it takes between 30 minutes and 1 hour):
 python3 -m searxstats --cache /usr/local/searx-stats2/cache --all
 ```
 
-Output in the ```html/data/instance.json``` directory.
+Output in ```html/data/instance.json```.
+
+To display all options:
+```sh
+python3 -m searxstats --help
+```
