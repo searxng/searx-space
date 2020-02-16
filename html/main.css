@@ -69,8 +69,8 @@ th input {
   border: 1px solid lightgray;
 }
 
-.container {
-  width: auto;
+.full-width {
+  width: auto !important;
 }
 
 .table-widthauto {
