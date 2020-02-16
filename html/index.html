@@ -103,7 +103,7 @@
           </ul>
         </div>
       </main>
-      <main role="main" class="container theme-showcase full-width" v-if="instances.length > 0 && ['online_https', 'online_tor', 'searxerrors'].indexOf(selected_tab) >= 0">
+      <main role="main" class="container theme-showcase full-width" v-if="instances.length > 0 && selected_tab != 'about'">
         <p style="float:right">
           <span >Show comments <input type="checkbox" v-model="display.comments"></span>
           <span>Displayed time:<a class="help" href="#help-timing">?</a>
