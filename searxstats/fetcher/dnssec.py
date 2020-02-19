@@ -98,4 +98,4 @@ def fetch_one(url: str) -> dict:
     return dnssec_result
 
 
-fetch = create_fetch(['network', 'dnssec'], fetch_one, only_valid=False, network_type=NetworkType.NORMAL)
+fetch = create_fetch(['network', 'dnssec'], fetch_one, valid_or_private=True, network_type=NetworkType.NORMAL)

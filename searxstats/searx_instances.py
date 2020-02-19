@@ -25,8 +25,11 @@ def copy_dict_slash(dictionnary: dict) -> dict:
     return result
 
 
-async def get_searx_stats_result() -> SearxStatisticsResult:
-    searx_stats_result = SearxStatisticsResult()
+async def get_searx_stats_result_from_repository() -> SearxStatisticsResult:
+    """
+    Fetch searx instances from https://github.com/dalf/searx-instances/
+    """
+    searx_stats_result = SearxStatisticsResult(private=False)
     searx_instances = load_searx_instances()
     for url, instance in searx_instances.items():
         url = add_slash(url)
@@ -49,8 +52,11 @@ async def get_searx_stats_result() -> SearxStatisticsResult:
     return searx_stats_result
 
 
-async def get_searx_stats_result_from_list(instance_urls: list) -> SearxStatisticsResult:
-    searx_stats_result = SearxStatisticsResult()
+async def get_searx_stats_result_from_list(instance_urls: list, private: bool) -> SearxStatisticsResult:
+    """
+    Fetch searx instances from instance_urls given parameter.
+    """
+    searx_stats_result = SearxStatisticsResult(private=private)
     for url in instance_urls:
         url = add_slash(url)
         searx_stats_result.update_instance(url, {

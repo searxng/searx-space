@@ -3,7 +3,7 @@ import asyncio
 
 from .common import initialize as initialize_common, finalize as finalize_common
 from .fetcher import fetch, initialize as initialize_fetcher, FETCHERS
-from .searx_instances import get_searx_stats_result, get_searx_stats_result_from_list
+from .searx_instances import get_searx_stats_result_from_repository, get_searx_stats_result_from_list
 
 
 async def initialize():
@@ -26,7 +26,7 @@ def initialize_logging():
         logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 
-async def run_once(output_file: str, instance_urls: list, selected_fetcher_names: list):
+async def run_once(output_file: str, private: bool, instance_urls: list, selected_fetcher_names: list):
     # select fetchers
     selected_fetchers = list(
         filter(lambda f: f.name in selected_fetcher_names, FETCHERS))
@@ -35,10 +35,12 @@ async def run_once(output_file: str, instance_urls: list, selected_fetcher_names
     await initialize_fetcher(selected_fetchers)
 
     # fetch instance list
-    if instance_urls is None or len(instance_urls) == 0:
-        searx_stats_result = await get_searx_stats_result()
+    if not private and (instance_urls is None or len(instance_urls) == 0):
+        searx_stats_result = await get_searx_stats_result_from_repository()
     else:
-        searx_stats_result = await get_searx_stats_result_from_list(instance_urls)
+        searx_stats_result = await get_searx_stats_result_from_list(instance_urls, private)
+
+    # output
     print('\n{0} instance(s)\n'.format(len(searx_stats_result.instances.keys())))
 
     # fetch

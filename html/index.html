@@ -271,9 +271,6 @@
                     <tr>
                       <th class="column-url">URL</th>
                       <th v-if="!display.comments" class="column-status">Status</th>
-                      <th v-if="!display.comments" class="column-certificate">Certificate</th>
-                      <th v-if="!display.comments" class="column-tls">Country</th>
-                      <th v-if="!display.comments" class="column-network">Network</th>
                       <th v-if="display.comments" class="column-comments">Comments</th>
                       <th v-if="display.comments" class="column-alternativeurls">Alternative URLs</th>
                     </tr>
@@ -282,9 +279,6 @@
                     <tr v-for="detail in instances_nosearx">
                       <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                       <td v-if="!display.comments" class="column-status"><http-status-component :value="detail.http.status_code"></http-status-component></td>
-                      <td v-if="!display.comments" class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
-                      <td v-if="!display.comments" class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
-                      <td v-if="!display.comments" class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
                       <td v-if="display.comments" class="column-comments">
                         <p v-for="comment in detail.comments">{{comment}}</p>
                       </td>
@@ -305,9 +299,6 @@
                       <tr>
                         <th class="column-url">URL</th>
                         <th v-if="!display.comments" class="column-status">Status</th>
-                        <th v-if="!display.comments" class="column-certificate">Certificate</th>
-                        <th v-if="!display.comments" class="column-tls">Country</th>
-                        <th v-if="!display.comments" class="column-network">Network</th>
                         <th v-if="!display.comments" class="column-error">Error</th>
                         <th v-if="display.comments" class="column-comments">Comments</th>
                         <th v-if="display.comments" class="column-alternativeurls">Alternative URLs</th>
@@ -317,9 +308,6 @@
                       <tr v-for="detail in instanceList">
                         <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                         <td v-if="!display.comments" class="column-status"><http-status-component :value="detail.http.status_code"></http-status-component></td>
-                        <td v-if="!display.comments" class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
-                        <td v-if="!display.comments" class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
-                        <td v-if="!display.comments" class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
                         <td v-if="!display.comments" class="column-error">{{detail.error}}</td>
                         <td v-if="display.comments" class="column-comments">
                           <p v-for="comment in detail.comments">{{comment}}</p>

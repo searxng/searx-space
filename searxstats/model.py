@@ -18,9 +18,9 @@ class AsnPrivacy(Enum):
 
 class SearxStatisticsResult:
 
-    __slots__ = 'metadata', 'instances', 'engines', 'categories', 'hashes', 'asns'
+    __slots__ = 'metadata', 'instances', 'engines', 'categories', 'hashes', 'asns', 'private'
 
-    def __init__(self):
+    def __init__(self, private=False):
         self.metadata = {
             'timestamp': calendar.timegm(datetime.datetime.now().utctimetuple()),
             'ips': {},
@@ -30,16 +30,20 @@ class SearxStatisticsResult:
         self.categories = []
         self.hashes = []
         self.asns = {}
+        self.private = private
 
     @staticmethod
     def _is_valid_instance(detail):
         return detail.get('version', None) is not None and 'error' not in detail
 
-    def iter_instances(self, only_valid=False, network_type=NetworkType):
+    def iter_instances(self, only_valid=False, valid_or_private=True, network_type=NetworkType):
         if isinstance(network_type, NetworkType):
             network_type = [network_type]
         for instance, detail in self.instances.items():
-            if only_valid and not self._is_valid_instance(detail):
+            is_valid = self._is_valid_instance(detail)
+            if only_valid and not is_valid:
+                continue
+            if valid_or_private and not self.private and not is_valid:
                 continue
             if get_network_type(instance) not in network_type:
                 continue
@@ -106,7 +110,8 @@ class Fetcher:
         return None
 
 
-def create_fetch(keys, fetch_one, only_valid=False, network_type=NetworkType, limit=1):
+# pylint: disable=too-many-arguments
+def create_fetch(keys, fetch_one, only_valid=False, valid_or_private=True, network_type=NetworkType, limit=1):
 
     async def fetch_and_set_async(url, detail, *args, **kwargs):
         result = await fetch_one(url, *args, **kwargs)
@@ -121,7 +126,9 @@ def create_fetch(keys, fetch_one, only_valid=False, network_type=NetworkType, li
             fetch_and_set = fetch_and_set_async
         else:
             fetch_and_set = fetch_and_set_function
-        instance_iterator = searx_stats_result.iter_instances(only_valid=only_valid, network_type=network_type)
+        instance_iterator = searx_stats_result.iter_instances(only_valid=only_valid,
+                                                              valid_or_private=valid_or_private,
+                                                              network_type=network_type)
         await for_each(instance_iterator, fetch_and_set,
                        limit=limit)
 

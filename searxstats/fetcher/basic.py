@@ -23,27 +23,29 @@ async def get_searx_version(response):
 
 
 @MemoizeToDisk(expire_time=3600)
-async def fetch_one(instance_url):
+async def fetch_one(instance_url: str, private: bool) -> dict:
     detail = dict()
     # no cookie ( cookies=DEFAULT_COOKIES,  )
+    network_type = get_network_type(instance_url)
+    detail = {
+        'network_type': network_type.name.lower(),
+        'http': {
+        },
+        'version': None,
+    }
     try:
-        network_type = get_network_type(instance_url)
         async with new_client(network_type=network_type) as session:
             response, error = await get(session, instance_url,
                                         headers=DEFAULT_HEADERS, timeout=10)
+            status_code = response.status_code if response is not None else None
+            detail['http'] = {
+                'status_code': status_code,
+                'error': error,
+            }
             if response is not None:
-                version = await get_searx_version(response)
-                detail = {
-                    'network_type': network_type.name.lower(),
-                    'http': {
-                        'status_code': response.status_code,
-                        'error': error
-                    },
-                    'version': version,
-                    'timing': {
-                        'initial': response.elapsed.total_seconds()
-                    },
-                }
+                detail['version'] = await get_searx_version(response)
+                detail['timing'] = {}
+                detail['timing']['initial'] = response.elapsed.total_seconds()
                 response_url = str(response.url)
                 # add trailing slash
                 if not response_url.endswith('/'):
@@ -54,40 +56,30 @@ async def fetch_one(instance_url):
                 if response_url != instance_url:
                     detail['alternativeUrls'][instance_url] = 'redirect from'
                     instance_url = response_url
-            else:
-                detail = {
-                    'network_type': network_type.name.lower(),
-                    'http': {
-                        'status_code': None,
-                        'error': error
-                    },
-                    'version': None,
-                    'timing': {
-                    },
-                }
     except concurrent.futures.TimeoutError:
         # This exception occurs on new_client()
-        detail['error'] = 'Timeout error'
+        error = 'Timeout error'
+
+    if (detail['version'] is not None or private) and network_type == NetworkType.NORMAL:
+        detail['tls'] = get_ssl_info(get_host(instance_url))
 
     if error is not None:
+        detail['http']['error'] = error
         detail['error'] = error
 
-    if network_type == NetworkType.NORMAL:
-        detail['tls'] = get_ssl_info(get_host(instance_url))
     return instance_url, detail
 
 
-async def fetch_one_display(url: str) -> dict:
+async def fetch_one_display(url: str, private: bool) -> dict:
     # basic checks
-    url, detail = await fetch_one(url)
+    url, detail = await fetch_one(url, private)
 
     # output
-    http_status_code = detail.get('http').get('status_code', '') or ''
+    error = detail['http']['error'] or ''
+    http_status_code = detail['http'].get('status_code', '') or ''
     searx_version = detail.get('version', '') or ''
     timing = detail.get('timing', {}).get('initial') or None
-    cert_orgname = (detail.get('tls') or {}).get(
-        'certificate', {}).get('organizationName', '')
-    error = detail.get('error', '')
+    cert_orgname = detail.get('tls', {}).get('certificate', {}).get('issuer', {}).get('organizationName', '')
     if error != '':
         icon = '❌'
     elif searx_version == '':
@@ -108,11 +100,11 @@ async def fetch(searx_stats_result: SearxStatisticsResult):
 
     async def fetch_and_set_async(url: str, detail, *_, **__):
         if 'version' not in detail:
-            r_url, r_detail = await fetch_one_display(url)
+            r_url, r_detail = await fetch_one_display(url, searx_stats_result.private)
             dict_merge(r_detail, detail)
             if r_url != url:
                 del searx_stats_result.instances[url]
             searx_stats_result.update_instance(r_url, r_detail)
 
-    instance_iterator = searx_stats_result.iter_instances(only_valid=False)
+    instance_iterator = searx_stats_result.iter_instances(only_valid=False, valid_or_private=False)
     await for_each(instance_iterator, fetch_and_set_async, limit=1)

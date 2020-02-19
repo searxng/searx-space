@@ -90,4 +90,4 @@ async def fetch_one(url: str) -> dict:
     return {'grade': grade, 'gradeUrl': grade_url}
 
 
-fetch = create_fetch(['http'], fetch_one, only_valid=True, network_type=NetworkType.NORMAL, limit=2)
+fetch = create_fetch(['http'], fetch_one, valid_or_private=True, network_type=NetworkType.NORMAL, limit=2)
