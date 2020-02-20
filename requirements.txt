@@ -7,4 +7,5 @@ ipwhois==1.1.0
 lxml==4.4.2
 selenium==3.141.0
 pyyaml==5.1.2
-GitPython==3.0.5
+GitPython==3.0.8
+
