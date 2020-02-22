@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="searx-stats2">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer">
+    <meta name="HandheldFriendly" content="True">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+    <title>Searx instances - {% block title %}{% endblock %}</title>
+    {{ link("assets/bootstrap.min.css") }}
+    {{ link("assets/bootstrap-theme.min.css") }}
+    {{ link("assets/main.css") }}
+    {%- block head %}
+    {% endblock -%}
+  </head>
+  <body>
+    <header>
+        <nav class="navbar navbar-inverse navbar-static-top">
+          <div class="container full-width">
+            <div class="navbar-header">
+              <a class="navbar-brand" href="#">Searx instances</a>
+            </div>
+            <ul class="nav navbar-nav" role="tablist">
+              <li {%if template=='index.html'%}class="active"{%endif%}><a href="index.html">Online HTTPS</a></li>
+              <li {%if template=='tor.html'%}class="active"{%endif%}><a href="tor.html">Online Tor</a></li>
+              <li {%if template=='offline.html'%}class="active"{%endif%}><a href="offline.html">Offline & error</a></li>
+            </ul>
+            <p class="navbar-text">|</p>
+            <ul class="nav navbar-nav" role="tablist">
+                <li {%if template=='engines.html'%}class="active"{%endif%}><a href="engines.html">Engines</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right" role="tablist">
+                <li {%if template=='about.html'%}class="active"{%endif%}><a href="about.html">About</a></li>
+            </ul>
+          </div>
+        </nav>        
+    </header>
+    {% block content %}
+    {% endblock %}
+  </body>
+</html>

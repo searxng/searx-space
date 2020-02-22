@@ -1,0 +1,55 @@
+{% extends "macros/base.html" %}
+{% from "macros/macros.html" import url_component, http_status_component, comments_component, alternativeurls_component %}
+{% block title %}Offline instances{% endblock %}
+{% block content %}
+<main role="main" class="container theme-showcase full-width">
+<h2>Searx not found</h2>
+<div class="table-responsive">
+  <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th class="column-url">URL</th>
+          <th class="column-status column-normal">Status</th>
+          <th class="column-comments column-alt">Comments</th>
+          <th class="column-alternativeurls column-alt">Alternative URLs</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for instance in instances -%}
+        <tr>
+          <td class="column-url column-normal">{{ url_component(detail.url, detail.alternativeUrls, detail.comments) }}</td>
+          <td class="column-status column-normal">{{ http_status_component(detail.http.status_code) }}</td>
+          <td class="column-comments column-alt">{{ comments_component(detail.comments)}}</td>
+          <td class="column-alternativeurls column-alt">{{ alternativeurls_component(detail.alternativeUrls)}}</td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+  </table>
+</div>
+<template v-for="instanceList, instanceError in instances_ko">
+  <h2>{{instanceError}}</h2>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th class="column-url">URL</th>
+            <th class="column-status column-normal">Status</th>
+            <th class="column-error column-normal">Error</th>
+            <th class="column-comments column-alt">Comments</th>
+            <th class="column-alternativeurls column-alt">Alternative URLs</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="detail in instanceList">
+            <td class="column-url column-normal">{{ url_component(detail.url, detail.alternativeUrls, detail.comments) }}</td>
+            <td class="column-status column-normal">{{ http_status_component(detail.http.status_code) }}</td>
+            <td class="column-error column-normal">{{ detail.error }}</td>
+            <td class="column-comments column-alt">{{ comments_component(detail.comments) }}</td>
+            <td class="column-alternativeurls column-alt">{{ alternativeurls_component(detail.alternativeUrls) }}</td>
+          </tr>
+        </tbody>
+    </table>
+  </div>
+</template>
+</main>
+{% endblock %}
