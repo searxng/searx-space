@@ -8,9 +8,6 @@ TOR_SOCKS_PROXY_PORT = 9050
 # Local cryptcheck-backend
 CRYPTCHECK_BACKEND = 'http://127.0.0.1:7000'
 
-# Request count to measure response time
-REQUEST_COUNT = 6
-
 # Fetcher.external_ressource: load page timeout, in seconds
 BROWSER_LOAD_TIMEOUT = 20
 

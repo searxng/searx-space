@@ -7,6 +7,7 @@ from searxstats.common.utils import dict_merge
 from searxstats.common.http import new_client, get, get_host, get_network_type, NetworkType
 from searxstats.common.ssl_info import get_ssl_info
 from searxstats.common.memoize import MemoizeToDisk
+from searxstats.common.response_time import ResponseTimeStats
 from searxstats.config import DEFAULT_HEADERS
 
 
@@ -45,7 +46,9 @@ async def fetch_one(instance_url: str, private: bool) -> dict:
             if response is not None:
                 detail['version'] = await get_searx_version(response)
                 detail['timing'] = {}
-                detail['timing']['initial'] = response.elapsed.total_seconds()
+                response_time_stats = ResponseTimeStats()
+                response_time_stats.add_response(response)
+                detail['timing']['initial'] = response_time_stats.get()
                 response_url = str(response.url)
                 # add trailing slash
                 if not response_url.endswith('/'):
@@ -78,7 +81,7 @@ async def fetch_one_display(url: str, private: bool) -> dict:
     error = detail['http']['error'] or ''
     http_status_code = detail['http'].get('status_code', '') or ''
     searx_version = detail.get('version', '') or ''
-    timing = detail.get('timing', {}).get('initial') or None
+    timing = detail.get('timing', {}).get('initial', {}).get('all', {}).get('value', None)
     cert_orgname = detail.get('tls', {}).get('certificate', {}).get('issuer', {}).get('organizationName', '')
     if error != '':
         icon = '❌'
