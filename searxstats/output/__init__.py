@@ -7,6 +7,9 @@ import base64
 import jinja2
 import brotli
 from ..model import SearxStatisticsResult
+from .context import get_context
+from .filters import set_environment
+
 
 
 def write_file(file_name, content):
@@ -22,9 +25,7 @@ def write_json(searx_stats_result: SearxStatisticsResult, output_file: str):
 
 
 def write_template(searx_stats_result: SearxStatisticsResult, output_file: str, template: jinja2.Template):
-    context = searx_stats_result.get_json()
-    context['template'] = template.name
-    print(context['template'])
+    context = get_context(searx_stats_result, template)
     result = template.render(context)
     write_file(output_file, result)
 
@@ -37,12 +38,18 @@ def write_templates(searx_stats_result: SearxStatisticsResult, static_urls: dict
         # return f'<link rel="{rel}" integrity="{integrity}" crossorigin="same-origin" href="{url}"/>'
         return f'<link rel="{rel}" href="{url}"/>'
 
+    def _script(href: str) -> str:
+        url = static_urls[href]["url"]
+        return f'<script src="{url}"></script>'
+
     output_directory = os.path.realpath(output_directory)
     current_directory = os.path.dirname(os.path.realpath(__file__))
     templates_directory = os.path.join(current_directory, 'templates')
 
     environment = jinja2.Environment(loader=jinja2.FileSystemLoader(templates_directory))
     environment.globals['link'] = _link
+    environment.globals['script'] = _script
+    set_environment(environment)
 
     for template_name in environment.list_templates():
         if not template_name.startswith('macros'):
@@ -88,11 +95,10 @@ def write_statics(output_directory: str):
 
                 to_file_name = os.path.realpath(os.path.join(output_directory, relative_file_name_sha))
                 os.makedirs(os.path.dirname(to_file_name), exist_ok=True)
-                print('copy ', from_file_name, to_file_name)
                 shutil.copy(from_file_name, to_file_name)
                 shutil.copystat(from_file_name, to_file_name)
             else:
-                print('Error')
+                print('Internal Error', static_directory, from_file_name)
     return static_urls
 
 

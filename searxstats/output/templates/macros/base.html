@@ -39,5 +39,8 @@
     </header>
     {% block content %}
     {% endblock %}
+    <div>{% include 'macros/tooltips.html' with context %}</div>
+    {{ script("assets/popper-base.min.js") }}
+    {{ script("assets/main.js") }}
   </body>
 </html>

@@ -1,0 +1,16 @@
+{% from 'macros/macros.html' import comments_component, alternativeurls_component %}
+
+{%- for instance in tooltip_list('url') -%}
+{%- if instance.comments or instance.alternativeurls %}
+<div id="tooltip_{{ instance.id }}_url" class="tooltip" role="tooltip">
+    <table>
+        {%- for comment in instance.comments -%}
+        <tr><td colspan="2">{{ comment }}</td></tr>
+        {%- endfor -%}
+        {%- for url, comment in instance.alternativeurls -%}
+        <tr><td>{{ url }}</td><td>{{ comment }}</td></tr>
+        {%- endfor -%}
+    </table>
+</div>
+{% endif -%}
+{%- endfor %}
