@@ -23,8 +23,8 @@ const COMMON_ERROR_MESSAGE = {
     'Tor Error: ': 'Tor Error'
 };
 
-const SORT_CRITERIAS = ['http.status_code', 'error', 'version', 'tls.grade',
-    'http.grade', 'html.grade', 'timing.initial', 'url'];
+const SORT_CRITERIAS = ['http.status_code', 'error', 'timing.search.error', 'version', 'tls.grade',
+    'http.grade', 'html.grade', 'timing.search.all', 'url'];
 
 const HTML_GRADE_MAPPING = {
     'V': 3,
@@ -166,17 +166,38 @@ function compareVersion(a, b) {
     return 0;
 }
 
+
+function getTime(timing) {
+    if (timing.value !== undefined) {
+        return timing.value;
+    }
+    if (timing.median !== undefined) {
+        return timing.median;
+    }
+    return undefined;
+}
+
+function isError(timing) {
+    if (timing.success_percentage > 0) {
+        return false;
+    }
+    return (timing.error !== undefined);
+}
+
 const CompareFunctionCriterias = {
     'http.status_code': (a, b) => -compareTool(a, b, null, 'http', 'status_code'),
     'error': (a, b) => -compareTool(a, b, null, 'error'),
+    'error_wp': (a, b) => compareTool(a, b, null, 'timing', 'search_wp', 'error'),
     'network.asn_privacy': (a, b) => compareTool(a, b, null, 'network', 'asn_privacy'),
     'version': (a, b) => compareVersion(a.version, b.version),
     'tls.grade': (a, b) => compareTool(a, b, normalizeGrade, 'tls', 'grade'),
     'html.grade': (a, b) => compareTool(a, b, normalizeHtmlGrade, 'html', 'grade'),
     'http.grade': (a, b) => compareTool(a, b, normalizeGrade, 'http', 'grade'),
-    'timing.initial': (a, b) => -compareTool(a, b, null, 'timing', 'initial'),
-    'timing.search_wp.server.median': (a, b) => -compareTool(a, b, null, 'timing', 'search_wp', 'server', 'median'),
-    'timing.search_wp.all.median': (a, b) => -compareTool(a, b, null, 'timing', 'search_wp', 'all', 'median'),
+    'timing.initial.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'initial', 'all'),
+    'timing.search.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search'),
+    'timing.search.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search', 'all'),
+    'timing.search_wp.server': (a, b) => -compareTool(a, b, getTime, 'timing', 'search_wp', 'server'),
+    'timing.search_wp.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search_wp', 'all'),
     'url': (a, b) => -compareTool(a, b, null, 'url'),
 };
 
@@ -215,8 +236,8 @@ function hslResponseTime(value, successRate) {
     if (value === 'N/A') {
         value = 2;
     }
-    const responseTimeInPercentage = translateValue(value, 0.1, 2, 0, 100, true);
-    const successRateNormalized = translateValue(successRate || 100, 40, 90, 0, 100, false);
+    const responseTimeInPercentage = translateValue(value, 0.6, 2.5, 0, 100, true);
+    const successRateNormalized = translateValue(successRate || 100, 70, 100, 0, 100, false);
     const percentageShown = (responseTimeInPercentage / 100) * (successRateNormalized / 100) * 100;
     const h = translateValue(percentageShown, 0, 100, 0, 128, false);
     const s = translateValue(percentageShown, 0, 100, 39, 54, true);
@@ -345,31 +366,36 @@ Vue.component('time-component', {
         if (this.value != null) {
             let successRate = 100;
             let value;
-            let tooltip_lines;
-            if (typeof (this.value) === 'object') {
-                const timing = this.value[this.time_select];
-                if (timing !== undefined) {
-                    value = this.value[this.time_select].median;
-                    if (value === undefined) {
-                        value = this.value[this.time_select].value;
-                    }
-                    successRate = this.value.success_percentage;
-                    tooltip_lines = [
-                        h('p', `${successRate}% success`),
-                    ];
-                    tooltip_add_timing(h, tooltip_lines, this.value.all, 'Total time');
-                    tooltip_add_timing(h, tooltip_lines, this.value.server, 'Server time');
-                    tooltip_add_timing(h, tooltip_lines, this.value.load, 'Load time');
-                    if (this.value.error !== undefined && this.value.error != 'Check failed') {
-                        tooltip_lines.push(h('p', `Error: ${this.value.error}`));
-                        if (value === undefined) {
-                            value = 'N/A';
-                        }
-                    }
+            let tooltip_lines = [];
+            const timing = this.value[this.time_select];
+            if (timing !== undefined) {
+                value = timing.median;
+                if (value === undefined) {
+                    value = timing.value;
                 }
-            } else if (this.time_select === 'all') {
-                value = this.value;
-                tooltip_lines = null;
+                successRate = this.value.success_percentage;
+                if (successRate !== undefined) {
+                    tooltip_lines.push(h('p', `${successRate}% success`));
+                }
+            }
+            if (this.value.error !== undefined ) {
+                tooltip_lines.push(h('p', `Error: ${this.value.error}`));
+                if (value === undefined) {
+                    value = 'Error';
+                }
+            }
+            if (timing !== undefined) {
+                tooltip_add_timing(h, tooltip_lines, this.value.all, 'Total time');
+                tooltip_add_timing(h, tooltip_lines, this.value.server, 'Server time');
+                tooltip_add_timing(h, tooltip_lines, this.value.load, 'Load time');
+            }
+            if (this.value.error === 'No result' && this.value.success_percentage === 0) {
+                return undefined;
+            }
+            if (value == 'Error') {
+                return createTooltip(h,
+                    h('span', value),
+                    tooltip_lines);
             }
             if (value !== undefined) {
                 return createTooltip(h,
@@ -760,6 +786,7 @@ new Vue({
             asn_privacy: false,
             network_name: '',
             network_country: '',
+            standard_search: false,
             google: false,
         },
         display: {
@@ -814,6 +841,9 @@ new Vue({
             if (this.filters.asn_privacy) {
                 result = result.filter((detail) => detail.network.asn_privacy >= 0);
             }
+            if (this.filters.standard_search) {
+                result = result.filter((detail) => detail.timing.search.success_percentage > 0);
+            }
             if (this.filters.google) {
                 result = result.filter((detail) => detail.timing.search_go.success_percentage > 0);
             }
@@ -846,15 +876,17 @@ new Vue({
                     setDefault(instance, 'tls', {});
                     setDefault(instance.tls, 'certificate', {});
                     setDefault(instance, 'timing', {});
-                    setDefault(instance.timing, 'index', {});
-                    setDefault(instance.timing.index, 'all', {});
+                    setDefault(instance.timing, 'initial', {});
+                    setDefault(instance.timing.initial, 'all', {});
+                    setDefault(instance.timing, 'search', {});
+                    setDefault(instance.timing.search, 'all', {});
                     setDefault(instance.timing, 'search_wp', {});
                     setDefault(instance.timing.search_wp, 'all', {});
                     setDefault(instance.timing, 'search_go', {});
                     setDefault(instance.timing.search_go, 'all', {});
                     setDefault(instance, 'html', {});
                     setDefault(instance.html, 'grade', '');
-                    setComputedTimes(instance.timing.index);
+                    setComputedTimes(instance.timing.search);
                     setComputedTimes(instance.timing.search_wp);
                     setComputedTimes(instance.timing.search_go);
 
