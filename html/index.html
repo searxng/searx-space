@@ -233,8 +233,8 @@
                       <th class="column-url">URL</th>
                       <th class="column-version">Version</th>
                       <th v-if="!display.comments" class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
+                      <th v-if="!display.comments" class="column-responsetime">Search response time</th>
                       <th v-if="!display.comments" class="column-responsetime">Initial response time</th>
-                      <th v-if="!display.comments" class="column-responsetime">Index response time</th>
                       <th v-if="!display.comments" class="column-responsetime">Wikipedia response time</th>
                       <th v-if="!display.comments" class="column-responsetime">Google response time</th>
                       <th v-if="display.comments" class="column-comments">Comments</th>
@@ -246,8 +246,8 @@
                       <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
                       <td class="column-version">{{detail.version}}</td>
                       <td v-if="!display.comments" class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
+                      <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search" :time_select="$root.display.time_select"></time-component></td>
                       <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
-                      <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.index" :time_select="$root.display.time_select"></time-component></td>
                       <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
                       <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
                       <td v-if="display.comments" class="column-comments">

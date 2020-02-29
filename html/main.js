@@ -24,7 +24,7 @@ const COMMON_ERROR_MESSAGE = {
 };
 
 const SORT_CRITERIAS = ['http.status_code', 'error', 'timing.search.error', 'version', 'tls.grade',
-   'http.grade', 'html.grade', 'timing.search.all', 'url'];
+    'http.grade', 'html.grade', 'timing.search.all', 'url'];
 
 const HTML_GRADE_MAPPING = {
     'V': 3,
@@ -236,8 +236,8 @@ function hslResponseTime(value, successRate) {
     if (value === 'N/A') {
         value = 2;
     }
-    const responseTimeInPercentage = translateValue(value, 0.1, 2, 0, 100, true);
-    const successRateNormalized = translateValue(successRate || 100, 40, 90, 0, 100, false);
+    const responseTimeInPercentage = translateValue(value, 0.6, 2.5, 0, 100, true);
+    const successRateNormalized = translateValue(successRate || 100, 70, 100, 0, 100, false);
     const percentageShown = (responseTimeInPercentage / 100) * (successRateNormalized / 100) * 100;
     const h = translateValue(percentageShown, 0, 100, 0, 128, false);
     const s = translateValue(percentageShown, 0, 100, 39, 54, true);

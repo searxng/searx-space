@@ -77,18 +77,22 @@ class ResponseTimeStats:
         self.server_timings = []
         self.load_timings = []
         self.count = 0
+        self.error_msg = None
 
     def add_response(self, response):
         self.count += 1
-        if response is not None:
-            self.all_timings.append(response.elapsed.total_seconds())
-            server_timing_values = parse_server_timings(response.headers.get('server-timing', ''))
-            server_time = server_timing_values.get('total', {}).get('dur', None)
-            if server_time is not None:
-                self.server_timings.append(server_time)
-            load_time = get_load_time(server_timing_values)
-            if load_time is not None:
-                self.load_timings.append(load_time)
+        self.all_timings.append(response.elapsed.total_seconds())
+        server_timing_values = parse_server_timings(response.headers.get('server-timing', ''))
+        server_time = server_timing_values.get('total', {}).get('dur', None)
+        if server_time is not None:
+            self.server_timings.append(server_time)
+        load_time = get_load_time(server_timing_values)
+        if load_time is not None:
+            self.load_timings.append(load_time)
+
+    def add_error(self, error_msg):
+        self.count += 1
+        self.error_msg = error_msg
 
     def get(self):
         if self.count == 0:
@@ -100,4 +104,6 @@ class ResponseTimeStats:
             set_timings_stats(result, 'all', self.all_timings)
             set_timings_stats(result, 'server', self.server_timings)
             set_timings_stats(result, 'load', self.load_timings)
+            if self.error_msg is not None:
+                result['error'] = self.error_msg
         return result

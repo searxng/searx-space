@@ -45,7 +45,7 @@ FETCHERS = [
             'other'),
     Fetcher(timing,
             'timing',
-            'Test the response time 🔎🐘🔍🏁❌',
+            'Test the response time 🐘🔎🔍🏁❌',
             'timing'),
 ]
 

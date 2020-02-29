@@ -2,7 +2,6 @@ import sys
 import traceback
 import asyncio
 import random
-import httpx
 
 from lxml import etree
 from searxstats.common.utils import exception_to_str
@@ -32,7 +31,7 @@ async def check_html_result_page(engine_name, response):
         for engine_element in ENGINE_XPATH(result_element):
             if extract_text(engine_element).find(engine_name) >= 0:
                 continue
-            return False, 'A result is not from the engine'
+            return False, f'A result is not from the {engine_name}'
     return True, None
 
 
@@ -62,51 +61,35 @@ async def check_search_result(response):
     return True, None
 
 
+async def check_results_always_valid(_):
+    return True, None
+
+
 # pylint: disable=too-many-arguments, too-many-locals
-async def request_stat(session, url, count, between_a, and_b, check_results, **kwargs):
-    headers = kwargs.get('headers', dict())
-    headers.update(DEFAULT_HEADERS)
-    kwargs['headers'] = headers
-
-    cookies = kwargs.get('cookies', dict())
-    cookies.update(DEFAULT_COOKIES)
-    kwargs['cookies'] = cookies
-
-    error_msg = None
+async def request_stat(client, url, count, between_a, and_b, check_results, **kwargs):
     error_count = 0
-
     response_time_stats = ResponseTimeStats()
-
-    for i in range(1, count+1):
+    check_results = check_results or check_results_always_valid
+    # loop
+    for _ in range(0, count):
         await asyncio.sleep(random.randint(a=between_a, b=and_b))
-        response, error_msg = await get(session, url, **kwargs)
-        if i == 0 and error_msg is not None and error_msg.startswith('HTTP status code 5'):
-            # cookie settings may cause a server error: disable them and try again
-            # check only on the first request
-            del kwargs['cookies']
-            response, error_msg = await get(session, url, **kwargs)
+        response, error_msg = await get(client, url, **kwargs)
+
+        # check error_msg
         if error_msg is not None:
-            response_time_stats.add_response(None)
-            break
-        await response.aread()
-        # check response
-        if not check_results:
-            valid_response = True
+            response_time_stats.add_error(error_msg)
         else:
+            await response.aread()
+            # check response
             valid_response, error_msg = await check_results(response)
-        #
-        if valid_response:
-            response_time_stats.add_response(response)
-        else:
-            response_time_stats.add_response(None)
-            error_count += 1
-            if error_count > 3:
-                break
-    result = {}
-    result.update(response_time_stats.get())
-    if error_msg is not None:
-        result['error'] = error_msg
-    return result
+            if valid_response:
+                response_time_stats.add_response(response)
+            else:
+                response_time_stats.add_error(error_msg)
+                error_count += 1
+                if error_count > 3:
+                    break
+    return response_time_stats.get()
 
 
 async def request_stat_with_log(instance, obj, key, *args, **kwargs):
@@ -116,32 +99,65 @@ async def request_stat_with_log(instance, obj, key, *args, **kwargs):
         print(f'❌ {str(instance)}: {key}: {result["error"]}')
 
 
-@MemoizeToDisk()
+async def get_cookie_settings(client, url):
+    # an user request without outgoing request:
+    # currency will never match "ip".
+    kwargs = {
+        'params': {'q': '!currency ip'},
+        'headers': DEFAULT_HEADERS,
+        'cookies': DEFAULT_COOKIES,
+    }
+
+    _, error_msg = await get(client, url, **kwargs)
+    if error_msg is not None and error_msg.startswith('HTTP status code 5'):
+        # cookie settings may cause a server error: disable them and try again
+        del kwargs['cookies']
+        _, error_msg = await get(client, url, **kwargs)
+        if error_msg is None:
+            # no more error: cookies are (most probably) the cause.
+            return None
+        else:
+            # there is still an error
+            # disable cookie
+            return None
+    return DEFAULT_COOKIES
+
+
+@MemoizeToDisk(expire_time=3600*3)
 async def fetch_one(instance: str) -> dict:
     timings = {}
     try:
-        user_pool_limits = httpx.PoolLimits(soft_limit=10, hard_limit=300)
         network_type = get_network_type(instance)
-        timeout = 5 if network_type == NetworkType.NORMAL else 20
-        async with new_client(pool_limits=user_pool_limits, timeout=timeout, network_type=network_type) as session:
-            # check index with a new connection each time
-            print('🔎 ' + instance)
-            await request_stat_with_log(instance, timings, 'search',
-                                        session, instance,
-                                        3, 30, 60, check_search_result,
-                                        params={'q': 'time'})
-            # check wikipedia engine with a new connection each time
-            print('🐘 ' + instance)
-            await request_stat_with_log(instance, timings, 'search_wp',
-                                        session, instance,
-                                        3, 30, 60, check_wikipedia_result,
-                                        params={'q': '!wp time'})
-            # check google engine with a new connection each time
+        timeout = 15 if network_type == NetworkType.NORMAL else 30
+        async with new_client(timeout=timeout, network_type=network_type) as client:
+            # check if cookie settings is supported
+            # intended side effect: add one HTTP connection to the pool
+            cookies = await get_cookie_settings(client, instance)
+
+            # check the google engine
             print('🔍 ' + instance)
             await request_stat_with_log(instance, timings, 'search_go',
-                                        session, instance,
-                                        2, 60, 80, check_google_result,
-                                        params={'q': '!google time'})
+                                        client, instance,
+                                        2, 60, 160, check_google_result,
+                                        params={'q': '!google time'},
+                                        cookies=cookies, headers=DEFAULT_HEADERS)
+
+            # check the wikipedia engine
+            print('🐘 ' + instance)
+            await request_stat_with_log(instance, timings, 'search_wp',
+                                        client, instance,
+                                        2, 60, 160, check_wikipedia_result,
+                                        params={'q': '!wp time'},
+                                        cookies=cookies, headers=DEFAULT_HEADERS)
+
+            # check the default engines
+            # may include google results too, so wikipedia engine check before
+            print('🔎 ' + instance)
+            await request_stat_with_log(instance, timings, 'search',
+                                        client, instance,
+                                        3, 120, 160, check_search_result,
+                                        params={'q': 'time'},
+                                        cookies=cookies, headers=DEFAULT_HEADERS)
     except Exception as ex:
         print('❌❌ {0}: unexpected {1} {2}'.format(str(instance), type(ex), str(ex)))
         timings['error'] = exception_to_str(ex)
@@ -152,4 +168,4 @@ async def fetch_one(instance: str) -> dict:
 
 
 # pylint: disable=invalid-name
-fetch = create_fetch(['timing'], fetch_one, only_valid=True, limit=70)
+fetch = create_fetch(['timing'], fetch_one, only_valid=True, limit=150)
