@@ -1,3 +1,7 @@
+.page-footer {
+  margin-top: 2em;
+}
+
 .table-responsive {
   max-width: min-content;
   max-width: fit-content;
