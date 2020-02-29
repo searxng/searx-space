@@ -377,15 +377,17 @@ Vue.component('time-component', {
                 if (successRate !== undefined) {
                     tooltip_lines.push(h('p', `${successRate}% success`));
                 }
-                tooltip_add_timing(h, tooltip_lines, this.value.all, 'Total time');
-                tooltip_add_timing(h, tooltip_lines, this.value.server, 'Server time');
-                tooltip_add_timing(h, tooltip_lines, this.value.load, 'Load time');
             }
             if (this.value.error !== undefined ) {
                 tooltip_lines.push(h('p', `Error: ${this.value.error}`));
                 if (value === undefined) {
                     value = 'Error';
                 }
+            }
+            if (timing !== undefined) {
+                tooltip_add_timing(h, tooltip_lines, this.value.all, 'Total time');
+                tooltip_add_timing(h, tooltip_lines, this.value.server, 'Server time');
+                tooltip_add_timing(h, tooltip_lines, this.value.load, 'Load time');
             }
             if (this.value.error === 'No result' && this.value.success_percentage === 0) {
                 return undefined;
@@ -784,6 +786,7 @@ new Vue({
             asn_privacy: false,
             network_name: '',
             network_country: '',
+            standard_search: false,
             google: false,
         },
         display: {
@@ -837,6 +840,9 @@ new Vue({
             }
             if (this.filters.asn_privacy) {
                 result = result.filter((detail) => detail.network.asn_privacy >= 0);
+            }
+            if (this.filters.standard_search) {
+                result = result.filter((detail) => detail.timing.search.success_percentage > 0);
             }
             if (this.filters.google) {
                 result = result.filter((detail) => detail.timing.search_go.success_percentage > 0);

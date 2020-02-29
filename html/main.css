@@ -30,6 +30,11 @@
   z-index: 1000000;
 }
 
+/* hack */
+.column-filter .info-tooltip {
+  margin: 2em 0 0 2em;
+}
+
 .info-tooltip p {
   margin: 0.125rem;
 }
@@ -58,7 +63,6 @@ a:hover + .info-tooltip,
 span:hover + .info-tooltip,
 .info-tooltip:hover {
   display: block;
-  /* opacity: 1; */
 }
 
 sup {
@@ -109,13 +113,18 @@ tbody .column-url, tbody .column-certificate {
 
 tbody .column-url:hover, tbody .column-certificate:hover {
   position: absolute;
-  background: white;
+  background: inherit;
   border: none;
   width: auto;
   overflow: visible;
   text-overflow: inherit;
   word-break: keep-all;
   white-space: nowrap;
+}
+
+main thead th {
+  padding: 2px;
+  vertical-align: middle !important;
 }
 
 .column-status {
@@ -151,6 +160,13 @@ tbody .column-url:hover, tbody .column-certificate:hover {
   width: 9rem;
   text-align: right;
 }
+
+.column-filter {
+  display: flex;
+  flex-direction: row;
+  align-content: center;
+}
+
 
 div.table-responsive table th.column-responsetime {
   white-space: normal;

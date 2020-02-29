@@ -134,12 +134,12 @@ async def fetch_one(instance: str) -> dict:
             # intended side effect: add one HTTP connection to the pool
             cookies = await get_cookie_settings(client, instance)
 
-            # check the google engine
-            print('🔍 ' + instance)
-            await request_stat_with_log(instance, timings, 'search_go',
+            # check the default engines
+            print('🔎 ' + instance)
+            await request_stat_with_log(instance, timings, 'search',
                                         client, instance,
-                                        2, 60, 160, check_google_result,
-                                        params={'q': '!google time'},
+                                        3, 120, 160, check_search_result,
+                                        params={'q': 'time'},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
 
             # check the wikipedia engine
@@ -150,13 +150,13 @@ async def fetch_one(instance: str) -> dict:
                                         params={'q': '!wp time'},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
 
-            # check the default engines
+            # check the google engine
             # may include google results too, so wikipedia engine check before
-            print('🔎 ' + instance)
-            await request_stat_with_log(instance, timings, 'search',
+            print('🔍 ' + instance)
+            await request_stat_with_log(instance, timings, 'search_go',
                                         client, instance,
-                                        3, 120, 160, check_search_result,
-                                        params={'q': 'time'},
+                                        2, 60, 160, check_google_result,
+                                        params={'q': '!google time'},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
     except Exception as ex:
         print('❌❌ {0}: unexpected {1} {2}'.format(str(instance), type(ex), str(ex)))
