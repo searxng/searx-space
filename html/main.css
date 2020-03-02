@@ -277,3 +277,19 @@ tbody .column-responsetime {
   width: 100%;
   z-index: -1;
 }
+
+.global_filters {
+  margin: 0 0 1em 0;
+}
+
+@media only screen and (max-width: 405px) {
+  .global_filters {
+    margin: 0 0 4em 0;
+  }
+}
+
+.global_filters span {
+  padding-right: 1em;
+  white-space: nowrap;
+  float: right;
+}
