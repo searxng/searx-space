@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="assets/bootstrap.min.css">
     <link rel="stylesheet" href="assets/bootstrap-theme.min.css">
     <link rel="stylesheet" href="main.css">
+    <link rel="preload" href="/data/instances.json" as="fetch" crossorigin="anonymous">
 
     <title>Searx instances</title>
     <meta name="description" content="Online and offline Searx instances">
@@ -127,9 +128,9 @@
         </div>
       </main>
       <main role="main" class="container theme-showcase full-width" v-if="instances.length > 0 && selected_tab != 'about'">
-        <p style="float:right">
+        <p class="global_filters">
           <span >Show comments <input type="checkbox" v-model="display.comments"></span>
-          <span>Displayed time:<a class="help" href="#help-timing">?</a>
+          <span>Displayed time:<a class="help" href="#help-timing">?</a>&nbsp;
             <select name="time-select" id="time-select" v-model="display.time_select">
               <option value="all">Total</option>
               <option value="server">Server</option>
