@@ -660,18 +660,18 @@ Vue.component('ipv6-component', {
 });
 
 Vue.component('network-country-component', {
-    props: ['value', 'asns'],
+    props: ['value', 'cidrs'],
     render: function (h) {
         if ((this.value.ips != null) && Object.keys(this.value.ips).length > 0) {
             // element body
             const countries = Object.keys(this.value.ips).map((ip) => {
                 const ipinfo = this.value.ips[ip];
-                if (ipinfo !== undefined && ipinfo.asn != null) {
-                    const ip_asn = this.asns[ipinfo.asn];
-                    if (ip_asn !== undefined) {
-                        let fieldValue = ip_asn.network_country;
+                if (ipinfo !== undefined && ipinfo.asn_cidr != null) {
+                    const asn_cidr = this.cidrs[ipinfo.asn_cidr];
+                    if (asn_cidr !== undefined) {
+                        let fieldValue = asn_cidr.network_country;
                         if (fieldValue === null) {
-                            fieldValue = ip_asn.asn_country_code;
+                            fieldValue = asn_cidr.asn_country_code;
                         }
                         return fieldValue;
                     }
@@ -686,20 +686,16 @@ Vue.component('network-country-component', {
 });
 
 Vue.component('network-name-component', {
-    props: ['value', 'asns'],
+    props: ['value', 'cidrs'],
     render: function (h) {
         if ((this.value.ips != null) && Object.keys(this.value.ips).length > 0) {
             // element body
             const networks = Object.keys(this.value.ips).map((ip) => {
                 const ipinfo = this.value.ips[ip];
-                if (ipinfo !== undefined && ipinfo.asn != null) {
-                    const ip_asn = this.asns[ipinfo.asn];
-                    if (ip_asn !== undefined) {
-                        let fieldValue = ip_asn.asn_description;
-                        if (fieldValue === null) {
-                            fieldValue = ip_asn.network_name;
-                        }
-                        return fieldValue;
+                if (ipinfo !== undefined && ipinfo.asn_cidr != null) {
+                    const asn_cidr = this.cidrs[ipinfo.asn_cidr];
+                    if (asn_cidr !== undefined) {
+                        return asn_cidr.asn_description;
                     }
                 }
                 return null;
@@ -816,9 +812,9 @@ new Vue({
             result = applyStrFilter(result, this.filters.network_name,
                 (f, detail) => {
                     for (const ipInfo of Object.values(detail.network.ips)) {
-                        if (ipInfo.asn) {
-                            const asn_info = this.asns[ipInfo.asn];
-                            const network = asn_info.network_name || asn_info.asn_description || '';
+                        if (ipInfo.asn_cidr) {
+                            const asn_cidr = this.cidrs[ipInfo.asn_cidr];
+                            const network = asn_cidr.network_name || asn_cidr.asn_description || '';
                             return network.toLowerCase().indexOf(f) >= 0;
                         }
                     }
@@ -827,9 +823,9 @@ new Vue({
             result = applyStrFilter(result, this.filters.network_country,
                 (f, detail) => {
                     for (const ipInfo of Object.values(detail.network.ips)) {
-                        if (ipInfo.asn) {
-                            const asn_info = this.asns[ipInfo.asn]
-                            const country = asn_info.network_country || asn_info.network_country || '';
+                        if (ipInfo.asn_cidr) {
+                            const asn_cidr = this.cidrs[ipInfo.asn_cidr]
+                            const country = asn_cidr.network_country || asn_cidr.asn_country_code || '';
                             return country.toLowerCase().indexOf(f) >= 0;
                         }
                     }
@@ -921,7 +917,7 @@ new Vue({
                 this.hashes = json.hashes;
                 this.engines = json.engines;
                 this.categories = json.categories;
-                this.asns = json.asns;
+                this.cidrs = json.cidrs;
                 this.selected_category = this.categories[0];
             });
         });

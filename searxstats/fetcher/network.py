@@ -124,12 +124,11 @@ def get_whois(address: str):
     else:
         result = {
             'asn': rdap_answer.get('asn', ''),
+            'asn_cidr': rdap_answer.get('asn_cidr', ''),
             'asn_description': rdap_answer.get('asn_description', ''),
             'asn_country_code': safe_upper(rdap_answer.get('asn_country_code')),
-            'asn_registry': rdap_answer.get('asn_registry', ''),
             'network_name': rdap_answer.get('network', {}).get('name', ''),
             'network_country': safe_upper(rdap_answer.get('network', {}).get('country', '')),
-            'network_type': rdap_answer.get('network', {}).get('type', ''),
         }
         asn_privacy = ASN_PRIVACY.get(result['asn'], AsnPrivacy.UNKNOWN)
         if asn_privacy is not None:
@@ -157,10 +156,21 @@ def get_address_info(searx_stats_result: SearxStatisticsResult, address: str, fi
     }
 
     if whois_info is not None:
-        asn = whois_info['asn']
-        del whois_info['asn']
-        result['asn'] = asn
-        searx_stats_result.asns[asn] = whois_info
+        # asn_cidr
+        asn_cidr = whois_info['asn_cidr']
+        del whois_info['asn_cidr']
+
+        # fall back
+        if whois_info['asn_description'] is None:
+            whois_info['asn_description'] = whois_info['network_name']
+        del whois_info['network_name']
+
+        result['asn_cidr'] = asn_cidr
+        if asn_cidr not in searx_stats_result.cidrs:
+            searx_stats_result.cidrs[asn_cidr] = whois_info
+        else:
+            if whois_info != searx_stats_result.cidrs[asn_cidr]:
+                print('different asn info\n', whois_info, '\n', searx_stats_result.cidrs[asn_cidr])
 
     if reverse_dns_error is not None:
         result['reverse_error'] = reverse_dns_error
@@ -200,9 +210,9 @@ def get_network_info(searx_stats_result: SearxStatisticsResult, host: str):
                 if field_type == 'AAAA' and result['ips'][address]['https_port']:
                     # ipv6 support if at least one IPv6 address has the port 443 opened.
                     result['ipv6'] = True
-                asn = result['ips'][address].get('asn')
-                if asn is not None:
-                    asn_privacy = searx_stats_result.asns.get(asn, {}).get('asn_privacy', AsnPrivacy.GOOD.value)
+                asn_cidr = result['ips'][address].get('asn_cidr')
+                if asn_cidr is not None:
+                    asn_privacy = searx_stats_result.cidrs.get(asn_cidr, {}).get('asn_privacy', AsnPrivacy.GOOD.value)
                     result['asn_privacy'] = min(asn_privacy, result['asn_privacy'])
     return result
 
@@ -248,7 +258,7 @@ async def _find_similar_instances(searx_stats_result: SearxStatisticsResult):
 async def _check_connectivity(searx_stats_result: SearxStatisticsResult):
     async def get_ip(url):
         async with new_client() as session:
-            response, error = await get(session, url)
+            response, error = await get(session, url, timeout=10.0)
         if error is None:
             return response.text, None
         else:

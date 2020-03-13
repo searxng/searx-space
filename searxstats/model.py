@@ -18,7 +18,7 @@ class AsnPrivacy(Enum):
 
 class SearxStatisticsResult:
 
-    __slots__ = 'metadata', 'instances', 'engines', 'categories', 'hashes', 'asns', 'private'
+    __slots__ = 'metadata', 'instances', 'engines', 'categories', 'hashes', 'cidrs', 'private'
 
     def __init__(self, private=False):
         self.metadata = {
@@ -29,7 +29,7 @@ class SearxStatisticsResult:
         self.engines = {}
         self.categories = []
         self.hashes = []
-        self.asns = {}
+        self.cidrs = {}
         self.private = private
 
     @staticmethod
@@ -68,7 +68,7 @@ class SearxStatisticsResult:
             'engines': self.engines,
             'categories': self.categories,
             'hashes': self.hashes,
-            'asns': self.asns,
+            'cidrs': self.cidrs,
         }
         with open(output_file_name, "w") as output_file:
             json.dump(searx_json, output_file, indent=4, ensure_ascii=False)

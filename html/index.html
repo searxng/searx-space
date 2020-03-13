@@ -183,8 +183,8 @@
                     <td v-if="!display.comments" class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
                     <td v-if="!display.comments" class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
                     <td v-if="!display.comments" class="column-ipv6"><ipv6-component :value="detail.network"></ipv6-component></td>
-                    <td v-if="!display.comments" class="column-country"><network-country-component :value="detail.network" :asns="$root.asns"></network-country-component></td>
-                    <td v-if="!display.comments" class="column-network"><network-name-component :value="detail.network" :asns="$root.asns"></network-name-component></td>
+                    <td v-if="!display.comments" class="column-country"><network-country-component :value="detail.network" :cidrs="$root.cidrs"></network-country-component></td>
+                    <td v-if="!display.comments" class="column-network"><network-name-component :value="detail.network" :cidrs="$root.cidrs"></network-name-component></td>
                     <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search" :time_select="$root.display.time_select"></time-component></td>
                     <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
                     <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
