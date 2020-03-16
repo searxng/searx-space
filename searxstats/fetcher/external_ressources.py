@@ -31,10 +31,12 @@ with open(os.path.dirname(os.path.realpath(__file__))
 
 def new_driver(network_type=NetworkType.NORMAL):
     firefox_profile = webdriver.FirefoxProfile()
+    firefox_profile.set_preference('javascript.options.showInConsole', True)
     firefox_profile.set_preference('browser.preferences.instantApply', True)
     firefox_profile.set_preference('browser.helperApps.alwaysAsk.force', False)
     firefox_profile.set_preference('browser.download.manager.showWhenStarting', False)
     firefox_profile.set_preference('browser.download.folderList', 0)
+    firefox_profile.accept_untrusted_certs = False
     if network_type == NetworkType.NORMAL:
         pass
     elif network_type == NetworkType.TOR:
@@ -48,7 +50,8 @@ def new_driver(network_type=NetworkType.NORMAL):
 
     driver = webdriver.Firefox(options=options,
                                firefox_profile=firefox_profile,
-                               service_log_path=get_geckodriver_file_name())
+                               service_log_path=get_geckodriver_file_name(),
+                               service_args=['--log', 'info'])
     driver.set_page_load_timeout(BROWSER_LOAD_TIMEOUT)
     return driver
 
