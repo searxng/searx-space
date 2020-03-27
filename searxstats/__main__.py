@@ -1,3 +1,4 @@
+import os
 import argparse
 import asyncio
 
@@ -50,11 +51,12 @@ def run(server_mode: bool, output_directory: str, user_cache_directory: str,
 
 
 def main():
+    output_directory = os.path.join(os.getcwd(), 'output')
     parser = argparse.ArgumentParser(description='Check searx instances.')
     parser.add_argument('--output', '-o',
                         type=str, nargs='?', dest='output_directory',
                         help='Output directory',
-                        default='output')
+                        default=output_directory)
     parser.add_argument('--private',
                         action='store_true', dest='private',
                         help='In private execution mode, fetch data even if the website is not a searx instance',
