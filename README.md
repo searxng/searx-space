@@ -4,16 +4,6 @@ Statistics on the [searx](https://asciimoo.github.io/searx/) instances: https://
 
 ## Installation
 
-### Download and run cryptcheck-backend
-
-searx-stats2 expects [cryptcheck-backend](https://github.com/dalf/cryptcheck-backend) to respond on localhost:7000:
-
-```sh
-docker run --rm -p 7000:7000 dalf/cryptcheck-backend:latest
-```
-
-Note: cryptcheck-backend is used to get the TLS grade.
-
 ### Install system packages
 
 Install packages:

@@ -8,7 +8,6 @@ from . import basic
 from . import external_ressources
 from . import network
 from . import selfreport
-from . import cryptcheck_backend
 from . import mozillaobs
 from . import timing
 
@@ -34,10 +33,6 @@ FETCHERS = [
     Fetcher(selfreport,
             'self-report',
             'Fetch the /status and /config URLs 💡',
-            'other'),
-    Fetcher(cryptcheck_backend,
-            'https-grade',
-            'Check the HTTPS / TLS grade 🔒',
             'other'),
     Fetcher(mozillaobs,
             'csp-grade',
