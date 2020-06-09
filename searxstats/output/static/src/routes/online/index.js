@@ -1,9 +1,9 @@
-import { Fragment, Component, h } from 'preact';
-import style from './style';
-import linkState from 'linkstate';
-import UrlComponent from '../../components/instance-url';
 import { usePrerenderData } from '@preact/prerender-data-provider';
+import linkState from 'linkstate';
+import { Component, Fragment } from 'preact';
+import UrlComponent from '../../components/instance-url';
 import { compareFunctionCompose, SORT_CRITERIAS } from '../../sort';
+import style from './style';
 
 
 function applyStrFilter(r, filterValue, f) {
@@ -35,8 +35,47 @@ const debounce = (cb, wait) => {
 	  timeout = setTimeout(callback, wait);
 	}
   }
-  
 
+
+const TlsComponent = (props) => {
+	return <div>{ props.value.grade }</div>
+};
+
+const CspComponent = (props) => {
+	return <div>{ props.value.grade }</div>
+};
+
+const HtmlComponent = (props) => {
+	return <span>{ props.value.grade }</span>
+};
+
+const CertificateComponent = (props) => {
+	if (props) {
+		const certificate = props.value.certificate, url = props.url;
+		if (certificate.issuer != null) {
+			const { hostname } = new URL(url);
+			return <a href={ `https://crt.sh/?q=${hostname}` }>
+					{ certificate.issuer.organizationName || certificate.issuer.commonName } ( { certificate.issuer.countryName } )
+				</a>
+		}	
+	}
+};
+
+const Ipv6Component = () => (
+	<div>A</div>
+);
+
+const NetworkCountryComponent = () => (
+	<div>A</div>
+);
+
+const NetworkNameComponent = () => (
+	<div>A</div>
+);
+
+const TimeComponent = () => (
+	<div>A</div>
+);
 
 export default class Online extends Component {
 
@@ -139,7 +178,7 @@ export default class Online extends Component {
 			<th class="column-country"><input value={state.networkCountry} onInput={linkState(this, 'networkCountry')} /></th>
 			<th class="column-network">
 				<input value={state.networkName} onInput={linkState(this, 'networkName')} style="width: 90%" />
-				<span><input value={state.asnPrivacy} onInput={linkState(this, 'asnPrivacy')}  style="margin: 0 0.25em;vertical-align: middle; width:auto;" /></span>
+				<span><input value={state.asnPrivacy} onInput={linkState(this, 'asnPrivacy')}  style="margin: 0 0.25em;vertical-align: middle; width:auto;" type="checkbox" /></span>
 			</th>
 			<th class="column-responsetime"><input value={state.query} onInput={linkState(this, 'query')} type="checkbox" /></th>
 			<th class="column-responsetime"><input value={state.query_google} onInput={linkState(this, 'query_google')} type="checkbox" /></th>
@@ -148,8 +187,7 @@ export default class Online extends Component {
 		</Fragment>;
 	}
 
-	/*
-	renderInstance(instance, state) {
+	renderInstance(instance, state, data) {
 		if (state.comments) {
 			return <Fragment>
 				<td class="column-comments">
@@ -161,25 +199,24 @@ export default class Online extends Component {
 			</Fragment>;
 		}
 		return <Fragment>
-                    <td class="column-tls"><tls-component value={instance.tls} /></td>
-                    <td class="column-csp"><csp-component value={instance.http} /></td>
-                    <td class="column-html"><html-component value={instance.html} hashes={$root.hashes} url={instance.url}/></td>
-                    <td class="column-certificate"><certificate-component value={instance.tls} url={instance.url} /></td>
-                    <td class="column-ipv6"><ipv6-component value={instance.network} /></td>
-                    <td class="column-country"><network-country-component value={instance.network} asns={$root.asns} /></td>
-                    <td class="column-network"><network-name-component value={instance.network} asns={$root.asns} /></td>
-                    <td class="column-responsetime"><time-component value={instance.timing.search} time_select={$root.display.time_select} /></td>
-                    <td class="column-responsetime"><time-component value={instance.timing.search_go} time_select={$root.display.time_select} /></td>
-                    <td class="column-responsetime"><time-component value={instance.timing.search_wp} time_select={$root.display.time_select} /></td>
-                    <td class="column-responsetime"><time-component value={instance.timing.initial} time_select={$root.display.time_select} /></td>
+                    <td class="column-tls"><TlsComponent value={instance.tls} /></td>
+                    <td class="column-csp"><CspComponent value={instance.http} /></td>
+                    <td class="column-html"><HtmlComponent value={instance.html} hashes={data.hashes} url={instance.url}/></td>
+                    <td class="column-certificate"><CertificateComponent value={instance.tls} url={instance.url} /></td>
+                    <td class="column-ipv6"><Ipv6Component value={instance.network} /></td>
+                    <td class="column-country"><NetworkCountryComponent value={instance.network} asns={data.asns} /></td>
+                    <td class="column-network"><NetworkNameComponent value={instance.network} asns={data.asns} /></td>
+                    <td class="column-responsetime"><TimeComponent value={instance.timing.search} time_select={state.time_select} /></td>
+                    <td class="column-responsetime"><TimeComponent value={instance.timing.search_go} time_select={state.time_select} /></td>
+                    <td class="column-responsetime"><TimeComponent value={instance.timing.search_wp} time_select={state.time_select} /></td>
+                    <td class="column-responsetime"><TimeComponent value={instance.timing.initial} time_select={state.time_select} /></td>
 		</Fragment>;
 	}
-	*/
 
 	render(props, state) {
 		const [data, loading, error] = usePrerenderData(props);
 
-		if (loading) return <h1>Loading...</h1>;
+		if (loading || !data || !data.instances) return <h1>Loading...</h1>;
 
 		if (error) return <p>Error: {error}</p>;
 
@@ -208,7 +245,7 @@ export default class Online extends Component {
 							<tr>
 								<td class="column-url"><UrlComponent url={instance.url} alternativeurls={instance.alternativeUrls} comments={instance.comments} /></td>
 								<td class="column-version">{instance.version}</td>
-								{ /* this.renderInstance(instance, state) */}
+								{ this.renderInstance(instance, state, data) }
 							</tr>
 						))}
 					</tbody>
@@ -219,6 +256,9 @@ export default class Online extends Component {
 	}
 
 	instances_filtered(instances, state) {
+		if (!instances) {
+			return [];
+		}
 		let result = instances.slice();
 		result = applyStrFilter(result, state.version, (f, instance) => filterStartsWith(f, instance.version));
 		result = applyStrFilter(result, state.csp_grade, (f, instance) => filterIndexOf(f, instance.http.grade));

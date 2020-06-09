@@ -25,7 +25,7 @@ export default class App extends Component {
 		return (
 			<Provider value={props}>
 				<Header />
-				<div id="app">
+				<div class="container-fluid">
 					<Router onChange={this.handleRoute}>
 						<Online path="/" />
 						<Offline path="/offline/" user="me" />
