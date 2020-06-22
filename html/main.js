@@ -850,7 +850,9 @@ new Vue({
         },
         selected_engines: function() {
             let result = Object.keys(this.engines).filter((engine) => (this.engines[engine].categories.includes(this.selected_category)));
-            result.sort();
+            const discontinued = ['asksteem', 'faroo', 'findx', 'ixquick', 'swisscows'];
+            const custom = ['Duden', 'everdot yacy network', 'global yacy network', 'immortalpoetry', 'linuxreviews yacy network', 'linuxreviews.org', 'namepros', 'pcgamingwiki', 'wikichip', 'wikispooks'];
+            result = result.filter(n => !discontinued.includes(n)).filter(n => !custom.includes(n)).sort();
             return result;
         },
     },
