@@ -2,6 +2,7 @@ import { usePrerenderData } from '@preact/prerender-data-provider';
 import linkState from 'linkstate';
 import { Component, Fragment } from 'preact';
 import UrlComponent from '../../components/instance-url';
+import TlsComponent from '../../components/tls-component';
 import { compareFunctionCompose, SORT_CRITERIAS } from '../../sort';
 import style from './style';
 
@@ -35,11 +36,6 @@ const debounce = (cb, wait) => {
 	  timeout = setTimeout(callback, wait);
 	}
   }
-
-
-const TlsComponent = (props) => {
-	return <div>{ props.value.grade }</div>
-};
 
 const CspComponent = (props) => {
 	return <div>{ props.value.grade }</div>
@@ -190,12 +186,8 @@ export default class Online extends Component {
 	renderInstance(instance, state, data) {
 		if (state.comments) {
 			return <Fragment>
-				<td class="column-comments">
-					TODO
-				</td>
-				<td class="column-alternativeurls">
-					TODO
-				</td>
+				<td class="column-comments">TODO</td>
+				<td class="column-alternativeurls">TODO</td>
 			</Fragment>;
 		}
 		return <Fragment>

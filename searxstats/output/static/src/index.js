@@ -6,4 +6,17 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './style';
 import App from './components/app';
 
-export default App;
+import { Provider } from 'unistore/preact'
+import { store, connectToStore } from './store';
+
+const AppConnected = connectToStore(store)((store) => (
+    <App></App>
+));
+
+const AppWithStore = () => (
+    <Provider store={store}>
+        <App></App>
+    </Provider>
+)
+
+export default AppWithStore;

@@ -1,7 +1,7 @@
 import createStore from 'unistore'
-import { Provider, connect } from 'unistore/preact'
+import { connect } from 'unistore/preact'
 
-let initialStore = {
+const initialStore = {
     version: '',
     tls_grade: '',
     csp_grade: '',
@@ -12,19 +12,17 @@ let initialStore = {
     query_google: false
 };
 
-let store = createStore(initialStore);
+const store = createStore(initialStore);
 
-let actions = {
+const actions = store => ({
 
     setVersion: (_, newVersion) => { return { version: newVersion } },
-    setTlsGrade: (_, newTlsGrade) => { return { tls_grade: newTlsGrade } }
+    setTlsGrade: (_, newTlsGrade) => { return { tls_grade: newTlsGrade } },
+    setCspGrade: (_, newCspGrade) => { return { csp_grade: newCspGrade } },
+    setHtmlGrade: (_, newHtmlGrade) => { return { html_grade: newHtmlGrade } },
 
-}
+});
 
-/*
-const AppWithStore = connect(Object.keys(initialStore), actions)(
-    <Provider store={store}>
-      <App />
-    </Provider>
-)
-*/
+const connectToStore = (e) => connect(Object.keys(initialStore), actions)(e);
+
+export { store, actions, connectToStore };

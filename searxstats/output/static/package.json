@@ -38,6 +38,7 @@
     "webpack": "^4.42.1"
   },
   "dependencies": {
+    "@popperjs/core": "^2.4.2",
     "@preact/prerender-data-provider": "^3.0.0-rc.9",
     "bootstrap": "^4.5.0",
     "fibers": "^4.0.2",
@@ -46,6 +47,7 @@
     "preact": "^10.4.4",
     "preact-render-to-string": "^5.1.9",
     "preact-router": "^3.2.1",
+    "react-popper": "^2.2.3",
     "sass": "^1.26.8",
     "unistore": "^3.5.1"
   },

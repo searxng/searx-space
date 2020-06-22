@@ -15,7 +15,7 @@ def write_file(file_name, content):
 
 def write_json(searx_stats_result: SearxStatisticsResult, output_file: str):
     searx_json = searx_stats_result.get_json()
-    result = json.dumps(searx_json, indent=4, ensure_ascii=False)
+    result = json.dumps(searx_json, ensure_ascii=False)
     write_file(output_file, result)
 
 
