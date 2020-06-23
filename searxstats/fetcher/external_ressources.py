@@ -10,6 +10,7 @@ from searxstats.config import BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SO
                               get_geckodriver_file_name
 from searxstats.data.well_kown_hashes import fetch_file_content_hashes
 from searxstats.data.inline_hashes import INLINE_HASHES
+from searxstats.data.dynamic_hashes import DYNAMIC_HASHES
 from searxstats.common.http import get_network_type, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
@@ -22,6 +23,7 @@ def initialize():
     global WELL_KNOWN_HASHES  # pylint: disable=global-statement
     WELL_KNOWN_HASHES.update(fetch_file_content_hashes())
     WELL_KNOWN_HASHES.update(INLINE_HASHES)
+    WELL_KNOWN_HASHES.update(DYNAMIC_HASHES)
 
 
 with open(os.path.dirname(os.path.realpath(__file__))
