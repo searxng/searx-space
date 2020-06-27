@@ -1,6 +1,7 @@
 # pylint: disable=invalid-name
 import re
 import concurrent.futures
+from collections import OrderedDict
 from searxstats.model import SearxStatisticsResult
 from searxstats.common.foreach import for_each
 from searxstats.common.utils import dict_merge
@@ -102,19 +103,25 @@ async def fetch_one_display(url: str, private: bool) -> dict:
 async def fetch(searx_stats_result: SearxStatisticsResult):
 
     url_to_deleted = []
+    url_to_update = OrderedDict()
 
-    async def fetch_and_set_async(url: str, detail, *_, **__):
+    # fetch and store the changes in url_to_deleted and url_to_add
+    # do not modify the searx_stats_result.instances to avoid
+    async def fetch_and_store_change(url: str, detail, *_, **__):
         if 'version' not in detail:
             r_url, r_detail = await fetch_one_display(url, searx_stats_result.private)
             dict_merge(r_detail, detail)
             if r_url != url:
-                # another r_url will never be url (the variable)
-                # since r_url is the result of following HTTP redirect
+                # r_url is the URL after following a HTTP redirect
+                # in this case the searx_stats_result.instances[url] must be deleted.
                 url_to_deleted.append(url)
-            searx_stats_result.update_instance(r_url, r_detail)
+            url_to_update[r_url] = r_detail
 
     instance_iterator = searx_stats_result.iter_instances(only_valid=False, valid_or_private=False)
-    await for_each(instance_iterator, fetch_and_set_async, limit=1)
+    await for_each(instance_iterator, fetch_and_store_change, limit=1)
 
+    # apply the changes
     for url in url_to_deleted:
         del searx_stats_result.instances[url]
+    for url, detail in url_to_update.items():
+        searx_stats_result.update_instance(url, detail)
