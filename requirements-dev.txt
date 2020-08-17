@@ -1,7 +1,7 @@
-pylint==2.4.4
-pytest==5.2.2
-pytest-asyncio==0.10.0
-pytest-cov==2.8.1
-pytest-httpserver==0.3.4
-pytest-mock==1.11.2
-flake8==3.7.9
+pylint==2.5.3
+pytest==6.0.1
+pytest-asyncio==0.14.0
+pytest-cov==2.10.0
+pytest-httpserver==0.3.5
+pytest-mock==3.2.0
+flake8==3.8.3
