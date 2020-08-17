@@ -71,7 +71,7 @@ class SearxStatisticsResult:
             'cidrs': self.cidrs,
         }
         with open(output_file_name, "w") as output_file:
-            json.dump(searx_json, output_file, indent=4, ensure_ascii=False)
+            json.dump(searx_json, output_file, ensure_ascii=False)
 
 
 class Fetcher:
