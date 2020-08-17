@@ -31,6 +31,12 @@ with open(os.path.dirname(os.path.realpath(__file__))
     FETCH_RESSOURCE_HASHES_JS = f.read()
 
 
+# https://raw.githubusercontent.com/dchest/fast-sha256-js/master/sha256.js
+with open(os.path.dirname(os.path.realpath(__file__))
+          + "/sha256.js", 'r', encoding='utf-8') as f:
+    SHA256_JS = f.read()
+
+
 def new_driver(network_type=NetworkType.NORMAL):
     firefox_profile = webdriver.FirefoxProfile()
     firefox_profile.set_preference('javascript.options.showInConsole', True)
@@ -87,6 +93,10 @@ def fetch_ressource_hashes_js(driver, url):
     try:
         # load page
         driver.get(url)
+
+        # http:// website don't have crypt.subtle (.onion)
+        # Load fast-sha256 fallback
+        driver.execute_script(SHA256_JS)
 
         # extract external ressources (use fetch Javascript function)
         # HACK: await is the solution

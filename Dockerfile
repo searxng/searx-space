@@ -7,7 +7,7 @@ ENV INITRD=no
 ENV DEBIAN_FRONTEND=noninteractive
 
 # ENV FIREFOX_URL="https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US" 
-ENV FIREFOX_URL="https://ftp.mozilla.org/pub/firefox/releases/74.0/linux-x86_64/en-US/firefox-74.0.tar.bz2"
+ENV FIREFOX_URL="https://ftp.mozilla.org/pub/firefox/releases/79.0/linux-x86_64/en-US/firefox-79.0.tar.bz2"
 
 WORKDIR /usr/local/searxstats/
 

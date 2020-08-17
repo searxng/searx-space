@@ -1,7 +1,6 @@
 function fetchRessourceHashes() {
     'use strict';
 
-    const DIGEST_ALGORITHM = 'SHA-256';
     const allRessources = { };
     const fetchOptions = {
         method: 'GET',
@@ -17,16 +16,40 @@ function fetchRessourceHashes() {
         return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
     }
 
+    function resssource_hash_subtle(textBuffer) {
+        return new Promise((resolutionFunc,rejectionFunc) => {
+            crypto.subtle.digest('SHA-256', textBuffer).then((hashBuffer) => {
+                resolutionFunc(bufferToHex(hashBuffer));
+            }).catch((error) => {
+                rejectionFunc(error);
+            });
+        });
+    }
+
+    function resssource_hash_fallback(textBuffer) {
+        return new Promise((resolutionFunc,rejectionFunc) => {
+            try {
+                resolutionFunc(bufferToHex(window.sha256.hash(textBuffer)));
+            } catch(error) {
+                rejectionFunc(error.toString());
+            }
+        });
+    }
+
+    // Use the Javascript implementation by default (http:// websites)
+    let ressource_hash = resssource_hash_fallback;
+    if ("crypto" in window && "subtle" in window.crypto) {
+        // Use native implementation (available only for https:// websites)
+        ressource_hash = resssource_hash_subtle;
+    }
+
     function addInlineRessource(key, text) {
         // Encode as (utf-8) Uint8Array
         const textBuffer = new TextEncoder().encode(text);
 
-        // hash
-        crypto.subtle.digest(DIGEST_ALGORITHM, textBuffer).then((hashBuffer) => {
-            allRessources[key].push({
-                hash: bufferToHex(hashBuffer),
-            });
-        });
+        ressource_hash(textBuffer).then((hash) => {
+            allRessources[key].push({hash});
+        })
     }
 
     function addInlineRessourceFromTags(key, tagName) {
@@ -46,6 +69,9 @@ function fetchRessourceHashes() {
 
     function fetchExternalRessource(relativeUrl, initiatorType, url) {
         const catchNetworkError = (error) => {
+            if (typeof error == 'Error') {
+                error = error.toString();
+            }
             // the ressource has NOT been fetched
             allRessources[initiatorType][relativeUrl].error = error || 'error';
         };
@@ -60,14 +86,12 @@ function fetchRessourceHashes() {
                 if (response.ok) {
                     return response.arrayBuffer()
                         .then((buffer) => {
-                            crypto.subtle.digest(DIGEST_ALGORITHM, buffer)
-                                .then((hashBuffer) => {
-                                    if (typeof hashBuffer !== 'undefined') {
-                                        allRessources[initiatorType][relativeUrl].hash = bufferToHex(hashBuffer);
-                                        delete allRessources[initiatorType][relativeUrl].notFetched;
-                                    }
-                                })
-                                .catch(catchInternalError);
+                            ressource_hash(new Uint8Array(buffer)).then((hash) => {
+                                if (typeof hash !== 'undefined') {
+                                    allRessources[initiatorType][relativeUrl].hash = hash;
+                                    delete allRessources[initiatorType][relativeUrl].notFetched;
+                                }
+                            }).catch(catchInternalError);
                         })
                         .catch(catchInternalError);
                 }
