@@ -3,7 +3,7 @@ import hashlib
 import yaml
 
 import searxstats.common.git_tool as git_tool
-from searxstats.config import get_hashes_file_name, get_searx_repository_directory, SEARX_GIT_REPOSITORY
+from searxstats.config import get_hashes_file_name, get_git_repository_path, SEARX_GIT_REPOSITORY
 
 
 __all__ = ['fetch_file_content_hashes']
@@ -129,5 +129,5 @@ def _fetch_file_content_hashes(cache_file, repo_directory, repo_url):
 
 def fetch_file_content_hashes():
     return _fetch_file_content_hashes(get_hashes_file_name(),
-                                      get_searx_repository_directory(),
+                                      get_git_repository_path(SEARX_GIT_REPOSITORY),
                                       SEARX_GIT_REPOSITORY)
