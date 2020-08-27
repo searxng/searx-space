@@ -1,11 +1,11 @@
-from searxstats.config import get_searxinstances_repository_directory, SEARXINSTANCES_GIT_REPOSITORY
+from searxstats.config import get_git_repository_path, SEARXINSTANCES_GIT_REPOSITORY
 from searxstats.model import SearxStatisticsResult
 from searxstats.common.git_tool import get_repository
 from searxstats.common.utils import import_module
 
 
 def load_searx_instances() -> dict:
-    repo_directory = get_searxinstances_repository_directory()
+    repo_directory = get_git_repository_path(SEARXINSTANCES_GIT_REPOSITORY)
     get_repository(repo_directory, SEARXINSTANCES_GIT_REPOSITORY)
     model_module = import_module('searxinstances.model', repo_directory)
     return model_module.load()

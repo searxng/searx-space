@@ -8,3 +8,9 @@ lxml==4.5.2
 selenium==3.141.0
 pyyaml==5.3.1
 GitPython==3.1.7
+httpobs @ git+https://github.com/dalf/http-observatory@master#egg=httpobs
+requests==2.24.0
+beautifulsoup4==4.6.3
+publicsuffixlist==0.6.2
+psutil==5.4.8
+celery==4.2.1

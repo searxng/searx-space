@@ -1,0 +1,1 @@
+httpobs @ git+https://github.com/dalf/http-observatory@master#egg=httpobs
