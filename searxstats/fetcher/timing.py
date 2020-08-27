@@ -15,7 +15,7 @@ from searxstats.model import create_fetch
 
 RESULTS_XPATH = etree.XPath(
     "//div[@id='main_results']/div[contains(@class,'result-default')]")
-ENGINE_XPATH = etree.XPath("//span[contains(@class, 'label')]")
+ENGINE_XPATH = etree.XPath("//span[contains(@class, 'label label-default')]")
 # There is no result, error on the main section
 ALERT_DANGER_MAIN_XPATH = etree.XPath("//div[contains(@class, 'alert-danger')]/p[2]")
 # There are results, error on the side (above infoboxes)
