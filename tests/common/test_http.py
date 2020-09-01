@@ -56,4 +56,4 @@ async def test_do_get_connection_refused(httpserver: pytest_httpserver.HTTPServe
         httpserver.start()
 
     assert response is None
-    assert error == 'Connection refused'
+    assert isinstance(error, str)
