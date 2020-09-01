@@ -7,7 +7,7 @@ ENV INITRD=no
 ENV DEBIAN_FRONTEND=noninteractive
 
 # ENV FIREFOX_URL="https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US" 
-ENV FIREFOX_URL="https://ftp.mozilla.org/pub/firefox/releases/79.0/linux-x86_64/en-US/firefox-79.0.tar.bz2"
+ENV FIREFOX_URL="https://ftp.mozilla.org/pub/firefox/releases/80.0/linux-x86_64/en-US/firefox-80.0.tar.bz2"
 
 WORKDIR /usr/local/searxstats/
 
@@ -25,7 +25,7 @@ RUN apt-get update \
       --no-replaces --no-enhances --no-pre-depends firefox-esr | grep -v "firefox-esr" | cut -f2 -d\:) \
  && pip3 install --upgrade pip \
  && pip3 install --no-cache -r requirements.txt \
- && apt-get -y purge build-essential python3-dev libxslt1-dev zlib1g-dev \
+ && apt-get -y purge build-essential python3-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev \
  && apt-get -y --no-install-recommends install libxslt1.1 libxml2 zlib1g libffi6 libssl1.1 \
  && apt-get -y autoremove \
  && apt-get -y clean \
