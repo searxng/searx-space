@@ -1,6 +1,9 @@
 # pylint: disable=invalid-name
 import re
+import asyncio
+import json
 import concurrent.futures
+from urllib.parse import urljoin
 from collections import OrderedDict
 from searxstats.model import SearxStatisticsResult
 from searxstats.common.foreach import for_each
@@ -16,7 +19,10 @@ from searxstats.config import DEFAULT_HEADERS
 SEARX_VERSION_RE = r'<meta name=[\"]?generator[\"]? content="searx/([^\"]+)">'
 
 
-async def get_searx_version(response):
+async def get_searx_version_fallback(response):
+    """
+    get the version from the <meta> tag
+    """
     results = re.findall(SEARX_VERSION_RE, response.text)
     if len(results) > 0 and len(results[0]) > 0:
         return results[0]
@@ -24,9 +30,33 @@ async def get_searx_version(response):
         return None
 
 
+async def get_searx_version_config(session, url):
+    """
+    get the version from the /config URL
+    """
+    response, error = await get(session, url, headers=DEFAULT_HEADERS, timeout=10)
+    if response is not None and error is None:
+        try:
+            config = response.json()
+            return config['version'], None
+        except json.JSONDecodeError as e:
+            return None, str(e)
+    return None, error
+
+
+async def set_searx_version(detail, session, response_url, response):
+    url_config = urljoin(response_url, 'config')
+    version, error_config = await get_searx_version_config(session, url_config)
+    if error_config is not None:
+        version = await get_searx_version_fallback(response)
+        if 'comments' not in detail:
+            detail['comments'] = []
+        detail['comments'].append("Impossible to access {0}: {1}.".format(url_config, error_config))
+    detail['version'] = version
+
+
 @MemoizeToDisk(expire_time=3600)
 async def fetch_one(instance_url: str, private: bool) -> dict:
-    detail = dict()
     # no cookie ( cookies=DEFAULT_COOKIES,  )
     network_type = get_network_type(instance_url)
     detail = {
@@ -45,11 +75,6 @@ async def fetch_one(instance_url: str, private: bool) -> dict:
                 'error': error,
             }
             if response is not None:
-                detail['version'] = await get_searx_version(response)
-                detail['timing'] = {}
-                response_time_stats = ResponseTimeStats()
-                response_time_stats.add_response(response)
-                detail['timing']['initial'] = response_time_stats.get()
                 response_url = str(response.url)
                 # add trailing slash
                 if not response_url.endswith('/'):
@@ -60,6 +85,17 @@ async def fetch_one(instance_url: str, private: bool) -> dict:
                 if response_url != instance_url:
                     detail['alternativeUrls'][instance_url] = 'redirect from'
                     instance_url = response_url
+
+                # get the searx version
+                if error is None:
+                    await asyncio.sleep(0.5)
+                    await set_searx_version(detail, session, response_url, response)
+
+                # set initial response time
+                detail['timing'] = {}
+                response_time_stats = ResponseTimeStats()
+                response_time_stats.add_response(response)
+                detail['timing']['initial'] = response_time_stats.get()
     except concurrent.futures.TimeoutError:
         # This exception occurs on new_client()
         error = 'Timeout error'

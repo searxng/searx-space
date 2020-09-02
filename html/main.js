@@ -91,7 +91,7 @@ function normalizeSearxVersion(v) {
     if (typeof (v) !== 'string') {
         return [0, 0, 0, 0, ''];
     }
-    const vdash = v.split('-');
+    const vdash = v.split(/[\-\+]/);
     const vdot = vdash[0].split('.').map((i) => parseInt(i, 10));
     if (vdash.length === 1) {
         return [vdot[0], vdot[1], vdot[2], 0, ''];
