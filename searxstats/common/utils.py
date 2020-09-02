@@ -43,6 +43,8 @@ def dict_merge(a, b, path=None):
                 dict_merge(a[key], b[key], path + [str(key)])
             elif a[key] == b[key]:
                 pass  # same leaf value
+            elif isinstance(a[key], list) and isinstance(b[key], list):
+                a[key] = b[key] + a[key]
             else:
                 raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
         else:
