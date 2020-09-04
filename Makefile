@@ -1,4 +1,4 @@
-APP_NAME=dalf/searxstats:latest
+APP_NAME=searx/searxstats:latest
 CONTAINER_NAME=searxstats
 OUTPUT_FILENAME=instances.json
 
