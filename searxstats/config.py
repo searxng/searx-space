@@ -49,9 +49,9 @@ SEARX_GIT_DIRECTORY = 'searxstats-git'
 SEARXINSTANCES_GIT_DIRECTORY = 'searxinstances-git'
 
 # Git URL of searx (to fetch static file content hashes)
-SEARX_GIT_REPOSITORY = 'https://github.com/asciimoo/searx'
+SEARX_GIT_REPOSITORY = 'https://github.com/searx/searx'
 
-SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/dalf/searx-instances'
+SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/searx/searx-instances'
 
 # geckodriver log file name
 GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'

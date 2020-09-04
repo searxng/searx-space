@@ -1,6 +1,6 @@
 # searx-stats2
 
-Statistics on the [searx](https://asciimoo.github.io/searx/) instances: https://searx.space ([Onion URL](http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion/))
+Statistics on the [searx](https://asciimoo.github.io/searx/searx/) instances: https://searx.space ([Onion URL](http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion/))
 
 ## Installation
 
@@ -25,7 +25,7 @@ apt install firefox wget git build-essential python3-dev virtualenv python3-virt
 Install searxstats:
 ```sh
 cd /usr/local
-sudo git clone https://github.com/dalf/searx-stats2
+sudo git clone https://github.com/searx/searx-stats2
 sudo useradd searxstats -d /usr/local/searx-stats2
 sudo chown searxstats:searxstats -R /usr/local/searx-stats2
 ```
