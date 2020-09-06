@@ -12,5 +12,5 @@ httpobs @ git+https://github.com/dalf/http-observatory@master#egg=httpobs
 requests==2.24.0
 beautifulsoup4==4.6.3
 publicsuffixlist==0.6.2
-psutil==5.4.8
+psutil==5.6.6
 celery==4.2.1
