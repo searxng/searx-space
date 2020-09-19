@@ -59,8 +59,8 @@ async def get_stats_multi(session, instance_url):
     # fetch the stats four times because of uwsgi
     # may be not enough to get the statistics from all the uwsgi processes
     # still better than only once
-    # see https://github.com/asciimoo/searx/issues/162
-    # and https://github.com/asciimoo/searx/issues/199
+    # see https://github.com/searx/searx/issues/162
+    # and https://github.com/searx/searx/issues/199
     for _ in range(4):
         result = result.union(await get_stats(session, instance_url))
     return result
