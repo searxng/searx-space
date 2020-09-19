@@ -28,7 +28,7 @@
         "about": {
           "@type": "Website",
           "name": "Searx",
-          "url": "https://github.com/asciimoo/searx/"
+          "url": "https://github.com/searx/searx/"
         },
         "sameAs" : [
           "http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion/"
@@ -65,7 +65,7 @@
           <h2>About</h2>
           <p>This website shows the searx public instances. It is updated every 24 hours, except the response times which are updated every 3 hours.
           It requires Javascript until the <a href="https://github.com/searx/searx-stats2/issues/9">issue #9</a> is fixed.</p>
-          <p><a href="https://github.com/asciimoo/searx">Searx</a> is a free internet metasearch engine which aggregates results from more than 70 search services. Users are neither tracked nor profiled.</p>
+          <p><a href="https://github.com/searx/searx">Searx</a> is a free internet metasearch engine which aggregates results from more than 70 search services. Users are neither tracked nor profiled.</p>
           <p>Public instances listed here may yield less accurate results as they have much higher traffic and consequently have a higher chance of being blocked
           by search providers such as Google, Qwant, Bing, Startpage, etc. Hosting your own instance or using an instance that isn't listed here
           may give you a more consistent search experience.</p>
@@ -114,7 +114,7 @@
           <p>See the <a href="https://github.com/searx/searx-instances">searx-instances</a> project</p>
 
           <h3>How can I install searx ?</h3>
-          <p>See the <a href="https://asciimoo.github.io/searx/admin/index.html">searx documentation</a></p>
+          <p>See the <a href="https://searx.github.io/searx/admin/index.html">searx documentation</a></p>
           <p>Or if you want to use docker: <a href="https://github.com/searx/searx-docker">https://github.com/searx/searx-docker</a></p>
 
           <h3>How can I use the results in another project ?</h3>
@@ -255,7 +255,7 @@
             </ul>
             <p>
               The instances have to send the <a href="https://www.w3.org/TR/server-timing/">Server-Timing header</a> to providing the Server, Load, Network and Processing times.
-              See the searx commit <a href="https://github.com/asciimoo/searx/commit/554a21e1d07f3b434b5097b4e3d49e1403be7527">554a21e1d07f3b43</a>.
+              See the searx commit <a href="https://github.com/searx/searx/commit/554a21e1d07f3b434b5097b4e3d49e1403be7527">554a21e1d07f3b43</a>.
             </p>
           </div>
           <div v-if="selected_tab === 'online_tor'">
@@ -360,7 +360,7 @@
           <div v-if="selected_tab === 'engines'">
             <h2>Working engines of {{instances_filtered.length}} instance(s) (on total {{instances.length}} instances)</h2>
             <p>Instances appear here only if <a href="https://github.com/searx/searx-checker">searx-checker</a> is installed.
-              See also issue <a href="https://github.com/asciimoo/searx/issues/1559">#1559</a></p>
+              See also issue <a href="https://github.com/searx/searx/issues/1559">#1559</a></p>
 
             <label for="selected_category">Category</label>
             <select name="selected_category" v-model="selected_category">

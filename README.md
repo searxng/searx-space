@@ -1,6 +1,6 @@
 # searx-stats2
 
-Statistics on the [searx](https://asciimoo.github.io/searx/searx/) instances: https://searx.space ([Onion URL](http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion/))
+Statistics on the [searx](https://searx.github.io/searx/) instances: https://searx.space ([Onion URL](http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion/))
 
 ## Installation
 
