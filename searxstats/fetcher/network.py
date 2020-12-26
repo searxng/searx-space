@@ -116,8 +116,9 @@ def safe_upper(o):
 def get_whois(address: str):
     whois_error = None
     result = None
-    obj = ipwhois.IPWhois(address)
+
     try:
+        obj = ipwhois.IPWhois(address)
         rdap_answer = obj.lookup_rdap(depth=1)
     except ipwhois.exceptions.BaseIpwhoisException as ex:
         whois_error = exception_to_str(ex)
