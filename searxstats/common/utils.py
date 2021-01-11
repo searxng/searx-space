@@ -1,6 +1,8 @@
 import os
 import importlib.util
 import inspect
+import sys
+import traceback
 import asyncio
 import functools
 
@@ -101,6 +103,23 @@ def create_task(loop, executor, function, *args, **kwargs):
                 return function(*args, **kwargs)
             functools.update_wrapper(wrapped, function)
             return loop.run_in_executor(executor, wrapped)
+
+
+def print_exception_wrapper(function):
+    if inspect.iscoroutinefunction(function):
+        async def wrapped(*arg, **kwargs):
+            try:
+                return await function(*arg, **kwargs)
+            except Exception:
+                traceback.print_exc(file=sys.stdout)
+        return wrapped
+    else:
+        def wrapped(*arg, **kwargs):
+            try:
+                return function(*arg, **kwargs)
+            except Exception:
+                traceback.print_exc(file=sys.stdout)
+        return wrapped
 
 
 def import_module(module_name, path):

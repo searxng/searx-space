@@ -5,7 +5,7 @@ import json
 from enum import Enum
 
 from .common.memoize import erase_by_name
-from .common.utils import dict_update, create_task
+from .common.utils import dict_update, create_task, print_exception_wrapper
 from .common.foreach import for_each
 from .common.http import get_network_type, NetworkType
 
@@ -88,7 +88,8 @@ class Fetcher:
 
     def create_fetch_task(self, loop, executor, searx_stats_result: SearxStatisticsResult):
         fetch = self.get_function('fetch')
-        return create_task(loop, executor, fetch, searx_stats_result)
+        safe_fetch = print_exception_wrapper(fetch)
+        return create_task(loop, executor, safe_fetch, searx_stats_result)
 
     def create_initialize_task(self, loop, executor):
         initialize = self.get_function('initialize')
