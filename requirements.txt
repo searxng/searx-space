@@ -6,7 +6,7 @@ dnspython==1.16.0
 ipwhois==1.1.0
 lxml==4.6.2
 selenium==3.141.0
-pyyaml==5.3.1
+pyyaml==5.4
 GitPython==3.1.7
 httpobs @ git+https://github.com/dalf/http-observatory@master#egg=httpobs
 requests==2.24.0
