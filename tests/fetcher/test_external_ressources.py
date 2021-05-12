@@ -125,7 +125,8 @@ def test_fetch_ressource_hashes_js(selenium_driver, fake_httpserver: pytest_http
     ressource_hashes = {
         'index': 0,
     }
-    external_ressources.replace_hash_by_hashref(ressources, ressource_hashes)
+    forks = []
+    external_ressources.replace_hash_by_hashref(ressources, ressource_hashes, forks)
 
     data_inline_js_info = find_sha256_info(ressource_hashes, DATA_INLINE_JS)
     data_index_css_info = find_sha256_info(ressource_hashes, DATA_INDEX_CSS)

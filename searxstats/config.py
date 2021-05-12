@@ -41,8 +41,8 @@ CACHE_DIRECTORY = '/tmp'
 # File name of cache
 CACHE_FILE_NAME = 'searxstats-cache.yaml'
 
-# File name of the hashes (of static file in searx)
-HASHES_FILE_NAME = 'searxstats-well-known-hashes.yaml'
+# Database URL
+DATABASE_URL = 'sqlite:////tmp/searxstats.db'
 
 # Directory where searx will be git clone
 SEARX_GIT_DIRECTORY = 'searxstats-git'
@@ -63,21 +63,21 @@ def set_cache_directory(directory):
     CACHE_DIRECTORY = directory
 
 
+def set_database_url(database_url):
+    global DATABASE_URL  # pylint: disable=global-statement
+    DATABASE_URL = database_url
+
+
 def get_cache_file_name():
     global CACHE_DIRECTORY, CACHE_FILE_NAME  # pylint: disable=global-statement
     return os.path.join(CACHE_DIRECTORY, CACHE_FILE_NAME)
-
-
-def get_hashes_file_name():
-    global CACHE_DIRECTORY, HASHES_FILE_NAME  # pylint: disable=global-statement
-    return os.path.join(CACHE_DIRECTORY, HASHES_FILE_NAME)
 
 
 def get_git_repository_path(url: str) -> str:
     global CACHE_DIRECTORY  # pylint: disable=global-statement
     url_hash = hashlib.sha256(url.encode()).hexdigest()
     name = "git-" + url_hash
-    return os.path.join(CACHE_DIRECTORY, name)
+    return os.path.join(os.path.join(CACHE_DIRECTORY, 'git'), name)
 
 
 def get_geckodriver_file_name():

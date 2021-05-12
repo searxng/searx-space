@@ -1,3 +1,4 @@
+import typing
 import os
 import time
 import traceback
@@ -6,9 +7,10 @@ import sys
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from searxstats.config import BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT,\
+from searxstats.config import SEARX_GIT_REPOSITORY, \
+                              BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT,\
                               get_geckodriver_file_name
-from searxstats.data.well_kown_hashes import fetch_file_content_hashes
+from searxstats.data.well_kown_hashes import get_repositories_for_content_sha
 from searxstats.data.inline_hashes import INLINE_HASHES
 from searxstats.data.dynamic_hashes import DYNAMIC_HASHES
 from searxstats.common.http import get_network_type, NetworkType
@@ -16,12 +18,11 @@ from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
 
 
-WELL_KNOWN_HASHES = set()
+WELL_KNOWN_HASHES: typing.Set[str] = set()
 
 
 def initialize():
     global WELL_KNOWN_HASHES  # pylint: disable=global-statement
-    WELL_KNOWN_HASHES.update(fetch_file_content_hashes())
     WELL_KNOWN_HASHES.update(INLINE_HASHES)
     WELL_KNOWN_HASHES.update(DYNAMIC_HASHES)
 
@@ -123,13 +124,14 @@ def fetch_ressource_hashes_js(driver, url):
         }
 
 
-def replace_hash_by_hashref(result, hashes):
+def replace_hash_by_hashref(result, hashes, forks):
     """
     Update 'unknown' field for each hash.
     Update hashes with one ressource set.
 
     Return hashes of unknown ressources
     """
+    # pylint: disable=too-many-nested-blocks
     global WELL_KNOWN_HASHES  # pylint: disable=global-statement
     ressource_hashes = set()
     for ressource, _ in result_hash_iterator(result):
@@ -145,7 +147,11 @@ def replace_hash_by_hashref(result, hashes):
                     }
                     # unknown hash ?
                     if ressource_hash not in WELL_KNOWN_HASHES:
-                        new_hash_desc['unknown'] = True
+                        repo_url_list = get_repositories_for_content_sha(ressource_hash)
+                        if not repo_url_list:
+                            new_hash_desc['unknown'] = True
+                        elif SEARX_GIT_REPOSITORY not in repo_url_list:
+                            new_hash_desc['forks'] = [forks.index(f) for f in repo_url_list]
                     # ressource_hash first seen for the whole run
                     hashes[ressource_hash] = new_hash_desc
                     # the next hash will uses the next index
@@ -158,19 +164,22 @@ def replace_hash_by_hashref(result, hashes):
             del ressource['hash']
 
 
-def fetch_ressource_hashes(driver, url, ressource_hashes):
+def fetch_ressource_hashes(driver, url, ressource_hashes, forks):
     ressources = fetch_ressource_hashes_js(driver, url)
-    replace_hash_by_hashref(ressources, ressource_hashes)
+    replace_hash_by_hashref(ressources, ressource_hashes, forks)
     return ressources
 
 
 class AnalyzeRessourcesResult:
 
-    __slots__ = 'count', 'well_known', 'unknown', 'unknown_js', 'unfetched', 'unfetched_js', 'external'
+    # pylint: disable=too-many-instance-attributes
+
+    __slots__ = 'count', 'well_known', 'fork', 'unknown', 'unknown_js', 'unfetched', 'unfetched_js', 'external'
 
     def __init__(self):
         self.count = 0
         self.well_known = 0
+        self.fork = 0
         self.unknown = 0
         self.unknown_js = 0
         self.unfetched = 0
@@ -197,6 +206,8 @@ def analyze_ressources(ressources, hashes):
                 result.unknown += 1
                 if ressource_type in ['script', 'inline_script']:
                     result.unknown_js += 1
+            elif res_hash.get('forks'):
+                result.fork += 1
             else:
                 result.well_known += 1
     return result
@@ -217,6 +228,9 @@ def get_grade(ressources, hashes):
     if result.well_known == result.count:
         # All ressources are well known
         grade.append('V')
+    elif result.fork > 0 and result.fork + result.well_known == result.count:
+        # It is a fork
+        grade.append('F')
     elif result.count == 0:
         # Nothing, most problably a problem occured while fetching the ressources
         # FIXME check if there is no ressources at all
@@ -251,7 +265,7 @@ def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: Net
     try:
         for url, detail in searx_stats_result.iter_instances(only_valid=True, network_type=network_type):
             if get_network_type(url) == network_type:
-                ressources = fetch_ressource_hashes(driver, url, ressource_hashes)
+                ressources = fetch_ressource_hashes(driver, url, ressource_hashes, searx_stats_result.forks)
                 if 'error' in ressources:
                     # don't reuse the browser if there was an error
                     driver.quit()

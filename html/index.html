@@ -196,11 +196,11 @@
                 </thead>
                 <tbody>
                   <tr v-for="detail in instances_filtered">
-                    <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
+                    <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments="detail.comments" :git_url="detail.git_url"></url-component></td>
                     <td class="column-version">{{detail.version}}</td>
                     <td v-if="!display.comments" class="column-tls"><tls-component :value="detail.tls"></tls-component></td>
                     <td v-if="!display.comments" class="column-csp"><csp-component :value="detail.http"></csp-component></td>
-                    <td v-if="!display.comments" class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
+                    <td v-if="!display.comments" class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url" :git_url="detail.git_url"></html-component></td>
                     <td v-if="!display.comments" class="column-certificate"><certificate-component :value="detail.tls" :url="detail.url"></certificate-component></td>
                     <td v-if="!display.comments" class="column-ipv6"><ipv6-component :value="detail.network"></ipv6-component></td>
                     <td v-if="!display.comments" class="column-country"><network-country-component :value="detail.network" :cidrs="$root.cidrs"></network-country-component></td>

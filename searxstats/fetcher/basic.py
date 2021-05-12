@@ -30,7 +30,7 @@ async def get_searx_version_fallback(response):
         return None
 
 
-async def get_searx_version_config(session, url):
+async def get_searx_config(session, url):
     """
     get the version from the /config URL
     """
@@ -38,7 +38,7 @@ async def get_searx_version_config(session, url):
     if response is not None and error is None:
         try:
             config = response.json()
-            return config['version'], None
+            return config, None
         except json.JSONDecodeError as e:
             return None, str(e)
     return None, error
@@ -46,13 +46,20 @@ async def get_searx_version_config(session, url):
 
 async def set_searx_version(detail, session, response_url, response):
     url_config = urljoin(response_url, 'config')
-    version, error_config = await get_searx_version_config(session, url_config)
-    if error_config is not None:
-        version = await get_searx_version_fallback(response)
+    config, error_config = await get_searx_config(session, url_config)
+    if error_config:
         if 'comments' not in detail:
             detail['comments'] = []
         detail['comments'].append("Impossible to access {0}: {1}.".format(url_config, error_config))
-    detail['version'] = version
+
+    if config and not error_config:
+        version = config.get('version')
+        if not version:
+            version = await get_searx_version_fallback(response)
+        detail['version'] = version
+        detail['docs_url'] = config.get('brand', {}).get('DOCS_URL')
+        detail['contact_url'] = config.get('brand', {}).get('CONTACT_URL')
+        detail['git_url'] = config.get('brand', {}).get('GIT_URL')
 
 
 @MemoizeToDisk(expire_time=3600)

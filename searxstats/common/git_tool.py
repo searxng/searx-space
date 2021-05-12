@@ -4,7 +4,8 @@ import git.exc
 
 
 def get_repository(directory, url):
-    print(f'{directory}: update from {url}')
+    print(f'Update git repository {url} to {directory}')
+
     # check if directory is a directory
     if not os.path.isdir(directory):
         if not os.path.exists(directory):
@@ -16,14 +17,14 @@ def get_repository(directory, url):
     repo = None
     try:
         repo = git.Repo(directory)
-        print('Use existing git repository')
+        print('* Use existing git repository')
 
     except git.exc.GitError as ex:  # pylint: disable=no-member
-        print('exception', ex)
+        print('* exception', ex)
 
     if repo is None:
         # it is not a git repository
-        print('Clone repository from {}'.format(url))
+        print('* clone repository from {}'.format(url))
         repo = git.Repo.clone_from(url, directory)
     else:
         # it is a git repository

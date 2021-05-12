@@ -2,13 +2,16 @@ import argparse
 import asyncio
 
 from .common.memoize import bind_to_file_name
-from .config import CACHE_DIRECTORY, SEARXINSTANCES_GIT_REPOSITORY, set_cache_directory, get_cache_file_name
+from .config import (
+    CACHE_DIRECTORY, DATABASE_URL, SEARXINSTANCES_GIT_REPOSITORY,
+    set_cache_directory, set_database_url, get_cache_file_name)
 from .fetcher import FETCHERS
 from . import initialize, run_once, run_server, erase_memoize, finalize
 
 
 # pylint: disable=too-many-arguments
-def run(server_mode: bool, output_file_name: str, user_cache_directory: str,
+# pylint: disable=too-many-locals
+def run(server_mode: bool, output_file_name: str, user_cache_directory: str, database_url: str,
         instance_urls: list, private: bool, selected_fetcher_names: list, update_fetcher_memoize_list: list):
     private_str = 'Private' if private else 'Public'
     server_mode_str = 'server mode' if server_mode else 'single run'
@@ -16,6 +19,7 @@ def run(server_mode: bool, output_file_name: str, user_cache_directory: str,
     print('{0} {1} {2}'.format(server_emoji_str, private_str, server_mode_str))
     print('{0:15} : {1}'.format('Output file', output_file_name))
     print('{0:15} : {1}'.format('Cache directory', user_cache_directory))
+    print('{0:15} : {1}'.format('Database URL', database_url))
     if server_mode:
         run_function = run_server
     else:
@@ -35,6 +39,9 @@ def run(server_mode: bool, output_file_name: str, user_cache_directory: str,
     try:
         # set cache directory
         set_cache_directory(user_cache_directory)
+
+        # set database URL
+        set_database_url(database_url)
 
         # load cache
         bind_to_file_name(get_cache_file_name())
@@ -63,6 +70,10 @@ def main():
                         type=str, nargs='?', dest='user_cache_directory',
                         help='Cache directory',
                         default=CACHE_DIRECTORY)
+    parser.add_argument('--database',
+                        type=str, nargs='?', dest='database_url',
+                        help='Database URL',
+                        default=DATABASE_URL)
     parser.add_argument('--server', '-s',
                         action='store_true', dest='server_mode',
                         help='Server mode, automatic check every day',
@@ -106,6 +117,7 @@ def main():
         run(args.server_mode,
             args.output_file_name,
             args.user_cache_directory,
+            args.database_url,
             args.instance_urls,
             args.private,
             list(selected_fetcher_names),

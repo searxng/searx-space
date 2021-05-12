@@ -5,6 +5,7 @@ from searxstats.common.utils import wait_get_results
 from searxstats.model import SearxStatisticsResult, Fetcher
 
 from . import basic
+from . import fetch_source
 from . import external_ressources
 from . import network
 from . import selfreport
@@ -21,7 +22,12 @@ FETCHERS = [
     Fetcher(basic,
             'basic',
             'Fetch basic information 🍰👽❌',
-            'basic',
+            'mandatory.phase1',
+            True),
+    Fetcher(fetch_source,
+            'fetch_source',
+            'Fetch git sources',
+            'mandatory.phase2',
             True),
     Fetcher(external_ressources,
             'html-grade',
