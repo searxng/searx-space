@@ -2,6 +2,7 @@ import sys
 import traceback
 import asyncio
 import random
+from urllib.parse import urljoin
 
 from lxml import etree
 from searxstats.common.utils import exception_to_str
@@ -124,46 +125,51 @@ async def get_cookie_settings(client, url):
 
 
 @MemoizeToDisk(expire_time=3600)
-async def fetch_one(instance: str) -> dict:
+async def fetch_one(instance_url: str) -> dict:
     timings = {}
     try:
-        network_type = get_network_type(instance)
+        network_type = get_network_type(instance_url)
         timeout = 15 if network_type == NetworkType.NORMAL else 30
         async with new_client(timeout=timeout, network_type=network_type) as client:
             # check if cookie settings is supported
             # intended side effect: add one HTTP connection to the pool
-            cookies = await get_cookie_settings(client, instance)
+            cookies = await get_cookie_settings(client, instance_url)
+
+            # /search instead of / : https://github.com/searx/searx/pull/1681
+            search_url = urljoin(instance_url, 'search')
+            print(search_url)
+            default_params = {'theme': 'oscar'}
 
             # check the default engines
-            print('🔎 ' + instance)
-            await request_stat_with_log(instance, timings, 'search',
-                                        client, instance,
+            print('🔎 ' + instance_url)
+            await request_stat_with_log(search_url, timings, 'search',
+                                        client, instance_url,
                                         3, 120, 160, check_search_result,
-                                        params={'q': 'time'},
+                                        params={'q': 'time', **default_params},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
 
             # check the wikipedia engine
-            print('🐘 ' + instance)
-            await request_stat_with_log(instance, timings, 'search_wp',
-                                        client, instance,
+            print('🐘 ' + instance_url)
+            await request_stat_with_log(search_url, timings, 'search_wp',
+                                        client, instance_url,
                                         2, 60, 160, check_wikipedia_result,
-                                        params={'q': '!wp time'},
+                                        params={'q': '!wp time', **default_params},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
 
             # check the google engine
             # may include google results too, so wikipedia engine check before
-            print('🔍 ' + instance)
-            await request_stat_with_log(instance, timings, 'search_go',
-                                        client, instance,
+            print('🔍 ' + instance_url)
+            await request_stat_with_log(search_url, timings, 'search_go',
+                                        client, instance_url,
                                         2, 60, 160, check_google_result,
-                                        params={'q': '!google time'},
+                                        params={'q': '!google time', **default_params},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
     except Exception as ex:
-        print('❌❌ {0}: unexpected {1} {2}'.format(str(instance), type(ex), str(ex)))
+        print('❌❌ {0}: unexpected {1} {2}'.format(str(instance_url), type(ex), str(ex)))
         timings['error'] = exception_to_str(ex)
         traceback.print_exc(file=sys.stdout)
     else:
-        print('🏁 {0}'.format(str(instance)))
+        print('🏁 {0}'.format(str(instance_url)))
     return timings
 
 
