@@ -31,6 +31,10 @@ const HTML_GRADE_MAPPING = {
     'V, ?': 3,
     'V, js?': 3,
 
+    'F': 3,
+    'F, ?': 3,
+    'F, js?': 3,
+
     'C': 3,
     'C, ?': 3,
     'C, js?': 3,
@@ -49,6 +53,7 @@ const HTML_GRADE_MAPPING = {
 
 const HTML_GRADE_LABEL = {
     'V': 'Vanilla',
+    'F': 'Fork',
     'C': 'Customized, vanilla Javascript',
     'Cjs': 'Customized, including Javascript',
     'E': 'External resources',
@@ -302,7 +307,7 @@ function tooltip_add_timing(h, tooltip_lines, timing, time_label) {
 }
 
 Vue.component('url-component', {
-    props: ['url', 'alternativeurls', 'comments'],
+    props: ['url', 'alternativeurls', 'comments', 'git_url'],
     render: function(h) {
         if (this.url != null && this.url !== undefined) {
             let tooltipLines = [];
@@ -325,6 +330,12 @@ Vue.component('url-component', {
                         h('td', altComment)
                     ]));
                 }
+            }
+            if (this.git_url != 'https://github.com/searx/searx') {
+                tooltipLines.push(h('tr', [
+                    h('td', 'git'),
+                    h('td', this.git_url)
+                ]));
             }
             const ahrefElement = h('a', { attrs: {  href: this.url } }, this.url);
             if (tooltipLines.length > 0) {
@@ -445,7 +456,7 @@ Vue.component('timestamp-component', {
 });
 
 Vue.component('html-component', {
-    props: ['value', 'hashes', 'url'],
+    props: ['value', 'hashes', 'url', 'git_url'],
     render: function (h) {
         if (this.value != null && this.value !== undefined) {
             // eslint-disable-next-line prefer-const
@@ -456,7 +467,10 @@ Vue.component('html-component', {
                 const { link: ressourceLink, inline_script: ressourceInlineScripts, error } = ressources;
                 if (ressourceLink) {
                     //
-                    const label = HTML_GRADE_LABEL[grade.split(',')[0]];
+                    let label = HTML_GRADE_LABEL[grade.split(',')[0]];
+                    if (label == 'Fork') {
+                        label += ': ' + this.git_url
+                    }
                     const attrs = {};
                     r.push(h('tr', [
                         h('td', { attrs: attrs }, ''),
@@ -774,6 +788,7 @@ new Vue({
     el: '#searxinstances',
     data: () => ({
         filters: {
+            fork_select: '',
             version: '',
             html_grade: '',
             csp_grade: '',
@@ -795,6 +810,7 @@ new Vue({
         instances_nosearx: [],
         instances_ko: [],
         instances_tor: [],
+        forks: [],
         hashes: [],
         engines: {},
         categories: [],
@@ -804,6 +820,9 @@ new Vue({
     computed: {
         instances_filtered: function () {
             let result = this.instances;
+            if (this.filters.fork_select != '') {
+                result = result.filter((detail) => detail.git_url == this.filters.fork_select)
+            }
             result = applyStrFilter(result, this.filters.version, (f, detail) => filterStartsWith(f, detail.version));
             result = applyStrFilter(result, this.filters.csp_grade, (f, detail) => filterIndexOf(f, detail.http.grade));
             result = applyStrFilter(result, this.filters.tls_grade, (f, detail) => filterIndexOf(f, detail.tls.grade));
@@ -916,6 +935,9 @@ new Vue({
                 this.instances_ko = instancesWithError;
                 this.instances_nosearx = instancesWithoutSearx;
                 this.instances_tor = instancesTor;
+                this.forks = ['', ...json.forks.map(f => ({text: f, value:f}))];
+                this.forks[1].text = 'Vanilla'
+                this.display.fork_select = json.forks[0];
                 this.hashes = json.hashes;
                 this.engines = json.engines;
                 this.categories = json.categories;
