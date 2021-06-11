@@ -120,7 +120,9 @@ def get_whois(address: str):
     try:
         obj = ipwhois.IPWhois(address)
         rdap_answer = obj.lookup_rdap(depth=1)
-    except ipwhois.exceptions.BaseIpwhoisException as ex:
+    except Exception as ex:
+        # should be ipwhois.exceptions.BaseIpwhoisException
+        # but ipwhois can raise AttributeError: 'NoneType' object has no attribute 'strip'
         whois_error = exception_to_str(ex)
     else:
         result = {
