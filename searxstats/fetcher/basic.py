@@ -44,6 +44,15 @@ async def get_searx_config(session, url):
     return None, error
 
 
+async def resolve_https_redirect(session, url):
+    if not url or not url.startswith('https://'):
+        return None
+    response, _error = await get(session, url, timeout=10)
+    if response is not None:
+        return str(response.url)
+    return url
+
+
 async def set_searx_version(detail, session, response_url, response):
     url_config = urljoin(response_url, 'config')
     config, error_config = await get_searx_config(session, url_config)
@@ -56,10 +65,12 @@ async def set_searx_version(detail, session, response_url, response):
         version = config.get('version')
         if not version:
             version = await get_searx_version_fallback(response)
+        git_url = config.get('brand', {}).get('GIT_URL')
+        doc_url = config.get('brand', {}).get('DOCS_URL')
         detail['version'] = version
-        detail['docs_url'] = config.get('brand', {}).get('DOCS_URL')
         detail['contact_url'] = config.get('brand', {}).get('CONTACT_URL')
-        detail['git_url'] = config.get('brand', {}).get('GIT_URL')
+        detail['docs_url'] = await resolve_https_redirect(session, doc_url)
+        detail['git_url'] = await resolve_https_redirect(session, git_url)
 
 
 @MemoizeToDisk(expire_time=3600)

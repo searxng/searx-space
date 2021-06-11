@@ -68,6 +68,10 @@ def set_database_url(database_url):
     DATABASE_URL = database_url
 
 
+def get_database_url():
+    return DATABASE_URL
+
+
 def get_cache_file_name():
     global CACHE_DIRECTORY, CACHE_FILE_NAME  # pylint: disable=global-statement
     return os.path.join(CACHE_DIRECTORY, CACHE_FILE_NAME)

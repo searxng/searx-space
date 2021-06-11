@@ -6,7 +6,7 @@ from sqlalchemy.orm import lazyload
 from sqlalchemy import select
 
 import searxstats.common.git_tool as git_tool
-from searxstats.database import Session, Commit, Content, Fork, engine, commit_content_table
+from searxstats.database import get_engine, new_session, Commit, Content, Fork, commit_content_table
 from searxstats.config import get_git_repository_path
 
 
@@ -68,8 +68,8 @@ def fetch_file_content_hashes(repo_url=None):
     # get commit list
     all_commit_list = get_all_commit_list(repo)
     # forks
-    with engine.connect() as connection:
-        with Session(bind=connection) as session:
+    with get_engine().connect() as connection:
+        with new_session(bind=connection) as session:
             # get fork_obj
             fork_obj = session.execute(
                                     select(Fork)
@@ -104,7 +104,7 @@ def fetch_file_content_hashes(repo_url=None):
         commit_iterator = get_content_list_per_commit_iterator(repo_directory, repo, new_commit_list)
         for commit_sha, content_hash_list in commit_iterator:
             # one SQL transaction per commit
-            with Session(bind=connection) as session:
+            with new_session(bind=connection) as session:
                 # get fork_obj
                 fork_obj = session.query(Fork)\
                                   .where(Fork.git_url == repo_url)\
@@ -145,8 +145,8 @@ def fetch_file_content_hashes(repo_url=None):
 
 def get_repositories_for_content_sha(content_sha):
     result: typing.List[str] = []
-    with engine.connect() as connection:
-        with Session(bind=connection) as session:
+    with get_engine().connect() as connection:
+        with new_session(bind=connection) as session:
             s = select(Fork.git_url) \
                 .join(Fork.commits) \
                 .join(Commit.contents) \

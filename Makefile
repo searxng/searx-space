@@ -32,6 +32,7 @@ docker-run: # Run the container
 	    -v $(ROOT_DIR)/cache:/usr/local/searxstats/cache \
 	    --name="$(CONTAINER_NAME)" \
 	    $(APP_NAME) \
+	    --database sqlite:////usr/local/searxstats/cache/searxstats.db \
 	    --cache /usr/local/searxstats/cache \
 	    --output /usr/local/searxstats/html/data/$(OUTPUT_FILENAME) \
 	    --all

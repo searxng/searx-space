@@ -33,15 +33,15 @@ def run(server_mode: bool, output_file_name: str, user_cache_directory: str, dat
 
     loop = asyncio.get_event_loop()
 
+    # set database URL
+    set_database_url(database_url)
+
     # initialize
     loop.run_until_complete(initialize())
 
     try:
         # set cache directory
         set_cache_directory(user_cache_directory)
-
-        # set database URL
-        set_database_url(database_url)
 
         # load cache
         bind_to_file_name(get_cache_file_name())
