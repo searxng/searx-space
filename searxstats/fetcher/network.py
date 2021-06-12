@@ -1,15 +1,21 @@
 # pylint: disable=invalid-name
+import os
 import socket
 import dns.resolver
 import dns.reversename
 import ipwhois
+import IP2Location
 from searxstats.data.asn import ASN_PRIVACY
 from searxstats.common.utils import exception_to_str
 from searxstats.common.http import get_host, get, new_client, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.common.foreach import for_each
+from searxstats.config import IP2LOCATION_FILENAME
 from searxstats.model import SearxStatisticsResult, AsnPrivacy
 
+IP2LOCATION_DATABASE = None
+if IP2LOCATION_FILENAME and os.path.isfile(IP2LOCATION_FILENAME):
+    IP2LOCATION_DATABASE = IP2Location.IP2Location(IP2LOCATION_FILENAME)
 
 HTTPS_PORT = 443
 ONE_DAY_IN_SECOND = 24*3600
@@ -168,6 +174,11 @@ def get_address_info(searx_stats_result: SearxStatisticsResult, address: str, fi
             whois_info['asn_description'] = whois_info['network_name']
         del whois_info['network_name']
 
+        # overwrite the network_country with ip2location
+        if IP2LOCATION_DATABASE:
+            whois_info['network_country'] = IP2LOCATION_DATABASE.get_country_short(address)
+
+        #
         result['asn_cidr'] = asn_cidr
         if asn_cidr not in searx_stats_result.cidrs:
             searx_stats_result.cidrs[asn_cidr] = whois_info
