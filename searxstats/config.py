@@ -57,8 +57,8 @@ SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/searx/searx-instances'
 # geckodriver log file name
 GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'
 
-# ip2location
-IP2LOCATION_FILENAME = os.environ.get("IP2LOCATION_FILENAME")
+# mmdb
+MMDB_FILENAME = os.environ.get("MMDB_FILENAME")
 
 
 def set_cache_directory(directory):

@@ -1,21 +1,23 @@
 # pylint: disable=invalid-name
+import typing
 import os
 import socket
 import dns.resolver
 import dns.reversename
 import ipwhois
-import IP2Location
+import geoip2.database
+import geoip2.errors
 from searxstats.data.asn import ASN_PRIVACY
 from searxstats.common.utils import exception_to_str
 from searxstats.common.http import get_host, get, new_client, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.common.foreach import for_each
-from searxstats.config import IP2LOCATION_FILENAME
+from searxstats.config import MMDB_FILENAME
 from searxstats.model import SearxStatisticsResult, AsnPrivacy
 
-IP2LOCATION_DATABASE = None
-if IP2LOCATION_FILENAME and os.path.isfile(IP2LOCATION_FILENAME):
-    IP2LOCATION_DATABASE = IP2Location.IP2Location(IP2LOCATION_FILENAME)
+MMDB_DATABASE: typing.Optional[geoip2.database.Reader] = None
+if MMDB_FILENAME and os.path.isfile(MMDB_FILENAME):
+    MMDB_DATABASE = geoip2.database.Reader(MMDB_FILENAME)
 
 HTTPS_PORT = 443
 ONE_DAY_IN_SECOND = 24*3600
@@ -175,8 +177,14 @@ def get_address_info(searx_stats_result: SearxStatisticsResult, address: str, fi
         del whois_info['network_name']
 
         # overwrite the network_country with ip2location
-        if IP2LOCATION_DATABASE:
-            whois_info['network_country'] = IP2LOCATION_DATABASE.get_country_short(address)
+        if MMDB_DATABASE:
+            try:
+                mmdb_country = MMDB_DATABASE.country(address)
+                whois_info['network_country'] = mmdb_country.country.iso_code
+            except (ValueError, geoip2.errors.AddressNotFoundError):
+                pass
+            except Exception as ex:
+                print('MMDB Error', exception_to_str(ex))
 
         #
         result['asn_cidr'] = asn_cidr
