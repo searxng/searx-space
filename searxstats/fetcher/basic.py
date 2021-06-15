@@ -12,6 +12,7 @@ from searxstats.common.http import new_client, get, get_host, get_network_type, 
 from searxstats.common.ssl_info import get_ssl_info
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.common.response_time import ResponseTimeStats
+from searxstats.data import get_fork_list
 from searxstats.config import DEFAULT_HEADERS
 
 
@@ -44,7 +45,16 @@ async def get_searx_config(session, url):
     return None, error
 
 
-async def set_searx_version(detail, session, response_url, response):
+async def resolve_https_redirect(session, url):
+    if not url or not url.startswith('https://'):
+        return None
+    response, _error = await get(session, url, timeout=10)
+    if response is not None:
+        return str(response.url)
+    return url
+
+
+async def set_searx_version(detail, git_url, session, response_url, response):
     url_config = urljoin(response_url, 'config')
     config, error_config = await get_searx_config(session, url_config)
     if error_config:
@@ -56,14 +66,21 @@ async def set_searx_version(detail, session, response_url, response):
         version = config.get('version')
         if not version:
             version = await get_searx_version_fallback(response)
+        if not git_url:
+            git_url = config.get('brand', {}).get('GIT_URL')
+        doc_url = config.get('brand', {}).get('DOCS_URL')
         detail['version'] = version
-        detail['docs_url'] = config.get('brand', {}).get('DOCS_URL')
         detail['contact_url'] = config.get('brand', {}).get('CONTACT_URL')
-        detail['git_url'] = config.get('brand', {}).get('GIT_URL')
+        detail['docs_url'] = await resolve_https_redirect(session, doc_url)
+    if git_url:
+        git_url = await resolve_https_redirect(session, git_url)
+    else:
+        git_url = 'https://github.com/searx/searx'
+    detail['git_url'] = git_url
 
 
 @MemoizeToDisk(expire_time=3600)
-async def fetch_one(instance_url: str, private: bool) -> dict:
+async def fetch_one(instance_url: str, git_url: str, private: bool) -> dict:
     # no cookie ( cookies=DEFAULT_COOKIES,  )
     network_type = get_network_type(instance_url)
     detail = {
@@ -71,6 +88,7 @@ async def fetch_one(instance_url: str, private: bool) -> dict:
         'http': {
         },
         'version': None,
+        'git_url': git_url,
     }
     try:
         async with new_client(network_type=network_type) as session:
@@ -96,7 +114,7 @@ async def fetch_one(instance_url: str, private: bool) -> dict:
                 # get the searx version
                 if error is None:
                     await asyncio.sleep(0.5)
-                    await set_searx_version(detail, session, response_url, response)
+                    await set_searx_version(detail, git_url, session, response_url, response)
 
                 # set initial response time
                 detail['timing'] = {}
@@ -117,9 +135,9 @@ async def fetch_one(instance_url: str, private: bool) -> dict:
     return instance_url, detail
 
 
-async def fetch_one_display(url: str, private: bool) -> dict:
+async def fetch_one_display(url: str, git_url: str, private: bool) -> dict:
     # basic checks
-    url, detail = await fetch_one(url, private)
+    url, detail = await fetch_one(url, git_url, private)
 
     # output
     error = detail['http']['error'] or ''
@@ -152,7 +170,8 @@ async def fetch(searx_stats_result: SearxStatisticsResult):
     # do not modify the searx_stats_result.instances to avoid
     async def fetch_and_store_change(url: str, detail, *_, **__):
         if 'version' not in detail:
-            r_url, r_detail = await fetch_one_display(url, searx_stats_result.private)
+            r_url, r_detail = await fetch_one_display(url, detail['git_url'], searx_stats_result.private)
+            del detail['git_url']
             dict_merge(r_detail, detail)
             if r_url != url:
                 # r_url is the URL after following a HTTP redirect
@@ -168,3 +187,7 @@ async def fetch(searx_stats_result: SearxStatisticsResult):
         del searx_stats_result.instances[url]
     for url, detail in url_to_update.items():
         searx_stats_result.update_instance(url, detail)
+    # add all known forks
+    for fork in get_fork_list():
+        if fork not in searx_stats_result.forks:
+            searx_stats_result.forks.append(fork)

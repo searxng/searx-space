@@ -30,8 +30,10 @@ docker-run: # Run the container
 	    --network host \
 	    -v $(ROOT_DIR)/html/data:/usr/local/searxstats/html/data \
 	    -v $(ROOT_DIR)/cache:/usr/local/searxstats/cache \
+	    -e MMDB_FILENAME=/usr/local/searxstats/cache/dbip-country.mmdb \
 	    --name="$(CONTAINER_NAME)" \
 	    $(APP_NAME) \
+	    --database sqlite:////usr/local/searxstats/cache/searxstats.db \
 	    --cache /usr/local/searxstats/cache \
 	    --output /usr/local/searxstats/html/data/$(OUTPUT_FILENAME) \
 	    --all

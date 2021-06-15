@@ -7,6 +7,7 @@ import pytest
 import pytest_httpserver
 
 import searxstats.common.memoize
+import searxstats.database
 import searxstats.model
 import searxstats.fetcher.external_ressources as external_ressources
 
@@ -109,6 +110,7 @@ def selenium_driver():
 
 
 def test_fetch_ressource_hashes_js(selenium_driver, fake_httpserver: pytest_httpserver.HTTPServer):
+    searxstats.database.initialize_database(':memory:')
     ressources = external_ressources.fetch_ressource_hashes_js.no_memoize(
         selenium_driver, fake_httpserver.url_for('/index.html'))
 
@@ -149,5 +151,6 @@ def test_fetch_ressource_hashes_js(selenium_driver, fake_httpserver: pytest_http
 def test_fetch(selenium_driver,
                fake_httpserver: pytest_httpserver.HTTPServer,
                fake_searxstatisticsresult):
+    searxstats.database.initialize_database(':memory:')
     searxstats.common.memoize.nobinding()
     external_ressources.fetch(fake_searxstatisticsresult)

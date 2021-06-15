@@ -1,8 +1,11 @@
 from sqlalchemy import Table, Column, Integer, String, ForeignKey, create_engine
+import sqlalchemy
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
-from .config import DATABASE_URL
+from .config import get_database_url
 
+engine: sqlalchemy.engine.Engine = None
+Session: sqlalchemy.orm.Session = None
 
 Base = declarative_base()
 fork_commit_table = Table(
@@ -60,6 +63,17 @@ class Fork(Base):
                            innerjoin=True)
 
 
-engine = create_engine(DATABASE_URL, future=True)
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine, future=True)
+def initialize_database(url=None):
+    global engine, Session   # pylint: disable=global-statement,invalid-name
+    url = url or get_database_url()
+    engine = create_engine(get_database_url(), future=True)
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, future=True)
+
+
+def get_engine():
+    return engine
+
+
+def new_session(*args, **kwargs) -> sqlalchemy.orm.Session:
+    return Session(*args, **kwargs)

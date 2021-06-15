@@ -34,6 +34,7 @@ async def get_searx_stats_result_from_repository() -> SearxStatisticsResult:
     for url, instance in searx_instances.items():
         url = add_slash(url)
         searx_stats_result.update_instance(url, {
+            'git_url': instance.git_url,
             'comments': instance.comments,
             'alternativeUrls': copy_dict_slash(instance.additional_urls),
             'main': True,
@@ -45,6 +46,7 @@ async def get_searx_stats_result_from_repository() -> SearxStatisticsResult:
             if aurl in a_aurls:
                 del a_aurls[aurl]
             searx_stats_result.update_instance(aurl, {
+                'git_url': instance.git_url,
                 'comments': [comment],
                 'alternativeUrls': a_aurls
             })
@@ -60,6 +62,7 @@ async def get_searx_stats_result_from_list(instance_urls: list, private: bool) -
     for url in instance_urls:
         url = add_slash(url)
         searx_stats_result.update_instance(url, {
+            'git_url': None,
             'comments': [],
             'alternativeUrls': dict()
         })

@@ -3,6 +3,7 @@ import os
 import time
 import traceback
 import sys
+import operator
 
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
@@ -10,21 +11,10 @@ from selenium.webdriver.firefox.options import Options
 from searxstats.config import SEARX_GIT_REPOSITORY, \
                               BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT,\
                               get_geckodriver_file_name
-from searxstats.data.well_kown_hashes import get_repositories_for_content_sha
-from searxstats.data.inline_hashes import INLINE_HASHES
-from searxstats.data.dynamic_hashes import DYNAMIC_HASHES
+from searxstats.data import get_repositories_for_content_sha, is_wellknown_content_sha
 from searxstats.common.http import get_network_type, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
-
-
-WELL_KNOWN_HASHES: typing.Set[str] = set()
-
-
-def initialize():
-    global WELL_KNOWN_HASHES  # pylint: disable=global-statement
-    WELL_KNOWN_HASHES.update(INLINE_HASHES)
-    WELL_KNOWN_HASHES.update(DYNAMIC_HASHES)
 
 
 with open(os.path.dirname(os.path.realpath(__file__))
@@ -132,7 +122,6 @@ def replace_hash_by_hashref(result, hashes, forks):
     Return hashes of unknown ressources
     """
     # pylint: disable=too-many-nested-blocks
-    global WELL_KNOWN_HASHES  # pylint: disable=global-statement
     ressource_hashes = set()
     for ressource, _ in result_hash_iterator(result):
         ressource_hash = ressource.get('hash', None)
@@ -146,7 +135,7 @@ def replace_hash_by_hashref(result, hashes, forks):
                         'index': hashes['index']
                     }
                     # unknown hash ?
-                    if ressource_hash not in WELL_KNOWN_HASHES:
+                    if not is_wellknown_content_sha(ressource_hash):
                         repo_url_list = get_repositories_for_content_sha(ressource_hash)
                         if not repo_url_list:
                             new_hash_desc['unknown'] = True
@@ -260,6 +249,27 @@ def get_grade(ressources, hashes):
     return ', '.join(grade)
 
 
+def find_forks(ressources, hashes, forks) -> typing.List[str]:
+    """From the hashes of the static files, return a list of fork URL.
+    sorted by reference: the first URL is the most referenced.
+    """
+    found_forks: typing.Dict[str, int] = {}
+    for ressource, _ in result_hash_iterator(ressources):
+        hash_ref = ressource.get('hashRef')
+        if 'hashRef' not in ressource:
+            # the ressource was not found / error
+            continue
+        hash_info = hashes[hash_ref]
+        for fork_ref in hash_info.get('forks', []):
+            fork_url = forks[fork_ref]
+            found_forks[fork_url] = found_forks.get(fork_url, 0) + 1
+
+    if found_forks:
+        found_fork_tuples = sorted(found_forks.items(), key=operator.itemgetter(1))
+        return [f[0] for f in found_fork_tuples]
+    return []
+
+
 def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: NetworkType, ressource_hashes):
     driver = new_driver(network_type=network_type)
     try:
@@ -301,6 +311,14 @@ def fetch(searx_stats_result: SearxStatisticsResult):
             del ressource_desc['index']
             ressource_desc['hash'] = ressource_hash
             searx_stats_result.hashes[i] = ressource_desc
+
+    # detect fork using the static files
+    for _, detail in searx_stats_result.iter_instances(only_valid=True):
+        ressources = detail.get('html', {}).get('ressources')
+        if ressources:
+            found_forks = find_forks(detail['html']['ressources'], searx_stats_result.hashes, searx_stats_result.forks)
+            if found_forks and detail['git_url'] not in found_forks:
+                detail['git_url'] = found_forks[0]
 
     # get grade
     for _, detail in searx_stats_result.iter_instances(only_valid=True):

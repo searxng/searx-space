@@ -1,15 +1,23 @@
 # pylint: disable=invalid-name
+import typing
+import os
 import socket
 import dns.resolver
 import dns.reversename
 import ipwhois
+import geoip2.database
+import geoip2.errors
 from searxstats.data.asn import ASN_PRIVACY
 from searxstats.common.utils import exception_to_str
 from searxstats.common.http import get_host, get, new_client, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.common.foreach import for_each
+from searxstats.config import MMDB_FILENAME
 from searxstats.model import SearxStatisticsResult, AsnPrivacy
 
+MMDB_DATABASE: typing.Optional[geoip2.database.Reader] = None
+if MMDB_FILENAME and os.path.isfile(MMDB_FILENAME):
+    MMDB_DATABASE = geoip2.database.Reader(MMDB_FILENAME)
 
 HTTPS_PORT = 443
 ONE_DAY_IN_SECOND = 24*3600
@@ -120,7 +128,9 @@ def get_whois(address: str):
     try:
         obj = ipwhois.IPWhois(address)
         rdap_answer = obj.lookup_rdap(depth=1)
-    except ipwhois.exceptions.BaseIpwhoisException as ex:
+    except Exception as ex:
+        # should be ipwhois.exceptions.BaseIpwhoisException
+        # but ipwhois can raise AttributeError: 'NoneType' object has no attribute 'strip'
         whois_error = exception_to_str(ex)
     else:
         result = {
@@ -166,6 +176,17 @@ def get_address_info(searx_stats_result: SearxStatisticsResult, address: str, fi
             whois_info['asn_description'] = whois_info['network_name']
         del whois_info['network_name']
 
+        # overwrite the network_country with ip2location
+        if MMDB_DATABASE:
+            try:
+                mmdb_country = MMDB_DATABASE.country(address)
+                whois_info['network_country'] = mmdb_country.country.iso_code
+            except (ValueError, geoip2.errors.AddressNotFoundError):
+                pass
+            except Exception as ex:
+                print('MMDB Error', exception_to_str(ex))
+
+        #
         result['asn_cidr'] = asn_cidr
         if asn_cidr not in searx_stats_result.cidrs:
             searx_stats_result.cidrs[asn_cidr] = whois_info

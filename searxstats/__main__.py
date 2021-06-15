@@ -3,7 +3,7 @@ import asyncio
 
 from .common.memoize import bind_to_file_name
 from .config import (
-    CACHE_DIRECTORY, DATABASE_URL, SEARXINSTANCES_GIT_REPOSITORY,
+    CACHE_DIRECTORY, DATABASE_URL, MMDB_FILENAME, SEARXINSTANCES_GIT_REPOSITORY,
     set_cache_directory, set_database_url, get_cache_file_name)
 from .fetcher import FETCHERS
 from . import initialize, run_once, run_server, erase_memoize, finalize
@@ -20,6 +20,7 @@ def run(server_mode: bool, output_file_name: str, user_cache_directory: str, dat
     print('{0:15} : {1}'.format('Output file', output_file_name))
     print('{0:15} : {1}'.format('Cache directory', user_cache_directory))
     print('{0:15} : {1}'.format('Database URL', database_url))
+    print('{0:15} : {1}'.format('MMDB filename', MMDB_FILENAME or ''))
     if server_mode:
         run_function = run_server
     else:
@@ -33,15 +34,15 @@ def run(server_mode: bool, output_file_name: str, user_cache_directory: str, dat
 
     loop = asyncio.get_event_loop()
 
+    # set database URL
+    set_database_url(database_url)
+
     # initialize
     loop.run_until_complete(initialize())
 
     try:
         # set cache directory
         set_cache_directory(user_cache_directory)
-
-        # set database URL
-        set_database_url(database_url)
 
         # load cache
         bind_to_file_name(get_cache_file_name())
