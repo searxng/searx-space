@@ -333,8 +333,8 @@ Vue.component('url-component', {
             }
             if (this.git_url != 'https://github.com/searx/searx') {
                 tooltipLines.push(h('tr', [
-                    h('td', 'git'),
-                    h('td', this.git_url)
+                    h('td', [ h('a', { attrs: { href: this.git_url } }, this.git_url) ]),
+                    h('td', 'Fork'),
                 ]));
             }
             const ahrefElement = h('a', { attrs: {  href: this.url } }, this.url);
@@ -464,23 +464,30 @@ Vue.component('html-component', {
             const tooltip = [];
             if (ressources !== undefined && this.hashes != null && this.hashes !== undefined) {
                 const r = [];
-                const { link: ressourceLink, inline_script: ressourceInlineScripts, error } = ressources;
-                if (ressourceLink) {
+                const {  error } = ressources;
+                if (ressources.script || ressources.style || ressources.inline_script) {
                     //
-                    let label = HTML_GRADE_LABEL[grade.split(',')[0]];
-                    if (label == 'Fork') {
-                        label += ': ' + this.git_url
-                    }
+                    const grade_id = grade.split(',')[0];
+                    let label = HTML_GRADE_LABEL[grade_id];
                     const attrs = {};
-                    r.push(h('tr', [
-                        h('td', { attrs: attrs }, ''),
-                        h('td', { attrs: attrs }, label),
-                        h('td', { attrs: attrs }, ''),
-                    ]));
+                    if (grade_id != 'F') {
+                        r.push(h('tr', [
+                            h('td', { attrs: attrs }, ''),
+                            h('td', { attrs: attrs }, label),
+                            h('td', { attrs: attrs }, ''),
+                        ]));
+                    }
+                    if (this.git_url != 'https://github.com/searx/searx') {
+                        r.push(h('tr', [
+                            h('td', { attrs: attrs }, 'Fork'),
+                            h('td', { attrs: attrs }, [ h('a', { attrs: { href: this.git_url } }, this.git_url) ]),
+                            h('td', { attrs: attrs }, ''),
+                        ]));
+                    }
                     // inline scripts
                     let unknownCountMin = 1000000;
                     let unknownInlineScriptCount = 0;
-                    for (const ressourceDetail of ressourceInlineScripts) {
+                    for (const ressourceDetail of ressources.inline_script) {
                         const ressourceHash = this.hashes[ressourceDetail.hashRef];
                         if (ressourceHash) {
                             if ('unknown' in ressourceHash) {

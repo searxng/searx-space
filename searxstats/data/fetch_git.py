@@ -1,20 +1,24 @@
-import typing
 import os
-import hashlib
 
-from sqlalchemy.orm import lazyload
 from sqlalchemy import select
 
 import searxstats.common.git_tool as git_tool
-from searxstats.database import get_engine, new_session, Commit, Content, Fork, commit_content_table
+from searxstats.common.utils import get_file_content_hash
+from searxstats.database import get_engine, new_session, Commit, Fork
 from searxstats.config import get_git_repository_path
+from searxstats.data.update import insert_commit
+from searxstats.data.query import get_all_commit_list
 
 
-__all__ = ['fetch_file_content_hashes', 'get_repositories_for_content_sha']
+__all__ = ['fetch_hashes_from_git_url']
 
 
 def get_filename_list(repo_directory):
     static_directory = os.path.join(repo_directory, 'searx', 'static')
+    if not os.path.isdir(static_directory):
+        # if searx/static is not found,
+        # fallback to the whole git repository to deal with some forks
+        static_directory = repo_directory
     # create a list of file and sub directories
     # names in the given directory
     all_files = list()
@@ -25,12 +29,6 @@ def get_filename_list(repo_directory):
             if not filename.endswith('.less'):
                 all_files.append(filename)
     return all_files
-
-
-def get_file_content_hash(filename):
-    with open(filename, 'rb') as reader:
-        buffer = reader.read()
-        return hashlib.sha256(buffer).hexdigest()
 
 
 def get_content_list_per_commit_iterator(repo_directory, repo, commit_list):
@@ -54,17 +52,11 @@ def get_content_list_per_commit_iterator(repo_directory, repo, commit_list):
         count = count + 1
 
 
-def get_all_commit_list(repo):
-    commit_list = list(repo.iter_commits())
-    commit_list.reverse()
-    return commit_list
-
-
-def fetch_file_content_hashes(repo_url=None):
+def fetch_hashes_from_git_url(git_url=None):
     # get repo_directory from the repo_url
-    repo_directory = get_git_repository_path(repo_url)
+    repo_directory = get_git_repository_path(git_url)
     # get (or initialize) the git repository
-    repo = git_tool.get_repository(repo_directory, repo_url)
+    repo = git_tool.get_repository(repo_directory, git_url)
     # get commit list
     all_commit_list = get_all_commit_list(repo)
     # forks
@@ -73,10 +65,10 @@ def fetch_file_content_hashes(repo_url=None):
             # get fork_obj
             fork_obj = session.execute(
                                     select(Fork)
-                                    .where(Fork.git_url == repo_url)
+                                    .where(Fork.git_url == git_url)
                                ).scalar()
             if fork_obj is None:
-                fork_obj = Fork(git_url=repo_url)
+                fork_obj = Fork(git_url=git_url)
                 session.add(fork_obj)
 
             # get the existing commits
@@ -105,53 +97,5 @@ def fetch_file_content_hashes(repo_url=None):
         for commit_sha, content_hash_list in commit_iterator:
             # one SQL transaction per commit
             with new_session(bind=connection) as session:
-                # get fork_obj
-                fork_obj = session.query(Fork)\
-                                  .where(Fork.git_url == repo_url)\
-                                  .scalar()
-
-                # add / update commit_obj
-                # don't load commit_obj.contents
-                commit_obj = session.query(Commit)\
-                                    .options(lazyload(Commit.contents))\
-                                    .where(Commit.sha == commit_sha)\
-                                    .scalar()
-                if not commit_obj:
-                    commit_obj = Commit(sha=commit_sha, forks=[fork_obj])
-                    session.add(commit_obj)
-                elif fork_obj not in commit_obj.forks:
-                    commit_obj.forks.append(fork_obj)
-                    session.add(commit_obj)
-
-                # add new content_obj
-                result_dict = {}
-                for content_obj in session.query(Content).options(lazyload(Content.commits)):
-                    result_dict[content_obj.sha] = content_obj.id
-                new_content_list = [content_hash
-                                    for content_hash in content_hash_list
-                                    if content_hash not in result_dict]
-                if new_content_list:
-                    session.execute(Content.__table__.insert(), [{"sha": sha} for sha in new_content_list])
-
-                # add links between commit_obj and the content_obj list
-                content_id_list = session.query(Content.id)\
-                                         .where(Content.sha.in_(content_hash_list))\
-                                         .all()
-                session.execute(commit_content_table.insert(),
-                                [{"commit_id": commit_obj.id, "content_id": content_id[0]}
-                                 for content_id in content_id_list])
+                insert_commit(session, git_url, commit_sha, content_hash_list)
                 session.commit()
-
-
-def get_repositories_for_content_sha(content_sha):
-    result: typing.List[str] = []
-    with get_engine().connect() as connection:
-        with new_session(bind=connection) as session:
-            s = select(Fork.git_url) \
-                .join(Fork.commits) \
-                .join(Commit.contents) \
-                .filter(Content.sha == content_sha) \
-                .group_by(Fork.git_url)
-            for row in session.execute(s):
-                result.append(row[0])
-    return result

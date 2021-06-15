@@ -60,6 +60,10 @@ GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'
 # mmdb
 MMDB_FILENAME = os.environ.get("MMDB_FILENAME")
 
+# debian
+DEBIAN_GIT_URL = 'https://salsa.debian.org/debian/searx'
+DEBIAN_SOURCE_PACKAGE_NAMES = ['searx', 'twitter-bootstrap3', 'jquery', 'leaflet', 'requirejs', 'typeahead.js']
+
 
 def set_cache_directory(directory):
     global CACHE_DIRECTORY  # pylint: disable=global-statement

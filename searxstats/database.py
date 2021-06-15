@@ -75,5 +75,5 @@ def get_engine():
     return engine
 
 
-def new_session(*args, **kwargs):
+def new_session(*args, **kwargs) -> sqlalchemy.orm.Session:
     return Session(*args, **kwargs)

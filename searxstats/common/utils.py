@@ -5,6 +5,7 @@ import sys
 import traceback
 import asyncio
 import functools
+import hashlib
 
 
 ERROR_REMOVE_PREFIX = "[SSL: CERTIFICATE_VERIFY_FAILED] "
@@ -133,3 +134,9 @@ def import_module(module_name, path):
     module_instance = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module_instance)
     return module_instance
+
+
+def get_file_content_hash(filename):
+    with open(filename, 'rb') as reader:
+        buffer = reader.read()
+        return hashlib.sha256(buffer).hexdigest()
