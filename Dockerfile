@@ -1,4 +1,4 @@
-FROM python:3.9-slim-buster
+FROM debian:bullseye-slim
 
 ARG SEARX_GID=1005
 ARG SEARX_UID=1005
@@ -16,12 +16,13 @@ COPY requirements.txt ./
 
 RUN apt-get update \
  && apt-get -y --no-install-recommends install \
-    wget git build-essential python3-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev \
+    wget git build-essential \
+    python3 python3-pip python3-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev \
     tor tini bzip2 firefox-esr \
- && pip3 install --upgrade pip \
- && pip3 install --no-cache -r requirements.txt \
+ && pip install --upgrade pip setuptools wheel \
+ && pip install --no-cache -r requirements.txt \
  && apt-get -y purge build-essential python3-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev \
- && apt-get -y --no-install-recommends install libxslt1.1 libxml2 zlib1g libffi6 libssl1.1 \
+ && apt-get -y --no-install-recommends install libxslt1.1 libxml2 zlib1g libffi7 libssl1.1 \
  && apt-get -y autoremove \
  && apt-get -y clean \
  && mkdir /usr/local/searxstats/cache
