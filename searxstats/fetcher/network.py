@@ -2,11 +2,14 @@
 import typing
 import os
 import socket
+from enum import IntEnum
+
 import dns.resolver
 import dns.reversename
 import ipwhois
 import geoip2.database
 import geoip2.errors
+
 from searxstats.data.asn import ASN_PRIVACY
 from searxstats.common.utils import exception_to_str
 from searxstats.common.http import get_host, get, new_client, NetworkType
@@ -14,6 +17,44 @@ from searxstats.common.memoize import MemoizeToDisk
 from searxstats.common.foreach import for_each
 from searxstats.config import MMDB_FILENAME
 from searxstats.model import SearxStatisticsResult, AsnPrivacy
+
+try:
+    import ldns
+    LDNS_ERROR_TO_STR = {
+        ldns.LDNS_RCODE_NOERROR: None,
+        # The 'FormErr' DNS RCODE (1), as defined in RFC1035.
+        ldns.LDNS_RCODE_FORMERR: 'The name server was unable to interpret the query.',
+        # The 'ServFail' DNS RCODE (2), as defined in RFC1035.
+        ldns.LDNS_RCODE_SERVFAIL: 'The name server was unable to process this query due to a problem ' \
+                                  + 'with the name server.',  # noqa
+        # The 'NXDomain' DNS RCODE (3), as defined in RFC1035.
+        # Domain not found
+        ldns.LDNS_RCODE_NXDOMAIN: None,
+        # The 'NotImp' DNS RCODE (4), as defined in RFC1035.
+        ldns.LDNS_RCODE_NOTIMPL: 'The name server does not support the requested kind of query',
+        # The 'Refused' DNS RCODE (5), as defined in RFC1035.
+        ldns.LDNS_RCODE_REFUSED: 'The server refused to answer',
+        # The 'YXDomain' DNS RCODE (6), as defined in RFC2136.
+        ldns.LDNS_RCODE_YXDOMAIN: 'Timeout after DNAME substitution',
+        # The 'YXRRSet' DNS RCODE (7), as defined in RFC2136.
+        ldns.LDNS_RCODE_YXRRSET: 'Some RRset that ought not to exist, does exist.',
+        # The 'NXRRSet' DNS RCODE (8), as defined in RFC2136.
+        ldns.LDNS_RCODE_NXRRSET: 'Some RRset that ought to exist, does not exist.',
+        # The 'NotAuth' DNS RCODE (9), as defined in RFC2136.
+        ldns.LDNS_RCODE_NOTAUTH: 'The server is not authoritative for the zone named in the Zone Section.',
+        # The 'NotZone' DNS RCODE (10), as defined in RFC2136.
+        ldns.LDNS_RCODE_NOTZONE: 'A name used in the Prerequisite or Update Section is not within the zone ' \
+                                 + 'denoted by the Zone Section.',  # noqa
+    }
+
+    STR_TO_LDNS_RR_TYPE = {
+        'PTR': ldns.LDNS_RR_TYPE_PTR,
+        'A': ldns.LDNS_RR_TYPE_A,
+        'AAAA': ldns.LDNS_RR_TYPE_AAAA,
+    }
+except ImportError:
+    ldns = None
+
 
 MMDB_DATABASE: typing.Optional[geoip2.database.Reader] = None
 if MMDB_FILENAME and os.path.isfile(MMDB_FILENAME):
@@ -25,6 +66,13 @@ ONE_WEEK_IN_SECOND = 7*24*3600
 
 URL_IPV4 = 'http://ipv4.whatismyip.akamai.com/'
 URL_IPV6 = 'http://ipv6.whatismyip.akamai.com/'
+
+
+class DnsSecResult(IntEnum):
+    UNKNOW = 0
+    SECURE = 1
+    INSECURE = 2
+    BOGUS = 3
 
 
 def valid_if_no_error(result):
@@ -66,7 +114,7 @@ def dns_query(qname, field):
 
 
 @MemoizeToDisk(expire_time=ONE_DAY_IN_SECOND, validate_result=valid_if_no_error)
-def dns_query_field(host: str, field: str):
+def dns_query_field_dnspython(host: str, field: str):
     """
     string everywhere to allow @MemoizeToDisk
 
@@ -81,7 +129,38 @@ def dns_query_field(host: str, field: str):
     error_msg is a text message that can be display to the user
     """
     dns_answers, dns_error = dns_query(host, field)
-    return list(map(str, dns_answers or [])), dns_error
+    return list(map(str, dns_answers or [])), dns_error, DnsSecResult.UNKNOW
+
+
+@MemoizeToDisk(expire_time=ONE_DAY_IN_SECOND, validate_result=valid_if_no_error)
+def dns_query_field_ldns(host: str, field: str):
+    dns_answers = []
+    dns_error = None
+    dnssec_result = DnsSecResult.UNKNOW
+
+    resolver = ldns.ldns_resolver.new_frm_file("/etc/resolv.conf")
+    resolver.set_dnssec(True)
+
+    pkt = resolver.query(host, STR_TO_LDNS_RR_TYPE[field], ldns.LDNS_RR_CLASS_IN)
+    if pkt and pkt.answer():
+        if pkt.get_rcode() is ldns.LDNS_RCODE_SERVFAIL:
+            # SERVFAIL indicated bogus name
+            dnssec_result = DnsSecResult.BOGUS
+        elif pkt.get_rcode() is ldns.LDNS_RCODE_NOERROR:
+            # Check AD (Authenticated) bit
+            if pkt.ad():
+                dnssec_result = DnsSecResult.SECURE
+            else:
+                dnssec_result = DnsSecResult.INSECURE
+        else:
+            dns_error = LDNS_ERROR_TO_STR.get(pkt.get_rcode(), "Error")
+
+        for rr in pkt.answer().rrs():
+            if rr.get_type_str() == field:
+                value = " ".join(str(rdf) for rdf in rr.rdfs())
+                dns_answers.append(value)
+
+    return dns_answers, dns_error, dnssec_result
 
 
 @MemoizeToDisk(expire_time=ONE_DAY_IN_SECOND, validate_result=valid_if_no_error)
@@ -222,8 +301,12 @@ def get_network_info(searx_stats_result: SearxStatisticsResult, host: str):
         field_type_list = ['A']
         result['ipv6'] = None
 
+    f_dns_query = dns_query_field_ldns if ldns else dns_query_field_dnspython
+
     for field_type in field_type_list:
-        addresses, error = dns_query_field(host, field_type)
+        addresses, error, dnssec_result = f_dns_query(host, field_type)
+        result['dnssec'] = max(dnssec_result, result.get('dnssec', DnsSecResult.UNKNOW))
+
         if error is not None:
             result['error'] = error
         if addresses is not None:

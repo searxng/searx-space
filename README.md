@@ -18,7 +18,7 @@ Note: cryptcheck-backend is used to get the TLS grade.
 
 Install packages:
 ```sh
-apt install firefox wget git build-essential python3-dev virtualenv python3-virtualenv libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev
+apt install firefox wget git build-essential python3-dev virtualenv python3-virtualenv libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev python3-ldns
 ```
 
 ### Get the project
@@ -34,9 +34,9 @@ sudo chown searxstats:searxstats -R /usr/local/searx-stats2
 ```sh
 sudo -u searxstats -i
 cd /usr/local/searx-stats2
-virtualenv -p $(which python3) ve
+python -m venv --system-site-packages ve
 . ./ve/bin/activate
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ./utils/install-geckodriver
 mkdir cache
 mkdir html/data

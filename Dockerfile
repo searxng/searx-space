@@ -17,7 +17,7 @@ COPY requirements.txt ./
 RUN apt-get update \
  && apt-get -y --no-install-recommends install \
     wget git build-essential \
-    python3 python3-pip python3-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev \
+    python3 python3-pip python3-dev libxslt1-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev python3-ldns \
     tor tini bzip2 firefox-esr \
  && pip install --upgrade pip setuptools wheel \
  && pip install --no-cache -r requirements.txt \
