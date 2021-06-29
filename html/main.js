@@ -740,6 +740,7 @@ Vue.component('network-name-component', {
             let content = networksList + DNSSEC_RESULT_TO_EMOJI[this.value.dnssec];
             const dnssec = this.value.dnssec;
             const tooltipContent = [ ];
+            tooltipContent.push(h('h5', content));
             if (dnssec > 0) {
                 tooltipContent.push(h('p', [ h('b', 'DNSSEC') ]));
                 tooltipContent.push(h('p', DNSSEC_RESULT_TO_LABEL[dnssec] + DNSSEC_RESULT_TO_EMOJI[dnssec]));
