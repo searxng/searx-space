@@ -61,6 +61,20 @@ const HTML_GRADE_LABEL = {
     'js?': 'Unloaded Javascript',
 }
 
+const DNSSEC_RESULT_TO_LABEL = {
+    0: 'Unknow',
+    1: 'Secure',
+    2: 'Insecure',
+    3: 'Bogus',
+}
+const DNSSEC_RESULT_TO_EMOJI = {
+    0: '',
+    1: '',
+    2: '',
+    3: ' ❗',
+}
+
+
 function getValue(f, obj, ...keys) {
     let value = obj;
     for(let i=0; i<keys.length; i++) {
@@ -723,8 +737,19 @@ Vue.component('network-name-component', {
             });
             const networksList = listUniq(networks.filter((v) => v !== null)).join(', ');
             // tooltip
+            let content = networksList + DNSSEC_RESULT_TO_EMOJI[this.value.dnssec];
+            const dnssec = this.value.dnssec;
+            const tooltipContent = [ ];
+            tooltipContent.push(h('h5', content));
+            if (dnssec > 0) {
+                tooltipContent.push(h('p', [ h('b', 'DNSSEC') ]));
+                tooltipContent.push(h('p', DNSSEC_RESULT_TO_LABEL[dnssec] + DNSSEC_RESULT_TO_EMOJI[dnssec]));
+            }
+            tooltipContent.push(h('p', [ h('b', 'Reverse DNS') ]));
             const reverseIpHosts = listUniq(Object.keys(this.value.ips).map((ip) => this.value.ips[ip].reverse || ip));
-            const reverseIpHostElements = reverseIpHosts.map((host) => h('p', host));
+            for(const host of reverseIpHosts) {
+                tooltipContent.push(h('p', host));
+            }
             //
             let privacyGrade = undefined;
             switch (this.value.asn_privacy) {
@@ -738,8 +763,10 @@ Vue.component('network-name-component', {
             const attrs = {};
             if (privacyGrade !== undefined) {
                 attrs.style = `background-color:${hslGrade(privacyGrade)}; color:white`;
+            } else if (this.value.dnssec == 3) {
+                attrs.style = `background-color:${hslGrade('D-')}; color:white`;
             }
-            return createTooltip(h, h('span', { class: 'value-network', attrs: attrs }, networksList), [reverseIpHostElements]);
+            return createTooltip(h, h('span', { class: 'value-network', attrs: attrs }, content), [tooltipContent]);
         }
         return undefined;
     },

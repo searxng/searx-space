@@ -159,6 +159,15 @@ main thead th {
   width: 29rem;
 }
 
+tbody .column-network span:first-child span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: keep-all;
+  white-space: nowrap;
+  max-width: 26rem;
+  height: 2rem;
+}
+
 .column-responsetime {
   max-width: 9rem;
   width: 9rem;
