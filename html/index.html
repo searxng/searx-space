@@ -187,7 +187,7 @@
                         <span class="info-tooltip">Hide networks with privacy issue</span>
                       </div></th>
                       <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.standard_search" type="checkbox" /></div></th>
-                      <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.google" type="checkbox" /></div></th>
+                      <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.engines.google" type="checkbox" /></div></th>
                       <th v-if="!display.comments" class="column-responsetime"></th>
                       <th v-if="!display.comments" class="column-responsetime"></th>
                       <th v-if="display.comments" class="column-comments"></th>
@@ -368,36 +368,45 @@
             </template>
           </div>
           <div v-if="selected_tab === 'engines'">
-            <h2>Working engines of {{instances_filtered.length}} instance(s) (on total {{instances.length}} instances)</h2>
-            <p>Instances appear here only if <a href="https://github.com/searx/searx-checker">searx-checker</a> is installed.
-              See also issue <a href="https://github.com/searx/searx/issues/1559">#1559</a></p>
+            <div class="engine-headers">
+              <h2>Working engines of {{instances_filtered.length}} instance(s) (on total {{instances.length}} instances)</h2>
+              <span style="float:right">
+                <label title="Engine with more than 20 instances">
+                  <input type="checkbox" v-model="$root.filters.well_known_engines"/>
+                  Engine with more than 20 instances
+                </label>
+              </span>
+              <ul class="nav nav-tabs">
+                <li v-for="category in categories" :class="selected_category==category?'active':''"><a href="" v-on:click.prevent="selected_category=category">{{category}}</a></li>
+              </ul>
+            </div>
 
-            <label for="selected_category">Category</label>
-            <select name="selected_category" v-model="selected_category">
-                <option v-for="category in categories" :value="category">{{category}}</option>
-            </select>
-
-            <table class="table table-widthauto table-bordered table-striped table-striped-column">
-                <thead>
-                  <tr>
-                    <td></td>
-                    <td v-for="engine in selected_engines"><span class="engine">{{engine}}</span></td>
-                  </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="detail in instances_filtered" v-if="detail.engines">
-                        <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments ="detail.comments"></url-component></td>
-                        <td class="column-engine-status" v-for="engine in selected_engines"><engine-component :instance='detail' :engine='engine'></engine-component></td>
+            <div>
+              <table class="table table-widthauto table-bordered table-striped table-engines">
+                  <thead>
+                    <tr>
+                      <td><span class="engine-label"></span></td>
+                      <td v-for="engine in selected_engines">
+                        <label class="engine-label" :title="engine"><input type="checkbox" v-model="$root.filters.engines[engine]"/> {{engine}}</label>
+                      </td>
                     </tr>
-                </tbody>
+                  </thead>
+                  <tbody>
+                      <tr v-for="detail in instances_filtered" v-if="detail.engines">
+                          <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments="detail.comments" :git_url="detail.git_url"></url-component></td>
+                          <td class="engine-status" v-for="engine in selected_engines"><engine-component :instance='detail' :engine='engine' :engine_errors='$root.engine_errors'></engine-component></td>
+                      </tr>
+                  </tbody>
+              </table>
+            </div>
+            <h4 id="help-http-grade">Labels:</h4>
+            <table class="engine-status-list">
+              <tr><td class="engine-status"><span class="ok"></span></td><td>The engine crashes less than 6% of the time</td></tr>
+              <tr><td class="engine-status"><span class="warning"></span></td><td>The engine crashes between 6% and 90% of the time</td></tr>
+              <tr><td class="engine-status"><span class="error"></span></td><td>The engine crashes more than 90% of the time</td></tr>
+              <tr><td class="engine-status"><span class="unknow"></span></td><td>The engine exists, but there is no statistics about it</td></tr>
+              <tr><td class="engine-status"></td><td>The engine doesn't exist for this instance.</td></tr>
             </table>
-            <h4 id="help-http-grade">Icons:</h4>
-            <ul>
-              <li>? - No self-checking, the engine hasn't returned results since the searx instance has started. Perhaps the engine has been used.</li>
-              <li>🟡 - No self-checking, the engine has returned results since the searx instance has started. Maybe it doesn't work anymore.</li>
-              <li>❌ - After self-check, the engine does not return a result.</li>
-              <li>✔️ - After a self-check, the engine returns results.</li>
-            </ul>
           </div>
       </main>
       <footer class="page-footer">

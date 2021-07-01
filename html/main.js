@@ -290,6 +290,15 @@ function hslGradeHtml(grade) {
     return hslNormalizedGradeHtml(normalizeHtmlGrade(grade));
 }
 
+function hslErrorPercentage(percentage) {
+    const l = 54;
+    const normalizedPercentage = 100 - Math.min(100, Math.max(0, percentage));
+    const value = normalizedPercentage / 5;
+    const h = translateValue(value, 0, 20, 0, 128, false);
+    const s = translateValue(value, 0, 20, 39, 54, true);
+    return hslCss(h, s, l);
+}
+
 function formatResponseTime(value) {
     if (typeof value === 'number') {
         return new Intl.NumberFormat('en', { maximumFractionDigits: 3, minimumFractionDigits: 3 }).format(value);
@@ -437,28 +446,79 @@ Vue.component('time-component', {
 });
 
 Vue.component('engine-component', {
-    props: ['instance', 'instance_url', 'engine'],
+    props: ['instance', 'instance_url', 'engine', 'engine_errors'],
     render: function(h) {
         if (this.instance !== undefined && this.engine !== undefined) {
             const engine = this.instance.engines[this.engine];
             if (engine !== undefined) {
                 const href= this.instance.url + 'search?q=!' + this.engine.replace(' ', '_') + ' time&theme=oscar&language=en';
-                let staticClass = 'item-unknow';
-                let text = '?';
-                if (engine.status === true) {
-                    staticClass = 'item-check';
-                    text = '✔️';
-                } else if (engine.status === false) {
-                    staticClass = 'item-uncheck';
-                    text = '❌';
-                } else if (engine.stats === true) {
-                    staticClass = 'item-maybe';
-                    text = '🟡';
+
+                let text;
+                let working_engine = false;
+                let checker_result = typeof engine.checker!=='undefined'?engine.checker.success:null;
+                let error_rate = typeof engine.error_rate!=='undefined'?engine.error_rate:null;
+                let engine_css_class;
+                if (checker_result === null && error_rate === null) {
+                    engine_css_class = 'unknow';
+                } else if (error_rate >= 90) {
+                    engine_css_class = 'error';
+                } else if (checker_result === false || error_rate > 5) {
+                    engine_css_class = 'warning';
+                } else {
+                    engine_css_class = 'ok';
+                    working_engine = true;                        
                 }
-                return createTooltip(h, h('a', {
-                    staticClass: staticClass,
+                text = [ h('span', { attrs: { 'class': engine_css_class } }, '') ];
+                // data about stats/errors
+                const tableTooltipContent = [];
+                if (working_engine) {
+                    const error_th_style = 'padding: 0.25rem; color: white; background-color:' + hslErrorPercentage(0);
+                    tableTooltipContent.push(h('tr', [ h('th', { attrs: { 'colspan': 2, 'style': error_th_style } }, 'No error')]));
+                } else if (error_rate !== null) {
+                    const normalizedErrorRate = engine.error_rate || 0;
+                    let error_th_style = 'padding: 0.25rem; color: white; background-color:' + hslErrorPercentage(normalizedErrorRate);
+                    if ((normalizedErrorRate) === 0) {
+                        error_th_style = 'padding: 0.25rem';
+                    }
+                    tableTooltipContent.push(h('tr',
+                        [
+                            h('th', { attrs: { 'scope': 'row', 'style': error_th_style } }, 'Error rate'),
+                            h('th', { attrs: { 'scope': 'row', 'style': error_th_style } }, (normalizedErrorRate) + '%')
+                        ])
+                    );
+                }
+
+                if (engine.errors) {
+                    for(const error_index of engine.errors) {
+                        tableTooltipContent.push(h('tr', [ h('td', { attrs: { 'colspan': 2  } }, [ this.engine_errors[error_index]])]));
+                    }
+                }
+
+                // data about stats/checker
+                if (checker_result !== null) {
+                    const checker_result_text = engine.checker.success ? 'pass':'fail'
+                    const error_th_style = 'padding: 0.25rem; color: white; background-color:' + hslErrorPercentage(engine.checker.success ? 0:100);
+                    tableTooltipContent.push(h('tr', [ h('td', { attrs: { 'colspan': 2  } }, '') ]));
+                    tableTooltipContent.push(h('tr', [
+                        h('th', { attrs: { 'scope': 'row', 'style': error_th_style } }, 'Checker'),
+                        h('th', { attrs: { 'scope': 'row', 'style': error_th_style } }, checker_result_text)
+                    ]));
+                    for(const checker_error of engine.checker.errors) {
+                        tableTooltipContent.push(h('tr', [ h('td', { attrs: { 'colspan': 2  } }, [ checker_error ])]));
+                    }
+                }
+
+                let content = h('a', {
+                    staticClass: 'engine-result',
                     attrs: { href: href },
-                }, text), engine.error);
+                }, text);
+                if (tableTooltipContent.length > 0) {
+                    const tooltipContent = h('table', { attrs: {'class': 'engine-tooltip'} }, tableTooltipContent);
+                    return createTooltip(h, content, [ tooltipContent ]);
+                } else {
+                    return content;
+                }
+                
             }
         }
     },
@@ -832,7 +892,10 @@ new Vue({
             network_name: '',
             network_country: '',
             standard_search: false,
-            google: false,
+            engines: {
+
+            },
+            well_known_engines: true,
         },
         display: {
             time_select: 'all',
@@ -847,6 +910,7 @@ new Vue({
         forks: [],
         hashes: [],
         engines: {},
+        engine_errors: [],
         categories: [],
         asns: {},
         selected_category: 'general',
@@ -884,6 +948,26 @@ new Vue({
                     }
                     return false;
                 });
+            for(let [engine_name, no_error] of Object.entries(this.filters.engines)) {
+                if (no_error) {
+                    result = result.filter((detail) => {
+                        let engine_detail = detail.engines[engine_name];
+                        if (engine_detail === undefined) {
+                            return false;
+                        }
+                        if (engine_name == 'google' && detail.timing.search_go.success_percentage === 0) {
+                            return false;
+                        }
+                        if (engine_detail['error_rate']) {
+                            return engine_detail['error_rate'] <= 10;
+                        }
+                        if (engine_detail['checker'] && engine_detail['checker']['simple']) {
+                            return engine_detail['checker']['simple'].length == 0;
+                        }
+                        return true;
+                    })
+                }
+            }
             if (this.filters.ipv6) {
                 result = result.filter((detail) => detail.network.ipv6 == true);
             }
@@ -893,9 +977,6 @@ new Vue({
             if (this.filters.standard_search) {
                 result = result.filter((detail) => detail.timing.search.success_percentage > 0);
             }
-            if (this.filters.google) {
-                result = result.filter((detail) => detail.timing.search_go.success_percentage > 0);
-            }
             // sort
             const compareInstance = compareFunctionCompose(...SORT_CRITERIAS);
             result.sort(compareInstance);
@@ -903,9 +984,12 @@ new Vue({
         },
         selected_engines: function() {
             let result = Object.keys(this.engines).filter((engine) => (this.engines[engine].categories.includes(this.selected_category)));
-            const discontinued = ['asksteem', 'faroo', 'findx', 'ixquick', 'swisscows'];
-            const custom = ['Duden', 'everdot yacy network', 'global yacy network', 'immortalpoetry', 'linuxreviews yacy network', 'linuxreviews.org', 'namepros', 'pcgamingwiki', 'wikichip', 'wikispooks'];
-            result = result.filter(n => !discontinued.includes(n)).filter(n => !custom.includes(n)).sort();
+            if (this.filters.well_known_engines) {
+                result = result.filter(n => this.engines[n].stats.instance_count > 20);
+            } else {
+                result = result.filter(n => this.engines[n].stats.instance_count <= 20);
+            }
+            result = result.sort();
             return result;
         },
     },
@@ -974,9 +1058,13 @@ new Vue({
                 this.display.fork_select = json.forks[0];
                 this.hashes = json.hashes;
                 this.engines = json.engines;
+                this.engine_errors = json.engine_errors;
                 this.categories = json.categories;
                 this.cidrs = json.cidrs;
                 this.selected_category = this.categories[0];
+                for(const engine_name of Object.keys(json.engines)) {
+                    this.filters[engine_name] = false;
+                }
             });
         });
     },
