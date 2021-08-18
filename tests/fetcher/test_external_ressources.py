@@ -92,6 +92,7 @@ def fake_searxstatisticsresult(fake_httpserver):
             'status_code': 200,
             'error': None
         },
+        'git_url': 'https://github.com/searx/searx',
         'version': '0.15.0',
         'timing': {
             'initial': 200

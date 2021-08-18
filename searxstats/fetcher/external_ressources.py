@@ -3,7 +3,6 @@ import os
 import time
 import traceback
 import sys
-import operator
 
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
@@ -249,7 +248,7 @@ def get_grade(ressources, hashes):
     return ', '.join(grade)
 
 
-def find_forks(ressources, hashes, forks) -> typing.List[str]:
+def find_forks(ressources, existing_git_url, hashes, forks) -> typing.List[str]:
     """From the hashes of the static files, return a list of fork URL.
     sorted by reference: the first URL is the most referenced.
     """
@@ -265,7 +264,11 @@ def find_forks(ressources, hashes, forks) -> typing.List[str]:
             found_forks[fork_url] = found_forks.get(fork_url, 0) + 1
 
     if found_forks:
-        found_fork_tuples = sorted(found_forks.items(), key=operator.itemgetter(1))
+        def sort_key(fork):
+            existing = fork[0] == existing_git_url
+            return (existing, fork[1])
+
+        found_fork_tuples = sorted(found_forks.items(), key=sort_key)
         return [f[0] for f in found_fork_tuples]
     return []
 
@@ -316,7 +319,11 @@ def fetch(searx_stats_result: SearxStatisticsResult):
     for _, detail in searx_stats_result.iter_instances(only_valid=True):
         ressources = detail.get('html', {}).get('ressources')
         if ressources:
-            found_forks = find_forks(detail['html']['ressources'], searx_stats_result.hashes, searx_stats_result.forks)
+            found_forks = find_forks(
+                detail['html']['ressources'],
+                detail['git_url'],
+                searx_stats_result.hashes,
+                searx_stats_result.forks)
             if found_forks and detail['git_url'] not in found_forks:
                 detail['git_url'] = found_forks[0]
 
