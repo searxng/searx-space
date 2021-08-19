@@ -1,17 +1,16 @@
 import typing
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import lazyload
 
+from searxstats.config import FORKS
 from searxstats.database import get_engine, new_session, Commit, Content, Fork
 from searxstats.data.dynamic_hashes import DYNAMIC_HASHES
 from searxstats.data.inline_hashes import INLINE_HASHES
 
 
 def get_fork_list():
-    fork_list = [
-        'https://github.com/searx/searx'
-    ]
+    fork_list = list(FORKS)
     with get_engine().connect() as connection:
         with new_session(bind=connection) as session:
             for fork in session.query(Fork).options(lazyload(Fork.commits)):
@@ -25,11 +24,13 @@ def get_repositories_for_content_sha(content_sha):
     result: typing.List[str] = []
     with get_engine().connect() as connection:
         with new_session(bind=connection) as session:
-            s = select(Fork.git_url) \
+            # order_by: to get the oldest commits first
+            s = select(Fork.git_url, func.min(Commit.date)) \
                 .join(Fork.commits) \
                 .join(Commit.contents) \
                 .filter(Content.sha == content_sha) \
-                .group_by(Fork.git_url)
+                .group_by(Fork.git_url) \
+                .order_by(func.min(Commit.date))
             for row in session.execute(s):
                 result.append(row[0])
     return result

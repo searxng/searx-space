@@ -44,7 +44,7 @@ def get_content_list_per_commit_iterator(repo_directory, repo, commit_list):
             content_for_commit.add(content_hash)
             seen_content_hashes.add(content_hash)
         # yield
-        yield str(commit.hexsha), content_for_commit
+        yield str(commit.hexsha), commit.authored_date, content_for_commit
         # output
         if count % 50 == 0 or (commit_count - count) < 5 or count == 1:
             print('commit {:4} of {:4}: {:4} different hashes'.format(
@@ -94,8 +94,8 @@ def fetch_hashes_from_git_url(git_url=None):
         print('  {:5} new commit(s)'.format(len(new_commit_list)))
 
         commit_iterator = get_content_list_per_commit_iterator(repo_directory, repo, new_commit_list)
-        for commit_sha, content_hash_list in commit_iterator:
+        for commit_sha, commit_date, content_hash_list in commit_iterator:
             # one SQL transaction per commit
             with new_session(bind=connection) as session:
-                insert_commit(session, git_url, commit_sha, content_hash_list)
+                insert_commit(session, git_url, commit_sha, commit_date, content_hash_list)
                 session.commit()

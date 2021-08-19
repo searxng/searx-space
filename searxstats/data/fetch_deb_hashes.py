@@ -3,6 +3,7 @@ import sys
 import asyncio
 import tempfile
 import subprocess
+from time import time
 from urllib.parse import urljoin
 from contextlib import asynccontextmanager
 
@@ -110,13 +111,15 @@ async def fetch_deb_hashes(session, url):
     """
     print('  Processing', url)
     hashes = []
+    modified_timestamp = time()
     async with download_and_extract_deb(session, url) as deb_directory:
         for filename in filename_iterator(deb_directory):
             try:
+                modified_timestamp = min(os.stat(filename).st_mtime, modified_timestamp)
                 hashes.append(get_file_content_hash(filename))
             except Exception as e:
                 print('    Error', filename[len(deb_directory):], exception_to_str(e))
-    return hashes
+    return hashes, modified_timestamp
 
 
 def filter_out_known_packages(name_url_dict):
@@ -132,14 +135,20 @@ def filter_out_known_packages(name_url_dict):
 async def fetch_source_package_hashes(source_package_name_list):
     """For each source package, get all .deb, then for each .deb, get the hashes of files of the .deb.
 
-    Return a dict, key are deb name, value is a list of hashes
+    Return: a dict
+    - key are deb name,
+    - value are a { "hashes": List[str], "timestamp", int }
     """
     async with new_client() as session:
         name_url_dict = await get_package_name_url_dict(session, source_package_name_list)
         name_url_dict = filter_out_known_packages(name_url_dict)
         hashes = {}
         for package_name, package_url in name_url_dict.items():
-            hashes[package_name] = await fetch_deb_hashes(session, package_url)
+            pkg_hashes, pkg_timestamp = await fetch_deb_hashes(session, package_url)
+            hashes[package_name] = {
+                'hashes': pkg_hashes,
+                'timestamp': pkg_timestamp,
+            }
         return hashes
 
 
@@ -147,9 +156,15 @@ async def fetch_hashes_from_deb_source_list(debian_git_url, debian_source_packag
     print(f'Update Debian package contents: {", ".join(debian_source_package_names)}')
     hashes = await fetch_source_package_hashes(debian_source_package_names)
     with get_engine().connect() as connection:
-        for package_name, package_hashes in hashes.items():
+        for package_name, package_info in hashes.items():
             with new_session(bind=connection) as session:
-                insert_commit(session, debian_git_url, get_deb_commit_id(package_name), package_hashes)
+                insert_commit(
+                    session,
+                    debian_git_url,
+                    get_deb_commit_id(package_name),
+                    package_info['timestamp'],
+                    package_info['hashes']
+                )
                 session.commit()
 
 

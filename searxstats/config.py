@@ -64,6 +64,14 @@ MMDB_FILENAME = os.environ.get("MMDB_FILENAME")
 DEBIAN_GIT_URL = 'https://salsa.debian.org/debian/searx'
 DEBIAN_SOURCE_PACKAGE_NAMES = ['searx', 'twitter-bootstrap3', 'jquery', 'leaflet', 'requirejs', 'typeahead.js']
 
+#
+FORKS = [
+    'https://github.com/searx/searx',
+    'https://github.com/searxng/searxng',
+    'https://salsa.debian.org/debian/searx',
+    'https://gitlab.e.foundation/e/cloud/my-spot',
+]
+
 
 def set_cache_directory(directory):
     global CACHE_DIRECTORY  # pylint: disable=global-statement

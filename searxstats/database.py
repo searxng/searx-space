@@ -39,6 +39,7 @@ class Commit(Base):
 
     id = Column(Integer, primary_key=True)
     sha = Column(String, nullable=False)
+    date = Column(Integer, nullable=False)
     contents = relationship("Content",
                             secondary=commit_content_table,
                             back_populates="commits",

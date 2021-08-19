@@ -1,6 +1,6 @@
 import os
+import pathlib
 import git
-import git.exc
 
 
 def get_repository(directory, url):
@@ -13,13 +13,15 @@ def get_repository(directory, url):
         else:
             raise Exception(directory + ' is not a directory')
 
+    # repository must be public: answer a default username / password
+    os.environ['GIT_ASKPASS'] = str(pathlib.Path(os.getcwd(), __file__).parent / 'askpassword.sh')
+
     # is it a git repository ?
     repo = None
     try:
         repo = git.Repo(directory)
-        print('* Use existing git repository')
-
-    except git.exc.GitError as ex:  # pylint: disable=no-member
+        print('* Use existing git repository, branch=', repo.active_branch.name)
+    except Exception as ex:  # pylint: disable=no-member
         print('* exception', ex)
 
     if repo is None:
@@ -28,10 +30,12 @@ def get_repository(directory, url):
         repo = git.Repo.clone_from(url, directory)
     else:
         # it is a git repository
-        # so pull the master branch without additional files
+        # clean
         repo.git.reset('--hard')
         repo.git.clean('-xdf')
-        repo.git.checkout('master')
+        # checkout current branch
+        repo.git.checkout(repo.heads[0].name)
+        # pull
         repo.git.pull()
 
     return repo
