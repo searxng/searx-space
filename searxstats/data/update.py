@@ -24,7 +24,7 @@ def insert_content(session, commit_obj, content_hash_list):
                         for content_id in content_id_list])
 
 
-def insert_commit(session, repo_url, commit_sha, content_hash_list):
+def insert_commit(session, repo_url, commit_sha, commit_date, content_hash_list):
     # get fork_obj
     fork_obj = session.query(Fork)\
                         .where(Fork.git_url == repo_url)\
@@ -42,7 +42,7 @@ def insert_commit(session, repo_url, commit_sha, content_hash_list):
                         .scalar()
     if not commit_obj:
         is_new_commit = True
-        commit_obj = Commit(sha=commit_sha, forks=[fork_obj])
+        commit_obj = Commit(sha=commit_sha, date=commit_date, forks=[fork_obj])
         session.add(commit_obj)
     elif fork_obj not in commit_obj.forks:
         commit_obj.forks.append(fork_obj)

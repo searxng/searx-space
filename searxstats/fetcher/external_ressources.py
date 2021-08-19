@@ -7,7 +7,7 @@ import sys
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from searxstats.config import SEARX_GIT_REPOSITORY, \
+from searxstats.config import SEARX_GIT_REPOSITORY, FORKS, \
                               BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT,\
                               get_geckodriver_file_name
 from searxstats.data import get_repositories_for_content_sha, is_wellknown_content_sha
@@ -248,7 +248,7 @@ def get_grade(ressources, hashes):
     return ', '.join(grade)
 
 
-def find_forks(ressources, existing_git_url, hashes, forks) -> typing.List[str]:
+def find_forks(ressources, hashes, forks) -> typing.List[str]:
     """From the hashes of the static files, return a list of fork URL.
     sorted by reference: the first URL is the most referenced.
     """
@@ -263,12 +263,31 @@ def find_forks(ressources, existing_git_url, hashes, forks) -> typing.List[str]:
             fork_url = forks[fork_ref]
             found_forks[fork_url] = found_forks.get(fork_url, 0) + 1
 
-    if found_forks:
-        def sort_key(fork):
-            existing = fork[0] == existing_git_url
-            return (existing, fork[1])
+    # Example:
+    # found_forks = {
+    #  'https://github.com/searx/searx': 7,
+    #  'https://github.com/searxng/searxng': 7,
+    #  'https://salsa.debian.org/debian/searx': 6,
+    # }
 
-        found_fork_tuples = sorted(found_forks.items(), key=sort_key)
+    if found_forks:
+        # sort criterias:
+        # * give priority to forks in searxstats.config.FORKS
+        # * then sort by the number of found hashes in a fork.
+        # Example:
+        # len(hashes) = 8
+        # * 6 hashes exist in fork A
+        # * 7 hashes exist in fork B (B in FORKS)
+        # * 7 hashes exist in fork C (C not in FORKS)
+        # --> found_fork_tuples = [(B, 7), (C, 7), (A, 6)]
+        # --> find_forks returns [B, C, A]
+        # possible enhancement:
+        # * use the github/gitlab API to detect fork relation
+        # * example: https://api.github.com/repos/<org>/<repo> see "parent" key.
+        found_fork_tuples = sorted(
+            found_forks.items(),
+            key=lambda o: (o[0] not in FORKS, o[1])
+        )
         return [f[0] for f in found_fork_tuples]
     return []
 
@@ -321,7 +340,6 @@ def fetch(searx_stats_result: SearxStatisticsResult):
         if ressources:
             found_forks = find_forks(
                 detail['html']['ressources'],
-                detail['git_url'],
                 searx_stats_result.hashes,
                 searx_stats_result.forks)
             if found_forks and detail['git_url'] not in found_forks:
