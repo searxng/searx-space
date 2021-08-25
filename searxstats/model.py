@@ -18,7 +18,10 @@ class AsnPrivacy(Enum):
 
 class SearxStatisticsResult:
 
-    __slots__ = 'metadata', 'instances', 'engines', 'categories', 'hashes', 'cidrs', 'forks', 'private'
+    __slots__ = (
+        'metadata', 'instances', 'engines', 'categories', 'hashes', 'cidrs', 'forks',
+        'engine_errors', 'private'
+    )
 
     def __init__(self, private=False):
         self.metadata = {
@@ -27,6 +30,7 @@ class SearxStatisticsResult:
         }
         self.instances = {}
         self.engines = {}
+        self.engine_errors = []
         self.categories = []
         self.hashes = []
         self.cidrs = {}
@@ -69,6 +73,7 @@ class SearxStatisticsResult:
             'metadata': self.metadata,
             'instances': self.instances,
             'engines': self.engines,
+            'engine_errors': self.engine_errors,
             'categories': self.categories,
             'hashes': self.hashes,
             'cidrs': self.cidrs,

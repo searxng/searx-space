@@ -1,86 +1,22 @@
 # pylint: disable=invalid-name
 import json
 from urllib.parse import urljoin
-from lxml import etree
 from searxstats.common.utils import dict_merge
 from searxstats.common.foreach import for_each
 from searxstats.common.http import new_client, get, get_network_type
-from searxstats.common.html import html_fromstring, extract_text
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
 
 
-STATS_ENGINES_XPATH = etree.XPath(
-    "//div[@class='col-xs-12 col-sm-12 col-md-6'][3]//div[@class='row']")
-STATS_ENGINES_NAME_XPATH = etree.XPath("div[@class='col-sm-4 col-md-4'][1]")
-STATS_ENGINES_COUNT_XPATH = etree.XPath("div[@class='col-sm-8 col-md-8'][1]")
-
-
 # pylint: disable=unused-argument
-def get_usable_engines_key(_, instance_url):
+def only_instance_url(_, instance_url):
     return instance_url
 
 
-@MemoizeToDisk(func_key=get_usable_engines_key)
-async def get_status(session, instance_url):
-    result = None
-    response, error = await get(session, urljoin(instance_url, 'status'), timeout=5)
-    if response is not None and error is None:
-        result = []
-        try:
-            status_json = response.json()
-        except json.JSONDecodeError:
-            pass
-        else:
-            result = status_json.get('engines_state', {})
-            for engine in result:
-                if 'error' in engine:
-                    if engine['error'] is None:
-                        del engine['error']
-    return result
-
-
-async def get_stats(session, instance_url):
-    result = set()
-    response, error = await get(session, urljoin(instance_url, 'stats'), timeout=5)
-    if response is not None and error is None:
-        html = await html_fromstring(response.text)
-        for e in STATS_ENGINES_XPATH(html):
-            engine_name = extract_text(STATS_ENGINES_NAME_XPATH(e))
-            result_count = extract_text(STATS_ENGINES_COUNT_XPATH(e))
-            if result_count not in ['', '0.00'] and engine_name is not None:
-                result.add(engine_name)
-    return result
-
-
-@MemoizeToDisk(func_key=get_usable_engines_key)
-async def get_stats_multi(session, instance_url):
-    result = set()
-    # fetch the stats four times because of uwsgi
-    # may be not enough to get the statistics from all the uwsgi processes
-    # still better than only once
-    # see https://github.com/searx/searx/issues/162
-    # and https://github.com/searx/searx/issues/199
-    for _ in range(4):
-        result = result.union(await get_stats(session, instance_url))
-    return result
-
-
-def get_status_from_stats(stats):
-    if len(stats) == 0:
-        return None
-    else:
-        status = {}
-        for engine_name in stats:
-            engine_status = status.setdefault(engine_name, {})
-            engine_status['stats'] = True
-        return status
-
-
-@MemoizeToDisk(func_key=get_usable_engines_key)
+@MemoizeToDisk(func_key=only_instance_url)
 async def get_config(session, instance_url):
-    result_config = None
-    result_instance = None
+    result_engines = None
+    result_categories = None
     response, error = await get(session, urljoin(instance_url, 'config'), timeout=5)
     if response is not None and error is None:
         try:
@@ -88,19 +24,15 @@ async def get_config(session, instance_url):
         except json.JSONDecodeError:
             pass
         else:
-            result_config = {
-                'engines': {},
-                'categories': []
-            }
-            result_instance = {}
+            result_engines = {}
+            result_categories = []
             # categories
             for category in config.get('categories', {}):
-                if category not in result_config['categories']:
-                    result_config['categories'].append(category)
+                if category not in result_categories:
+                    result_categories.append(category)
             # engines
             for engine in config.get('engines', {}):
-                # FIXME: deal with different the different configurations among instances for the same engine
-                result_config['engines'][engine['name']] = {
+                result_engines[engine['name']] = {
                     'categories': engine['categories'],
                     'language_support': engine['language_support'],
                     'paging': engine['paging'],
@@ -108,39 +40,149 @@ async def get_config(session, instance_url):
                     'time_range_support': engine['time_range_support'],
                     'shortcut': engine['shortcut']
                 }
-                result_instance[engine['name']] = {}
-                if engine['enabled']:
-                    result_instance[engine['name']]['enabled'] = True
-    return result_config, result_instance
+    return result_engines, result_categories
+
+
+@MemoizeToDisk(func_key=only_instance_url)
+async def get_stats_checker(session, instance_url):
+    result = None
+    response, error = await get(session, urljoin(instance_url, 'stats/checker'), timeout=5)
+    if response is not None and error is None:
+        try:
+            checker_json = response.json()
+        except json.JSONDecodeError:
+            pass
+        else:
+            if checker_json.get('status') != 'ok':
+                return result
+            result = {}
+            for engine_name, engine_checker_result in checker_json.get('engines', {}).items():
+                result[engine_name] = {
+                    'checker': {
+                        'success': engine_checker_result.get('success', False),
+                        'errors': list(engine_checker_result.get('errors', {}).keys()),
+                    }
+                }
+    return result
+
+
+@MemoizeToDisk(func_key=only_instance_url)
+async def get_stats_errors(session, instance_url):
+    # pylint: disable=too-many-nested-blocks
+    result = None
+    response, error = await get(session, urljoin(instance_url, 'stats/errors'), timeout=5)
+    if response is not None and error is None:
+        try:
+            status_json = response.json()
+        except json.JSONDecodeError:
+            pass
+        else:
+            result = {}
+            for engine_name, json_errors in status_json.items():
+                error_rate = 0
+                errors = []
+                for error in json_errors:
+                    exception_classname = error.get('exception_classname')
+                    if exception_classname and not error.get('secondary'):
+                        error_rate += error.get('percentage', 0)
+                        if error_rate > 0:
+                            errors.append(exception_classname)
+                # timeout can be count twice:
+                # because:
+                # * searx.search.processor.* records the timeout
+                # * searx.search.search_multiple_requests records the same timeout
+                error_rate = min(100, error_rate)
+                result[engine_name] = {
+                    'error_rate': error_rate,
+                    'errors': errors,
+                }
+    return result
+
+
+def set_engine_errors(searx_stats_result: SearxStatisticsResult, result_stats_errors: dict):
+    engine_errors = searx_stats_result.engine_errors
+    for errors in result_stats_errors.values():
+        error_indexes = []
+        for error in errors.get('errors', {}):
+            if error not in engine_errors:
+                engine_errors.append(error)
+            error_index = engine_errors.index(error)
+            if error_index not in error_indexes:
+                error_indexes.append(error_index)
+        if len(error_indexes):
+            errors['errors'] = error_indexes
+        else:
+            del errors['errors']
+    searx_stats_result.engine_errors = engine_errors
 
 
 async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail):
     network_type = get_network_type(url)
     async with new_client(network_type=network_type) as session:
-        # get config and config
-        result_status = await get_status(session, url)
-        result_config, result_instance = await get_config(session, url)
-        if result_status is None:
-            result_stats = await get_stats_multi(session, url)
-            result_status = get_status_from_stats(result_stats)
+        # /config
+        result_engines, result_categories = await get_config(session, url)
+        # /stats/checker
+        result_checker = await get_stats_checker(session, url)
+        # /stats/errors
+        result_stats_errors = await get_stats_errors(session, url)
 
         # update config and status for the instance
-        detail_engines = detail.setdefault('engines', dict())
-        if result_instance is not None:
-            dict_merge(detail_engines, result_instance)
-        if result_status is not None:
-            dict_merge(detail_engines, result_status)
+        engine_detail_dict = detail.setdefault('engines', dict())
+        if result_engines is not None:
+            declared_engines = {engine_name: {} for engine_name in result_engines.keys()}
+            dict_merge(engine_detail_dict, declared_engines)
+        if result_checker is not None:
+            dict_merge(engine_detail_dict, result_checker)
+        if result_stats_errors is not None:
+            set_engine_errors(searx_stats_result, result_stats_errors)
+            dict_merge(engine_detail_dict, result_stats_errors)
+        else:
+            # impossible to fetch /stats/errors
+            # set error_rate to None (unknown) for each engine
+            for engine_detail in engine_detail_dict.values():
+                engine_detail['error_rate'] = None
 
-        # update existing engine and category list
-        if result_config is not None:
-            # engines
-            searx_stats_result.engines.update(result_config['engines'])
-            # categories
-            for category in result_config['categories']:
+        # update existing engine list
+        if result_engines is not None:
+            for engine_name, engine_detail in result_engines.items():
+                if engine_name not in searx_stats_result.engines:
+                    engine_detail['stats'] = {
+                        # sum of error_rate for all stat_count instance
+                        # replace in finalize_stats by error_rate ( = total_error_rate / stats_count )
+                        'total_error_rate': 0,
+                        # number of instances with this engine
+                        'instance_count': 0,
+                        # number of instance with this engine and information in /stats/errors or /stats/checker
+                        'stats_count': 0,
+                    }
+                    searx_stats_result.engines[engine_name] = engine_detail
+                # FIXME: deal with the different configurations among instances for the same engine
+                # update stats
+                engine_stat = searx_stats_result.engines[engine_name]['stats']
+                engine_stat['instance_count'] += 1
+                if result_stats_errors and engine_name in result_stats_errors:
+                    engine_stat['total_error_rate'] += result_stats_errors[engine_name].get('error_rate', 0)
+                    engine_stat['stats_count'] += 1
+
+        # update existing category list
+        if result_categories is not None:
+            for category in result_categories:
                 if category not in searx_stats_result.categories:
                     searx_stats_result.categories.append(category)
         print('💡 {0:30}'.format(url))
 
 
+def finalize_stats(searx_stats_result: SearxStatisticsResult):
+    for engine_detail in searx_stats_result.engines.values():
+        engine_stat = engine_detail.get('stats')
+        if engine_stat:
+            if engine_stat['stats_count'] == 0:
+                engine_stat['error_rate'] = None
+            else:
+                engine_stat['error_rate'] = round(engine_stat['total_error_rate'] / engine_stat['stats_count'], 1)
+            del engine_stat['total_error_rate']
+
+
 async def fetch(searx_stats_result: SearxStatisticsResult):
     await for_each(searx_stats_result.iter_instances(only_valid=True), fetch_one, searx_stats_result)
+    finalize_stats(searx_stats_result)
