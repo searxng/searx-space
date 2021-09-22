@@ -10,13 +10,13 @@
     <link rel="stylesheet" href="main.css">
     <link rel="preload" href="/data/instances.json" as="fetch" crossorigin="anonymous">
 
-    <title>Searx instances</title>
+    <title>SearXNG and searx instances</title>
     <meta name="description" content="Online and offline Searx instances">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://searx.space/">
     <meta property="og:title" content="Searx instances">
     <meta property="og:image" content="https://searx.space/searx.png">
-    <meta property="og:description" content="Online and offline Searx instances">
+    <meta property="og:description" content="Online and offline instances">
     <link rel="apple-touch-icon" href="/searx.png">
     <script type="application/ld+json">
       {
@@ -24,11 +24,11 @@
         "@type": "Website",
         "url": "https://searx.space",
         "image": "https://searx.space/searx.png",
-        "license": "https://github.com/searx/searx-stats2/blob/master/LICENSE",
+        "license": "https://github.com/searxng/searx-space/blob/master/LICENSE",
         "about": {
           "@type": "Website",
-          "name": "Searx",
-          "url": "https://github.com/searx/searx/"
+          "name": "SearXNG",
+          "url": "https://github.com/searxng/searxmg/"
         },
         "sameAs" : [
           "http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion/"
@@ -43,7 +43,7 @@
           <nav class="navbar navbar-inverse navbar-static-top">
             <div class="container full-width">
               <div class="navbar-header">
-                <a class="navbar-brand" href="#">Searx instances</a>
+                <a class="navbar-brand" href="#">SearXNG instances</a>
               </div>
               <ul class="nav navbar-nav" role="tablist">
                 <li :class="selected_tab=='online_https'?'active':''"><a href="#" v-on:click="selected_tab='online_https'">Online HTTPS</a></li>
@@ -63,17 +63,17 @@
       <main role="main" class="container theme-showcase" v-if="selected_tab === 'about'">
         <div class="row">
           <h2>About</h2>
-          <p>This website shows the searx public instances. It is updated every 24 hours, except the response times which are updated every 3 hours.
-          It requires Javascript until the <a href="https://github.com/searx/searx-stats2/issues/9">issue #9</a> is fixed.</p>
-          <p><a href="https://github.com/searx/searx">Searx</a> is a free internet metasearch engine which aggregates results from more than 70 search services. Users are neither tracked nor profiled.</p>
+          <p>This website shows the SearXNG (and searx) public instances. It is updated every 24 hours, except the response times which are updated every 3 hours.
+          It requires Javascript until the <a href="https://github.com/searxng/searx-space/issues/9">issue #9</a> is fixed.</p>
+          <p><a href="https://github.com/searxng/searxng">SearXNG</a> is a free internet metasearch engine which aggregates results from more than 70 search services. Users are neither tracked nor profiled.</p>
           <p>Public instances listed here may yield less accurate results as they have much higher traffic and consequently have a higher chance of being blocked
           by search providers such as Google, Qwant, Bing, Startpage, etc. Hosting your own instance or using an instance that isn't listed here
           may give you a more consistent search experience.</p>
-          <p>The source code of this website: <a href="https://github.com/searx/searx-stats2">https://github.com/searx/searx-stats2</a></p>
-          <p>If something doesn't work as expected on this website, or you have a feature request, you can <a href="https://github.com/searx/searx-stats2/issues">create an issue</a></p>
+          <p>The source code of this website: <a href="https://github.com/searxng/searx-space">https://github.com/searxng/searx-space</a></p>
+          <p>If something doesn't work as expected on this website, or you have a feature request, you can <a href="https://github.com/searxng/searx-space/issues">create an issue</a></p>
 
           <h3>Meta-searx instances</h3>
-          <p>These are websites that source from other searx instances. These are useful if you can't decide which Searx instance to use:</p>
+          <p>These are websites that source from other searx instances. These are useful if you can't decide which SearXNG instance to use:</p>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover">
               <thead>
@@ -122,9 +122,9 @@
           <h3>How can I add / remove my instance on this site ?</h3>
           <p>See the <a href="https://github.com/searx/searx-instances">searx-instances</a> project</p>
 
-          <h3>How can I install searx ?</h3>
-          <p>See the <a href="https://searx.github.io/searx/admin/index.html">searx documentation</a></p>
-          <p>Or if you want to use docker: <a href="https://github.com/searx/searx-docker">https://github.com/searx/searx-docker</a></p>
+          <h3>How can I install SearXNG ?</h3>
+          <p>See the <a href="https://searxng.github.io/searxng/admin/index.html">searx documentation</a></p>
+          <p>Or if you want to use docker: <a href="https://github.com/searxng/searxng-docker">https://github.com/searxng/searxng-docker</a></p>
 
           <h3>How can I use the results in another project ?</h3>
           <p>You can fetch <a href="data/instances.json">instances.json</a> directly.</p>
@@ -227,14 +227,14 @@
 
             <h4 id="help-csp-grade">CSP grade</h4>
             <p>Grade from <a href="https://github.com/dalf/http-observatory">dalf/http-observatory</a> updated fork of <a href="https://observatory.mozilla.org/faq.html">Observatory by mozilla</a>.
-            <p>Note: The grade shown here might be different from observatory.mozilla.org: searx.space checks the full searx URL, observatory.mozilla.org checks the root path.</p>
+            <p>Note: The grade shown here might be different from observatory.mozilla.org: searx.space checks the full SearXNG URL, observatory.mozilla.org checks the root path.</p>
 
             <h4 id="help-http-grade">HTTP grade</h4>
             <p>When the page is loaded by Firefox, are the scripts well-known ?</p>
             <ul>
-              <li>V - Vanilla instance: all static files comes from the searx git repository.</li>
-              <li>F - Fork: all static files comes from a fork of searx</li>
-              <li>C - Some static files have been modified, but the Javascripts comes from the searx git repository.</li>
+              <li>V - Vanilla instance: all static files comes from the SearXNG git repository.</li>
+              <li>F - Fork: all static files comes from a fork of SearXNG</li>
+              <li>C - Some static files have been modified, but the Javascripts comes from the SearXNG git repository.</li>
               <li>Cjs - Some static files have been modified including Javascript files.</li>
               <li>E - The instance includes file from another domain.</li>
             </ul>
@@ -258,14 +258,14 @@
             <h4 id="help-timing">Displayed time</h4>
             <ul>
               <li>Total time - client time</li>
-              <li>Server time - on the searx instance, time to serve the page</li>
-              <li>Load time - on the searx instance, time to load the third party page (wikipedia, google)</li>
+              <li>Server time - on the SearXNG instance, time to serve the page</li>
+              <li>Load time - on the SearXNG instance, time to load the third party page (wikipedia, google)</li>
               <li>Network time = Total time - Server time</li>
               <li>Processing time = Server time - Load time</li>
             </ul>
             <p>
               The instances have to send the <a href="https://www.w3.org/TR/server-timing/">Server-Timing header</a> to providing the Server, Load, Network and Processing times.
-              See the searx commit <a href="https://github.com/searx/searx/commit/554a21e1d07f3b434b5097b4e3d49e1403be7527">554a21e1d07f3b43</a>.
+              See the SearXNG commit <a href="https://github.com/searxng/searxng/commit/554a21e1d07f3b434b5097b4e3d49e1403be7527">554a21e1d07f3b43</a>.
             </p>
           </div>
           <div v-if="selected_tab === 'online_tor'">
@@ -308,7 +308,7 @@
               </div>
           </div>
           <div v-if="selected_tab === 'searxerrors'">
-            <h2>Searx not found</h2>
+            <h2>SearXNG not found</h2>
             <div class="table-responsive">
               <table class="table table-bordered table-striped">
                   <thead>
@@ -412,7 +412,7 @@
       <footer class="page-footer">
         <div class="container text-center">
           <div class="row">
-            <p><a href="https://github.com/searx/searx-stats2">Source code of this website</a>
+            <p><a href="https://github.com/searxng/searx-space">Source code of this website</a>
               - <a href="https://searx.space">Public URL</a>
               - <a href="http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion">Onion URL</a>
             </p>
