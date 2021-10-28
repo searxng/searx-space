@@ -36,6 +36,7 @@ class SearxStatisticsResult:
         self.cidrs = {}
         self.forks = [
             'https://github.com/searx/searx',
+            'https://github.com/searxng/searxng',
         ]
         self.private = private
 

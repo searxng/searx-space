@@ -51,6 +51,7 @@ SEARXINSTANCES_GIT_DIRECTORY = 'searxinstances-git'
 
 # Git URL of searx (to fetch static file content hashes)
 SEARX_GIT_REPOSITORY = 'https://github.com/searx/searx'
+SEARXNG_GIT_REPOSITORY = 'https://github.com/searxng/searxng'
 
 SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/searx/searx-instances'
 

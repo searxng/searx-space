@@ -7,7 +7,7 @@ import sys
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from searxstats.config import SEARX_GIT_REPOSITORY, FORKS, \
+from searxstats.config import SEARX_GIT_REPOSITORY, SEARXNG_GIT_REPOSITORY, FORKS, \
                               BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT,\
                               get_geckodriver_file_name
 from searxstats.data import get_repositories_for_content_sha, is_wellknown_content_sha
@@ -138,7 +138,10 @@ def replace_hash_by_hashref(result, hashes, forks):
                         repo_url_list = get_repositories_for_content_sha(ressource_hash)
                         if not repo_url_list:
                             new_hash_desc['unknown'] = True
-                        elif SEARX_GIT_REPOSITORY not in repo_url_list:
+                        elif (
+                                SEARX_GIT_REPOSITORY not in repo_url_list
+                                and SEARXNG_GIT_REPOSITORY not in repo_url_list
+                        ):
                             new_hash_desc['forks'] = [forks.index(f) for f in repo_url_list]
                     # ressource_hash first seen for the whole run
                     hashes[ressource_hash] = new_hash_desc

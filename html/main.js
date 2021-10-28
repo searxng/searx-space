@@ -349,17 +349,15 @@ Vue.component('url-component', {
                 }
                 for (const [altUrl, altComment] of Object.entries(this.alternativeurls)) {
                     tooltipLines.push(h('tr', [
-                        h('td', altUrl),
-                        h('td', altComment)
+                        h('td', altComment),
+                        h('td', altUrl)
                     ]));
                 }
             }
-            if (this.git_url != 'https://github.com/searx/searx') {
-                tooltipLines.push(h('tr', [
-                    h('td', [ h('a', { attrs: { href: this.git_url } }, this.git_url) ]),
-                    h('td', 'Fork'),
-                ]));
-            }
+            tooltipLines.push(h('tr', [
+                h('td', 'Git URL'),
+                h('td', [ h('a', { attrs: { href: this.git_url } }, this.git_url) ]),
+            ]));
             const ahrefElement = h('a', { attrs: {  href: this.url } }, this.url);
             if (tooltipLines.length > 0) {
                 return createTooltip(h,
@@ -551,13 +549,11 @@ Vue.component('html-component', {
                             h('td', { attrs: attrs }, ''),
                         ]));
                     }
-                    if (this.git_url != 'https://github.com/searx/searx') {
-                        r.push(h('tr', [
-                            h('td', { attrs: attrs }, 'Fork'),
-                            h('td', { attrs: attrs }, [ h('a', { attrs: { href: this.git_url } }, this.git_url) ]),
-                            h('td', { attrs: attrs }, ''),
-                        ]));
-                    }
+                    r.push(h('tr', [
+                        h('td', { attrs: attrs }, 'Git URL'),
+                        h('td', { attrs: attrs }, [ h('a', { attrs: { href: this.git_url } }, this.git_url) ]),
+                        h('td', { attrs: attrs }, ''),
+                    ]));
                     // inline scripts
                     let unknownCountMin = 1000000;
                     let unknownInlineScriptCount = 0;

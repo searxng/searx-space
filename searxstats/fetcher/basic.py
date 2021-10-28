@@ -13,7 +13,7 @@ from searxstats.common.ssl_info import get_ssl_info
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.common.response_time import ResponseTimeStats
 from searxstats.data import get_fork_list
-from searxstats.config import DEFAULT_HEADERS
+from searxstats.config import DEFAULT_HEADERS, SEARX_GIT_REPOSITORY
 
 
 # in a HTML page produced by searx, regex to find the searx version
@@ -75,7 +75,7 @@ async def set_searx_version(detail, git_url, session, response_url, response):
     if git_url:
         git_url = await resolve_https_redirect(session, git_url)
     else:
-        git_url = 'https://github.com/searx/searx'
+        git_url = SEARX_GIT_REPOSITORY
     detail['git_url'] = git_url
 
 
