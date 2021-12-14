@@ -2,7 +2,7 @@ import ssl
 import httpx
 import httpx.config
 import httpx.backends.asyncio
-from OpenSSL.crypto import load_certificate, FILETYPE_ASN1
+# from OpenSSL.crypto import load_certificate, FILETYPE_ASN1
 
 
 def set_or_concat_value(obj, key, value):
@@ -94,7 +94,7 @@ SSLINFO = SslInfo()
 
 def get_httpx_backend():
     global SSLINFO  # pylint: disable=global-statement
-    return AsyncioBackendLogCert(SSLINFO)
+    return httpx.backends.asyncio.AsyncioBackend()
 
 
 def get_ssl_info(hostname):
