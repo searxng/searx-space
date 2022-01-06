@@ -13,5 +13,5 @@ requests==2.24.0
 beautifulsoup4==4.6.3
 publicsuffixlist==0.6.2
 psutil==5.6.6
-celery==4.2.1
+celery==5.2.2
 geoip2==4.2.0
