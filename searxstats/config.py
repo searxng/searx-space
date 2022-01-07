@@ -53,7 +53,7 @@ SEARXINSTANCES_GIT_DIRECTORY = 'searxinstances-git'
 SEARX_GIT_REPOSITORY = 'https://github.com/searx/searx'
 SEARXNG_GIT_REPOSITORY = 'https://github.com/searxng/searxng'
 
-SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/searx/searx-instances'
+SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/searxng/searx-instances'
 
 # geckodriver log file name
 GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'
