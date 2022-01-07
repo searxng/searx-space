@@ -27,7 +27,7 @@ def copy_dict_slash(dictionnary: dict) -> dict:
 
 async def get_searx_stats_result_from_repository() -> SearxStatisticsResult:
     """
-    Fetch searx instances from https://github.com/searx/searx-instances/
+    Fetch searx instances from https://github.com/searxng/searx-instances/
     """
     searx_stats_result = SearxStatisticsResult(private=False)
     searx_instances = load_searx_instances()
