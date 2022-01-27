@@ -1,7 +1,5 @@
 import ssl
-import httpx
-import httpx.config
-import httpx.backends.asyncio
+from typing import Dict
 from OpenSSL.crypto import load_certificate, FILETYPE_ASN1
 
 
@@ -47,56 +45,38 @@ def update_obj_with_bin(cert_obj, cert_bin):
             cert_obj['subject']['altName'] = str(ex)
 
 
-class SslInfo:
+SSL_CONTEXT = ssl.create_default_context()
 
-    __slots__ = ['_ssl_info']
+_SSL_OBJECTS: Dict[str, ssl.SSLObject] = {}
 
-    def __init__(self):
-        self._ssl_info = dict()
-
-    def parse_sslobject(self, hostname: str, sslobj: ssl.SSLObject):
-        if sslobj is None:
-            return
-        if hostname not in self._ssl_info:
-            cert_dict = sslobj.getpeercert(binary_form=False)
-            cert_bin = sslobj.getpeercert(binary_form=True)
-            # make cert_obj using cert_dict and cert_bin
-            cert_obj = cert_to_obj(cert_dict)
-            if cert_bin is not None and 'sha256' not in cert_obj:
-                update_obj_with_bin(cert_obj, cert_bin)
-            # store values
-            self._ssl_info[hostname] = {
-                'version': sslobj.version(),
-                'certificate': cert_obj
-            }
-
-    def get(self, hostname: str):
-        return self._ssl_info.get(hostname, {})
+_wrap_bio = SSL_CONTEXT.wrap_bio
 
 
-class AsyncioBackendLogCert(httpx.backends.asyncio.AsyncioBackend):
-
-    __slots__ = ['_sslinfo']
-
-    def __init__(self, sslinfo: SslInfo):
-        super().__init__()
-        self._sslinfo = sslinfo
-
-    async def open_tcp_stream(self, hostname, port, ssl_context, timeout):
-        value = await super().open_tcp_stream(hostname, port, ssl_context, timeout)
-        sslobj = value.stream_reader._transport.get_extra_info('ssl_object')  # pylint: disable=protected-access
-        self._sslinfo.parse_sslobject(hostname, sslobj)
-        return value
+def patched_wrap_bio(incoming: ssl.MemoryBIO, outgoing: ssl.MemoryBIO, server_hostname: str, **kwargs) -> ssl.SSLObject:
+    global _SSL_OBJECTS  # pylint: disable=global-statement
+    ssl_object = _wrap_bio(incoming, outgoing, server_hostname=server_hostname, **kwargs)
+    _SSL_OBJECTS[server_hostname] = ssl_object
+    return ssl_object
 
 
-SSLINFO = SslInfo()
-
-
-def get_httpx_backend():
-    global SSLINFO  # pylint: disable=global-statement
-    return httpx.backends.asyncio.AsyncioBackend()
+# we monkey patch SSL_CONTEXT to store SSLObjects in _ssl_objects
+# (subclassing ssl.SSLContext for some reason didn't work reliably)
+SSL_CONTEXT.wrap_bio = patched_wrap_bio
 
 
 def get_ssl_info(hostname):
-    global SSLINFO  # pylint: disable=global-statement
-    return SSLINFO.get(hostname)
+    global _SSL_OBJECTS  # pylint: disable=global-statement
+    ssl_object = _SSL_OBJECTS.get(hostname)
+    if ssl_object:
+        cert_dict = ssl_object.getpeercert(binary_form=False)
+        cert_bin = ssl_object.getpeercert(binary_form=True)
+        # make cert_obj using cert_dict and cert_bin
+        cert_obj = cert_to_obj(cert_dict)
+        if cert_bin is not None and 'sha256' not in cert_obj:
+            update_obj_with_bin(cert_obj, cert_bin)
+        return {
+            'version': ssl_object.version(),
+            'certificate': cert_obj
+        }
+    else:
+        return {}

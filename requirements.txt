@@ -1,4 +1,4 @@
-pyOpenSSL==19.1.0
+pyOpenSSL==21.0.0
 httpx==0.11.0
 brotlipy==0.7.0
 uvloop==0.14.0
