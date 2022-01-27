@@ -1,5 +1,7 @@
 import argparse
 import asyncio
+import os
+import sys
 
 from .common.memoize import bind_to_file_name
 from .config import (
@@ -13,6 +15,13 @@ from . import initialize, run_once, run_server, erase_memoize, finalize
 # pylint: disable=too-many-locals
 def run(server_mode: bool, output_file_name: str, user_cache_directory: str, database_url: str,
         instance_urls: list, private: bool, selected_fetcher_names: list, update_fetcher_memoize_list: list):
+
+    if not os.access(user_cache_directory, os.W_OK):
+        sys.exit('[FATAL ERROR] need write access to {}'.format(user_cache_directory))
+
+    if not os.access(output_file_name, os.W_OK):
+        sys.exit('[FATAL ERROR] need write access to {}'.format(output_file_name))
+
     private_str = 'Private' if private else 'Public'
     server_mode_str = 'server mode' if server_mode else 'single run'
     server_emoji_str = '🤖' if server_mode else '⚡'
