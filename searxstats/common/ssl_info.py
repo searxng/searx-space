@@ -2,7 +2,7 @@ import ssl
 import httpx
 import httpx.config
 import httpx.backends.asyncio
-# from OpenSSL.crypto import load_certificate, FILETYPE_ASN1
+from OpenSSL.crypto import load_certificate, FILETYPE_ASN1
 
 
 def set_or_concat_value(obj, key, value):
