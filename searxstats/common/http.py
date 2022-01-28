@@ -12,7 +12,7 @@ import httpx.backends.asyncio
 from .utils import exception_to_str
 from .queuecalls import UseQueue
 from .memoize import Memoize
-from .ssl_info import get_httpx_backend
+from .ssl_info import SSL_CONTEXT
 from ..config import TOR_HTTP_PROXY
 
 if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
@@ -66,9 +66,7 @@ async def new_client(*args, **kwargs):
             network_type = kwargs['network_type']
             kwargs['proxies'] = NETWORK_PROXIES.get(network_type, None)
         del kwargs['network_type']
-    if 'backend' not in kwargs:
-        kwargs['backend'] = get_httpx_backend()
-    async with httpx.AsyncClient(*args, **kwargs) as session:
+    async with httpx.AsyncClient(*args, backend='asyncio', verify=SSL_CONTEXT) as session:
         session._network_type = network_type  # pylint: disable=protected-access
         yield session
 
