@@ -66,7 +66,7 @@ async def new_client(*args, **kwargs):
             network_type = kwargs['network_type']
             kwargs['proxies'] = NETWORK_PROXIES.get(network_type, None)
         del kwargs['network_type']
-    async with httpx.AsyncClient(*args, backend='asyncio', verify=SSL_CONTEXT) as session:
+    async with httpx.AsyncClient(*args, **kwargs, backend='asyncio', verify=SSL_CONTEXT) as session:
         session._network_type = network_type  # pylint: disable=protected-access
         yield session
 
