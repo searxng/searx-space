@@ -96,7 +96,8 @@ def fake_searxstatisticsresult(fake_httpserver):
         'version': '0.15.0',
         'timing': {
             'initial': 200
-        }
+        },
+        'analytics': False,
     })
     yield result
 
