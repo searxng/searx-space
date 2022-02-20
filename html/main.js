@@ -46,6 +46,7 @@ const HTML_GRADE_MAPPING = {
     'E': 0,
     'E, ?': 0,
     'E, js?': 0,
+    '👁️': 0,
 
     '?': -1,
     'js?': -1,
@@ -57,6 +58,7 @@ const HTML_GRADE_LABEL = {
     'C': 'Customized, vanilla Javascript',
     'Cjs': 'Customized, including Javascript',
     'E': 'External resources',
+    '👁️': 'Analytics',
     '?': 'Unknow',
     'js?': 'Unloaded Javascript',
 }

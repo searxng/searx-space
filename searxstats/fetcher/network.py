@@ -56,7 +56,7 @@ except ImportError:
     ldns = None
 
 
-MMDB_DATABASE: typing.Optional[geoip2.database.Reader] = None
+MMDB_DATABASE: typing.Optional[geoip2.database.Reader] = None  # pylint: disable=unsubscriptable-object
 if MMDB_FILENAME and os.path.isfile(MMDB_FILENAME):
     MMDB_DATABASE = geoip2.database.Reader(MMDB_FILENAME)
 

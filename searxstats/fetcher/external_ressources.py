@@ -204,7 +204,7 @@ def analyze_ressources(ressources, hashes):
     return result
 
 
-def get_grade(ressources, hashes):
+def get_grade(ressources, hashes, analytics):
     """
     tags:
     - vanilla: only well known ressources
@@ -216,7 +216,10 @@ def get_grade(ressources, hashes):
 
     grade = []
 
-    if result.well_known == result.count:
+    if analytics:
+        # Analytics: same as external ressources
+        grade.append('👁️')
+    elif result.well_known == result.count:
         # All ressources are well known
         grade.append('V')
     elif result.fork > 0 and result.fork + result.well_known == result.count:
@@ -352,4 +355,4 @@ def fetch(searx_stats_result: SearxStatisticsResult):
     for _, detail in searx_stats_result.iter_instances(only_valid=True):
         if 'html' in detail:
             html = detail['html']
-            html['grade'] = get_grade(html['ressources'], searx_stats_result.hashes)
+            html['grade'] = get_grade(html['ressources'], searx_stats_result.hashes, detail['analytics'])
