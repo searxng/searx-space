@@ -11,6 +11,9 @@
 
 'use strict';
 
+const GROUP_VERSION_PER_DAYS = 30;
+const VERSION_START_DATE = new Date("2022-01-01").getTime();
+
 const COMMON_ERROR_MESSAGE = {
     'Connection refused': 'Connection refused',
     'Connection timed out': 'Connection timed out',
@@ -112,6 +115,15 @@ function normalizeSearxVersion(v) {
     if (typeof (v) !== 'string') {
         return [0, 0, 0, 0, ''];
     }
+    const asDate = new Date(v.split("-")[0].replaceAll('.', "-"));
+    if (!isNaN(asDate)) {
+        // version format "YYYY.MM.DD-HASH" (for example "2022.03.01-0ddcc124")
+        // group version per month
+        const relativeDate = asDate.getYear() * 12 + asDate.getMonth();
+        const hash = v.split("-")[1];
+        return [relativeDate, 0, 0, 0, hash];
+    }
+    // version format "MAJOR.MINOR.PATCH-DISTANCE-HASH" (for example "1.0.0-356-c9e6d9f5")
     const vdash = v.split(/[\-\+]/);
     const vdot = vdash[0].split('.').map((i) => parseInt(i, 10));
     if (vdash.length === 1) {
