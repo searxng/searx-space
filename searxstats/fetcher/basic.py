@@ -16,19 +16,18 @@ from searxstats.data import get_fork_list
 from searxstats.config import DEFAULT_HEADERS, SEARX_GIT_REPOSITORY
 
 
-# in a HTML page produced by searx, regex to find the searx version
-SEARX_VERSION_RE = r'<meta name=[\"]?generator[\"]? content="searx/([^\"]+)">'
+# in a HTML page produced by searx(ng), regex to find the searx version
+HTML_GENERATOR_RE = r'<meta name=[\"]?generator[\"]? content="([^\"]+)">'
 
 
-async def get_searx_version_fallback(response):
+async def get_html_meta_generator(response):
     """
     get the version from the <meta> tag
     """
-    results = re.findall(SEARX_VERSION_RE, response.text)
+    results = re.findall(HTML_GENERATOR_RE, response.text)
     if len(results) > 0 and len(results[0]) > 0:
-        return results[0]
-    else:
-        return None
+        return results[0].lower().split('/')
+    return None, None
 
 
 async def get_searx_config(session, url):
@@ -62,13 +61,16 @@ async def set_searx_version(detail, git_url, session, response_url, response):
             detail['comments'] = []
         detail['comments'].append("Impossible to access {0}: {1}.".format(url_config, error_config))
 
+    generator_name, generator_version = await get_html_meta_generator(response)
+
     if config and not error_config:
         version = config.get('version')
         if not version:
-            version = await get_searx_version_fallback(response)
+            version = generator_version
         if not git_url:
             git_url = config.get('brand', {}).get('GIT_URL')
         doc_url = config.get('brand', {}).get('DOCS_URL')
+        detail['generator'] = generator_name
         detail['version'] = version
         detail['contact_url'] = config.get('brand', {}).get('CONTACT_URL')
         detail['docs_url'] = await resolve_https_redirect(session, doc_url)
