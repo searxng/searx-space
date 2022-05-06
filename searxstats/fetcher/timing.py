@@ -192,9 +192,13 @@ async def fetch_one(instance_url: str, detail) -> dict:
         traceback.print_exc(file=sys.stdout)
     else:
         print('🏁 {0}'.format(str(instance_url)))
-    detail['timing'].update(timing)
+    return timing
+
+
+async def fetch_and_set(instance_url: str, detail):
+    detail['timing'].update(await fetch_one(instance_url, detail))
 
 
 async def fetch(searx_stats_result: SearxStatisticsResult):
     await for_each(searx_stats_result.iter_instances(valid_or_private=True, network_type=NetworkType.NORMAL),
-                   fetch_one)
+                   fetch_and_set, limit=150)
