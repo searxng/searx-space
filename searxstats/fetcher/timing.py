@@ -144,7 +144,7 @@ def only_instance_url(instance_url, _):
     return instance_url
 
 
-@MemoizeToDisk(func_key=only_instance_url)
+@MemoizeToDisk(func_key=only_instance_url, expire_time=3600)
 async def fetch_one(instance_url: str, detail) -> dict:
     timing = {}
     try:
