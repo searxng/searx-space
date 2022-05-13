@@ -2,7 +2,6 @@ import os
 import hashlib
 
 # Tor
-TOR_HTTP_PROXY = "http://127.0.0.1:9051"
 TOR_SOCKS_PROXY_HOST = "127.0.0.1"
 TOR_SOCKS_PROXY_PORT = 9050
 
@@ -63,7 +62,8 @@ MMDB_FILENAME = os.environ.get("MMDB_FILENAME")
 
 # debian
 DEBIAN_GIT_URL = 'https://salsa.debian.org/debian/searx'
-DEBIAN_SOURCE_PACKAGE_NAMES = ['searx', 'twitter-bootstrap3', 'jquery', 'leaflet', 'requirejs', 'typeahead.js']
+DEBIAN_SOURCE_PACKAGE_NAMES = [
+    'searx', 'twitter-bootstrap3', 'jquery', 'leaflet', 'requirejs', 'typeahead.js']
 
 #
 FORKS = [

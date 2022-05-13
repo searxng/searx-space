@@ -24,12 +24,6 @@ apt install firefox wget git build-essential python3-dev virtualenv python3-virt
 
 For Debian, `firefox` should be replaced with `firefox-esr`.
 
-Also make sure the following line is in your tor config file, otherwise instances with tor address cannot be checked.
-
-```txt
-HTTPTunnelPort 127.0.0.1:9051
-```
-
 ### Get the project
 
 Install searxstats:

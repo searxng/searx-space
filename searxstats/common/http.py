@@ -10,7 +10,7 @@ import httpx
 from .utils import exception_to_str
 from .memoize import Memoize
 from .ssl_info import SSL_CONTEXT
-from ..config import TOR_HTTP_PROXY
+from ..config import TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT
 
 if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
     from contextlib import asynccontextmanager  # pylint: disable=no-name-in-module
@@ -24,7 +24,8 @@ class NetworkType(Enum):
 
 
 NETWORK_PROXIES = {
-    NetworkType.TOR: httpx.Proxy(url=TOR_HTTP_PROXY, mode="TUNNEL_ONLY")
+    NetworkType.TOR: httpx.Proxy(
+        url=f'socks5://{TOR_SOCKS_PROXY_HOST}:{TOR_SOCKS_PROXY_PORT}')
 }
 
 TOR_PROXY_ERROR = {
@@ -60,7 +61,7 @@ async def new_client(*args, **kwargs):
             network_type = kwargs['network_type']
             kwargs['proxies'] = NETWORK_PROXIES.get(network_type, None)
         del kwargs['network_type']
-    async with httpx.AsyncClient(*args, **kwargs, verify=SSL_CONTEXT, http2=True) as session:
+    async with httpx.AsyncClient(*args, **kwargs, verify=SSL_CONTEXT, http2=True, follow_redirects=True) as session:
         session._network_type = network_type  # pylint: disable=protected-access
         yield session
 
@@ -110,6 +111,7 @@ async def request(method, *args, **kwargs):
         else:  # socket.gaierror, ssl.SSLError, h11._util.RemoteProtocolError
             error = exception_to_str(wrapped_ex)
     except httpx.ProxyError as ex:
+        print(ex)
         error = exception_to_str(ex)
         session = getattr(method, '__self__', None)
         network_type = NetworkType.NORMAL
