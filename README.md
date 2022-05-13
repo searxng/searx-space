@@ -16,13 +16,24 @@ Note: cryptcheck-backend is used to get the TLS grade.
 
 ### Install system packages
 
-Install packages:
+Install packages (for Ubuntu):
+
 ```sh
-apt install firefox wget git build-essential python3-dev virtualenv python3-virtualenv libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev python3-ldns
+apt install firefox wget git build-essential python3-dev virtualenv python3-virtualenv libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev python3-ldns python3-venv tor
+```
+
+For Debian, `firefox` should be replaced with `firefox-esr`.
+
+Also make sure the following line is in your tor config file, otherwise instances with tor address cannot be checked.
+
+```txt
+HTTPTunnelPort 127.0.0.1:9051
 ```
 
 ### Get the project
+
 Install searxstats:
+
 ```sh
 cd /usr/local
 sudo git clone https://github.com/searx/searx-stats2
@@ -31,26 +42,31 @@ sudo chown searxstats:searxstats -R /usr/local/searx-stats2
 ```
 
 ### Project install
+
 ```sh
 sudo -u searxstats -i
 cd /usr/local/searx-stats2
-python -m venv --system-site-packages ve
+python3 -m venv --system-site-packages ve
 . ./ve/bin/activate
 pip install -r requirements.txt
 ./utils/install-geckodriver
 mkdir cache
 mkdir html/data
+touch html/data/instances.json
 ```
 
 ### Run
+
 Run (it takes between 30 minutes and 1 hour):
+
 ```sh
 python3 -m searxstats --cache /usr/local/searx-stats2/cache --all
 ```
 
-Output in ```html/data/instance.json```.
+Output in `html/data/instances.json`.
 
 To display all options:
+
 ```sh
 python3 -m searxstats --help
 ```
