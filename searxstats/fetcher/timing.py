@@ -200,5 +200,5 @@ async def fetch_and_set(instance_url: str, detail):
 
 
 async def fetch(searx_stats_result: SearxStatisticsResult):
-    await for_each(searx_stats_result.iter_instances(valid_or_private=True, network_type=NetworkType.NORMAL),
+    await for_each(searx_stats_result.iter_instances(valid_or_private=True),
                    fetch_and_set, limit=150)
