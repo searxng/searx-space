@@ -1,13 +1,13 @@
 import sys
 import ssl
 import asyncio
+import logging
 from urllib.parse import urlparse
 from enum import Enum
 
 import httpx
 
 from .utils import exception_to_str
-from .queuecalls import UseQueue
 from .memoize import Memoize
 from .ssl_info import SSL_CONTEXT
 from ..config import TOR_HTTP_PROXY
@@ -24,10 +24,7 @@ class NetworkType(Enum):
 
 
 NETWORK_PROXIES = {
-    NetworkType.TOR: httpx.Proxy(
-        url=TOR_HTTP_PROXY,
-        mode="TUNNEL_ONLY"  # Tor is a tunnel only proxy
-    )
+    NetworkType.TOR: httpx.Proxy(url=TOR_HTTP_PROXY, mode="TUNNEL_ONLY")
 }
 
 TOR_PROXY_ERROR = {
@@ -143,7 +140,7 @@ async def post(session, *args, **kwargs):
 
 
 # pylint: disable=global-variable-undefined, invalid-name
-async def initialize(loop=None):
+async def initialize():
     """
     do the equivalent of
     ```
@@ -153,5 +150,5 @@ async def initialize(loop=None):
     ```
     once the `loop` value is known
     """
-    global request
-    request = UseQueue(worker_count=1, loop=loop)(request)
+    for logger_name in ('hpack.hpack', 'hpack.table', 'httpx._client'):
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
