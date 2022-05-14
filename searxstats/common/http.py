@@ -1,19 +1,16 @@
 import sys
 import ssl
 import asyncio
+import logging
 from urllib.parse import urlparse
 from enum import Enum
 
 import httpx
-import httpx.decoders
-import httpx.exceptions
-import httpx.backends.asyncio
 
 from .utils import exception_to_str
-from .queuecalls import UseQueue
 from .memoize import Memoize
 from .ssl_info import SSL_CONTEXT
-from ..config import TOR_HTTP_PROXY
+from ..config import TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT
 
 if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
     from contextlib import asynccontextmanager  # pylint: disable=no-name-in-module
@@ -28,9 +25,7 @@ class NetworkType(Enum):
 
 NETWORK_PROXIES = {
     NetworkType.TOR: httpx.Proxy(
-        url=TOR_HTTP_PROXY,
-        mode="TUNNEL_ONLY"  # Tor is a tunnel only proxy
-    )
+        url=f'socks5://{TOR_SOCKS_PROXY_HOST}:{TOR_SOCKS_PROXY_PORT}')
 }
 
 TOR_PROXY_ERROR = {
@@ -66,7 +61,7 @@ async def new_client(*args, **kwargs):
             network_type = kwargs['network_type']
             kwargs['proxies'] = NETWORK_PROXIES.get(network_type, None)
         del kwargs['network_type']
-    async with httpx.AsyncClient(*args, **kwargs, backend='asyncio', verify=SSL_CONTEXT) as session:
+    async with httpx.AsyncClient(*args, **kwargs, verify=SSL_CONTEXT, http2=True, follow_redirects=True) as session:
         session._network_type = network_type  # pylint: disable=protected-access
         yield session
 
@@ -96,33 +91,35 @@ async def request(method, *args, **kwargs):
     error = None
     try:
         response = await method(*args, **kwargs)
-    except httpx.exceptions.ConnectTimeout:
+    except httpx.ConnectTimeout:
         error = 'Connection timed out'
     except asyncio.TimeoutError:
         error = 'Connection timed out (asyncio)'
-    except httpx.exceptions.ReadTimeout:
+    except httpx.ReadTimeout:
         error = 'Read timeout'
-    except httpx.exceptions.DecodingError:
+    except httpx.DecodingError:
         error = 'Decoding error'
-    except httpx.exceptions.RedirectLoop:
+    except httpx.TooManyRedirects:
         error = 'Redirect loop error'
-    except httpx.exceptions.ProtocolError:
+    except httpx.ProtocolError:
         error = 'Protocol error'
-    except httpx.exceptions.NetworkError as ex:
+    except httpx.NetworkError as ex:
         # args[0] is the wrapped exception
         wrapped_ex = ex.args[0]
         if isinstance(wrapped_ex, ConnectionRefusedError):
             error = 'Connection refused'
         else:  # socket.gaierror, ssl.SSLError, h11._util.RemoteProtocolError
             error = exception_to_str(wrapped_ex)
-    except httpx.exceptions.ProxyError as ex:
+    except httpx.ProxyError as ex:
+        print(ex)
         error = exception_to_str(ex)
         session = getattr(method, '__self__', None)
         network_type = NetworkType.NORMAL
         if session is not None:
-            network_type = getattr(session, '_network_type', NetworkType.NORMAL)
-        if ex.response and network_type == NetworkType.TOR:
-            error = 'Tor Error: ' + TOR_PROXY_ERROR.get(ex.response.status_code, error)
+            network_type = getattr(
+                session, '_network_type', NetworkType.NORMAL)
+        if network_type == NetworkType.TOR:
+            error = 'Tor Error'
     except ssl.CertificateError as ex:
         if kwargs.get('verify', True):
             # get the certficate even if it is not validated.
@@ -145,7 +142,7 @@ async def post(session, *args, **kwargs):
 
 
 # pylint: disable=global-variable-undefined, invalid-name
-async def initialize(loop=None):
+async def initialize():
     """
     do the equivalent of
     ```
@@ -155,5 +152,5 @@ async def initialize(loop=None):
     ```
     once the `loop` value is known
     """
-    global request
-    request = UseQueue(worker_count=1, loop=loop)(request)
+    for logger_name in ('hpack.hpack', 'hpack.table', 'httpx._client'):
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
