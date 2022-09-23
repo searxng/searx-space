@@ -61,8 +61,8 @@ if MMDB_FILENAME and os.path.isfile(MMDB_FILENAME):
     MMDB_DATABASE = geoip2.database.Reader(MMDB_FILENAME)
 
 HTTPS_PORT = 443
+ONE_HOUR_IN_SECOND = 3600
 ONE_DAY_IN_SECOND = 24*3600
-ONE_WEEK_IN_SECOND = 7*24*3600
 
 URL_IPV4 = 'http://ipv4.whatismyip.akamai.com/'
 URL_IPV6 = 'http://ipv6.whatismyip.akamai.com/'
@@ -113,7 +113,7 @@ def dns_query(qname, field):
     return dns_answers, dns_error
 
 
-@MemoizeToDisk(expire_time=ONE_DAY_IN_SECOND, validate_result=valid_if_no_error)
+@MemoizeToDisk(expire_time=ONE_HOUR_IN_SECOND, validate_result=valid_if_no_error)
 def dns_query_field_dnspython(host: str, field: str):
     """
     string everywhere to allow @MemoizeToDisk
@@ -132,7 +132,7 @@ def dns_query_field_dnspython(host: str, field: str):
     return list(map(str, dns_answers or [])), dns_error, DnsSecResult.UNKNOW
 
 
-@MemoizeToDisk(expire_time=ONE_DAY_IN_SECOND, validate_result=valid_if_no_error)
+@MemoizeToDisk(expire_time=ONE_HOUR_IN_SECOND, validate_result=valid_if_no_error)
 def dns_query_field_ldns(host: str, field: str):
     dns_answers = []
     dns_error = None
@@ -163,7 +163,7 @@ def dns_query_field_ldns(host: str, field: str):
     return dns_answers, dns_error, dnssec_result
 
 
-@MemoizeToDisk(expire_time=ONE_DAY_IN_SECOND, validate_result=valid_if_no_error)
+@MemoizeToDisk(expire_time=ONE_HOUR_IN_SECOND, validate_result=valid_if_no_error)
 def dns_query_reverse(address):
     """
     string everywhere to allow @MemoizeToDisk
@@ -199,7 +199,7 @@ def safe_upper(o):
     return o
 
 
-@MemoizeToDisk(expire_time=ONE_WEEK_IN_SECOND, validate_result=valid_if_no_error)
+@MemoizeToDisk(expire_time=ONE_DAY_IN_SECOND, validate_result=valid_if_no_error)
 def get_whois(address: str):
     whois_error = None
     result = None
@@ -226,7 +226,7 @@ def get_whois(address: str):
     return result, whois_error
 
 
-@MemoizeToDisk(expire_time=ONE_DAY_IN_SECOND)
+@MemoizeToDisk(expire_time=ONE_HOUR_IN_SECOND)
 def check_https_port(address: str):
     try:
         sock = socket.create_connection((address, HTTPS_PORT), 5)
