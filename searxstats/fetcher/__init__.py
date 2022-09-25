@@ -12,6 +12,7 @@ from . import selfreport
 from . import cryptcheck_backend
 from . import mozillaobs
 from . import timing
+from . import uptime
 
 
 __all__ = ['FETCHERS', 'fetch']
@@ -53,6 +54,10 @@ FETCHERS = [
             'timing',
             'Test the response time 🔎🐘🔍🏁❌',
             'timing'),
+    Fetcher(uptime,
+            'uptime',
+            'Uptime from uptime.searxng.org',
+            'uptime'),
 ]
 
 

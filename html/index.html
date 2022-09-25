@@ -158,8 +158,8 @@
                     <th v-if="!display.comments" class="column-network">Network</th>
                     <th v-if="!display.comments" class="column-responsetime">Search response time</th>
                     <th v-if="!display.comments" class="column-responsetime">Google response time</th>
-                    <th v-if="!display.comments" class="column-responsetime">Wikipedia response time</th>
                     <th v-if="!display.comments" class="column-responsetime">Initial response time</th>
+                    <th v-if="!display.comments" class="column-uptime">Uptime</th>
                     <th v-if="display.comments" class="column-comments">Comments</th>
                     <th v-if="display.comments" class="column-alternativeurls">Alternative URLs</th>
                   </tr>
@@ -180,7 +180,7 @@
                       <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.standard_search" type="checkbox" /></div></th>
                       <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.engines.google" type="checkbox" /></div></th>
                       <th v-if="!display.comments" class="column-responsetime"></th>
-                      <th v-if="!display.comments" class="column-responsetime"></th>
+                      <th v-if="!display.comments" class="column-uptime"></th>
                       <th v-if="display.comments" class="column-comments"></th>
                       <th v-if="display.comments" class="column-alternativeurls"></th>
                   </tr>
@@ -198,8 +198,8 @@
                     <td v-if="!display.comments" class="column-network"><network-name-component :value="detail.network" :cidrs="$root.cidrs"></network-name-component></td>
                     <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search" :time_select="$root.display.time_select"></time-component></td>
                     <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
-                    <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
                     <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
+                    <td v-if="!display.comments" class="column-uptime"><uptime-component :value="detail.uptime" :url="detail.url"></uptime-component></td>
                     <td v-if="display.comments" class="column-comments">
                       <p v-for="comment in detail.comments">{{comment}}</p>
                     </td>
@@ -243,7 +243,6 @@
             <ul>
               <li>Search response time - response time of a query with the default engines.</li>
               <li>Google response time - respones time of the Google engine.</li>
-              <li>Wikipedia response time - response time of the Wikipedia engine.</li>
               <li>Initial response time - response time of the front time without prior existing connection.</li>
             </ul>
 
@@ -271,7 +270,6 @@
                       <th v-if="!display.comments" class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
                       <th v-if="!display.comments" class="column-responsetime">Search response time</th>
                       <th v-if="!display.comments" class="column-responsetime">Google response time</th>
-                      <th v-if="!display.comments" class="column-responsetime">Wikipedia response time</th>
                       <th v-if="!display.comments" class="column-responsetime">Initial response time</th>
                       <th v-if="display.comments" class="column-comments">Comments</th>
                       <th v-if="display.comments" class="column-alternativeurls">Alternative URLs</th>
@@ -284,7 +282,6 @@
                       <td v-if="!display.comments" class="column-html"><html-component :value="detail.html" :hashes="$root.hashes" :url="detail.url"></html-component></td>
                       <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search" :time_select="$root.display.time_select"></time-component></td>
                       <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_go" :time_select="$root.display.time_select"></time-component></td>
-                      <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.search_wp" :time_select="$root.display.time_select"></time-component></td>
                       <td v-if="!display.comments" class="column-responsetime"><time-component :value="detail.timing.initial" :time_select="$root.display.time_select"></time-component></td>
                       <td v-if="display.comments" class="column-comments">
                         <p v-for="comment in detail.comments">{{comment}}</p>
