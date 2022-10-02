@@ -313,6 +313,15 @@ function hslErrorPercentage(percentage) {
     return hslCss(h, s, l);
 }
 
+function hslUptimePercentage(percentage) {
+    const l = 54;
+    const value1 = Math.min(100, Math.max(90, percentage)) - 90; // from 0 to 10
+    const value = value1 * value1; // from 0 to 100
+    const h = translateValue(value, 0, 100, 0, 128, false);
+    const s = translateValue(value, 0, 100, 39, 54, true);
+    return hslCss(h, s, l);
+}
+
 function formatResponseTime(value) {
     if (typeof value === 'number') {
         return new Intl.NumberFormat('en', { maximumFractionDigits: 3, minimumFractionDigits: 3 }).format(value);
@@ -839,6 +848,42 @@ Vue.component('network-name-component', {
             return createTooltip(h, h('span', { class: 'value-network', attrs: attrs }, content), [tooltipContent]);
         }
         return undefined;
+    },
+});
+
+Vue.component('uptime-component', {
+    props: ['value', 'url'],
+    render: function (h) {
+        if (this.value != null && this.value !== undefined) {
+            const hostPath = new URL(this.url).host.replaceAll('.', '-');
+            const attrs = {
+                style: `background-color:${hslUptimePercentage(this.value.uptimeWeek)}; color:white`,
+                href: "https://uptime.searxng.org/history/" + hostPath,
+            };
+            const element = h('a', { staticClass: 'value-uptime', attrs: attrs }, Math.round(this.value.uptimeWeek) + ' %');
+            const tooltipContent = [
+                h('table', {}, [
+                    h('tr', {}, [
+                        h('td', "Today"),
+                        h('td', `${Math.round(this.value.uptimeDay)} %`)
+                    ]),
+                    h('tr', [
+                        h('td', "This week"),
+                        h('td', `${Math.round(this.value.uptimeWeek)} %`)
+                    ]),
+                    h('tr', [
+                        h('td', "This month"),
+                        h('td', `${Math.round(this.value.uptimeMonth)} %`)
+                    ]),
+                    h('tr', [
+                        h('td', "This year"),
+                        h('td', `${Math.round(this.value.uptimeYear)} %`)
+                    ]),
+                ])
+            ];
+            return createTooltip(h, element, tooltipContent);
+        }
+        return null;
     },
 });
 

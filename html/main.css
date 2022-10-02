@@ -176,6 +176,12 @@ tbody .column-network span:first-child span:first-child {
   text-align: right;
 }
 
+.column-uptime {
+  max-width: 8rem;
+  width: 8rem;
+  text-align: right;
+}
+
 .column-filter {
   display: flex;
   flex-direction: row;
@@ -230,6 +236,18 @@ tbody .column-responsetime {
   color: white;
   display: block;
   padding: 0.1rem 0.5rem 0.1rem 0.1rem;
+}
+
+.value-uptime {
+  text-align: right;
+  color: white;
+  display: block;
+  padding: 0.1rem 0.5rem 0.1rem 0.1rem;
+}
+
+.column-uptime .info-tooltip {
+  position: absolute;
+  right: 6rem;
 }
 
 .urls,

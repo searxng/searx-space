@@ -143,14 +143,5 @@ async def post(session, *args, **kwargs):
 
 # pylint: disable=global-variable-undefined, invalid-name
 async def initialize():
-    """
-    do the equivalent of
-    ```
-    @UseQueue(count=1, loop=loop)
-    async def request(method, *args, **kwargs):
-        ...
-    ```
-    once the `loop` value is known
-    """
     for logger_name in ('hpack.hpack', 'hpack.table', 'httpx._client'):
         logging.getLogger(logger_name).setLevel(logging.WARNING)

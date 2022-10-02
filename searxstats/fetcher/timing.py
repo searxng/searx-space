@@ -170,16 +170,7 @@ async def fetch_one(instance_url: str, detail) -> dict:
                                         params={'q': 'time', **default_params},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
 
-            # check the wikipedia engine
-            print('🐘 ' + instance_url)
-            await request_stat_with_log(search_url, timing, 'search_wp',
-                                        client, instance_url,
-                                        2, 60, 160, check_result.check_wikipedia_result,
-                                        params={'q': '!wp time', **default_params},
-                                        cookies=cookies, headers=DEFAULT_HEADERS)
-
             # check the google engine
-            # may include google results too, so wikipedia engine check before
             print('🔍 ' + instance_url)
             await request_stat_with_log(search_url, timing, 'search_go',
                                         client, instance_url,
