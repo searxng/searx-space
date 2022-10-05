@@ -857,10 +857,10 @@ Vue.component('uptime-component', {
         if (this.value != null && this.value !== undefined) {
             const hostPath = new URL(this.url).host.replaceAll('.', '-');
             const attrs = {
-                style: `background-color:${hslUptimePercentage(this.value.uptimeWeek)}; color:white`,
+                style: `background-color:${hslUptimePercentage(this.value.uptimeMonth)}; color:white`,
                 href: "https://uptime.searxng.org/history/" + hostPath,
             };
-            const element = h('a', { staticClass: 'value-uptime', attrs: attrs }, Math.round(this.value.uptimeWeek) + ' %');
+            const element = h('a', { staticClass: 'value-uptime', attrs: attrs }, Math.round(this.value.uptimeMonth) + ' %');
             const tooltipContent = [
                 h('table', {}, [
                     h('tr', {}, [
