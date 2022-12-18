@@ -6,6 +6,10 @@ import git
 def get_repository(directory, url):
     print(f'Update git repository {url} to {directory}')
 
+    if "::" in url:
+        # unsafe URL
+        return Exception("unsafe URL")
+
     # check if directory is a directory
     if not os.path.isdir(directory):
         if not os.path.exists(directory):
