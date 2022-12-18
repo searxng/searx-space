@@ -10,7 +10,6 @@ import ipwhois
 import geoip2.database
 import geoip2.errors
 
-from searxstats.data.asn import ASN_PRIVACY
 from searxstats.common.utils import exception_to_str
 from searxstats.common.http import get_host, get, new_client, NetworkType
 from searxstats.common.memoize import MemoizeToDisk
@@ -220,9 +219,6 @@ def get_whois(address: str):
             'network_name': rdap_answer.get('network', {}).get('name', ''),
             'network_country': safe_upper(rdap_answer.get('network', {}).get('country', '')),
         }
-        asn_privacy = ASN_PRIVACY.get(result['asn'], AsnPrivacy.UNKNOWN)
-        if asn_privacy is not None:
-            result['asn_privacy'] = asn_privacy.value
     return result, whois_error
 
 

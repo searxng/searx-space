@@ -221,7 +221,6 @@ const CompareFunctionCriterias = {
     'http.status_code': (a, b) => -compareTool(a, b, null, 'http', 'status_code'),
     'error': (a, b) => -compareTool(a, b, null, 'error'),
     'error_wp': (a, b) => compareTool(a, b, null, 'timing', 'search_wp', 'error'),
-    'network.asn_privacy': (a, b) => compareTool(a, b, null, 'network', 'asn_privacy'),
     'version': (a, b) => compareVersion(a.version, b.version),
     'tls.grade': (a, b) => compareTool(a, b, normalizeGrade, 'tls', 'grade'),
     'html.grade': (a, b) => compareTool(a, b, normalizeHtmlGrade, 'html', 'grade'),
@@ -830,19 +829,8 @@ Vue.component('network-name-component', {
                 tooltipContent.push(h('p', host));
             }
             //
-            let privacyGrade = undefined;
-            switch (this.value.asn_privacy) {
-                case -1:
-                    privacyGrade = 'F-';
-                    break;
-                case 1:
-                    privacyGrade = 'A+';
-                    break;
-            }
             const attrs = {};
-            if (privacyGrade !== undefined) {
-                attrs.style = `background-color:${hslGrade(privacyGrade)}; color:white`;
-            } else if (this.value.dnssec == 3) {
+            if (this.value.dnssec == 3) {
                 attrs.style = `background-color:${hslGrade('D-')}; color:white`;
             }
             return createTooltip(h, h('span', { class: 'value-network', attrs: attrs }, content), [tooltipContent]);
@@ -943,7 +931,6 @@ new Vue({
             csp_grade: '',
             tls_grade: '',
             ipv6: false,
-            asn_privacy: false,
             network_name: '',
             network_country: '',
             standard_search: false,
@@ -1025,9 +1012,6 @@ new Vue({
             }
             if (this.filters.ipv6) {
                 result = result.filter((detail) => detail.network.ipv6 == true);
-            }
-            if (this.filters.asn_privacy) {
-                result = result.filter((detail) => detail.network.asn_privacy >= 0);
             }
             if (this.filters.standard_search) {
                 result = result.filter((detail) => detail.timing.search.success_percentage > 0);

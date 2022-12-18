@@ -172,11 +172,7 @@
                       <th v-if="!display.comments" class="column-certificate"><div class="column-filter"></div></th>
                       <th v-if="!display.comments" class="column-ipv6"><div class="column-filter"><input v-model="filters.ipv6" type="checkbox" /></div></th>
                       <th v-if="!display.comments" class="column-country"><div class="column-filter"><input v-model="filters.network_country"/></div></th>
-                      <th v-if="!display.comments" class="column-network"><div class="column-filter">
-                        <input v-model="filters.network_name" style="width: 90%" />
-                        <span><input v-model="filters.asn_privacy" type="checkbox" style="margin: 0 0.25em;vertical-align: middle; width:auto;" /></span>
-                        <span class="info-tooltip">Hide networks with privacy issue</span>
-                      </div></th>
+                      <th v-if="!display.comments" class="column-network"><div class="column-filter"><input v-model="filters.network_name"/></div></th>
                       <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.standard_search" type="checkbox" /></div></th>
                       <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.engines.google" type="checkbox" /></div></th>
                       <th v-if="!display.comments" class="column-responsetime"></th>
