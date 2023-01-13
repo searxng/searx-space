@@ -13,14 +13,26 @@ set +e
 if [ -z "$NOTFOUND" ]; then
     return
 fi
-GECKODRIVER_VERSION="v0.28.0"
-PLATFORM="`python3 -c "import platform; print(platform.system().lower(), platform.architecture()[0])"`"
+GECKODRIVER_VERSION="v0.32.0"
+PLATFORM="`python3 -c "import platform; print(platform.system().lower(), str(platform.machine()).lower())"`"
+# Possible values for platform().machine
+# Linux & Mac: 
+# * https://en.wikipedia.org/wiki/Uname
+# * https://stackoverflow.com/questions/45125516/possible-values-for-uname-m 
+# Windows :
+# * https://github.com/python/cpython/blob/468c3bf79890ef614764b4e7543608876c792794/Lib/platform.py#L763
 case "$PLATFORM" in
-    "linux 32bit" | "linux2 32bit") ARCH="linux32";;
-    "linux 64bit" | "linux2 64bit") ARCH="linux64";;
-    "windows 32 bit") ARCH="win32";;
-    "windows 64 bit") ARCH="win64";;
-    "mac 64bit") ARCH="macos";;
+    "linux aarch64") ARCH="linux-aarch64";;
+    "linux i386" | "linux2 i386") ARCH="linux32";;
+    "linux i686" | "linux2 i686") ARCH="linux32";;
+    "linux x86_64" | "linux2 x86_64") ARCH="linux64";;
+    "windows arm64") ARCH="win-aarch64";;
+    "windows x86") ARCH="win32";;
+    "windows amd64") ARCH="win64";;
+    "mac arm64") ARCH="macos-aarch64";;
+    "mac x86_64") ARCH="macos";;
+    *)  echo "Unsupported platform '$PLATFORM'";
+        exit 1;;
 esac
 GECKODRIVER_URL="https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_VERSION/geckodriver-$GECKODRIVER_VERSION-$ARCH.tar.gz";
 
