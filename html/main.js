@@ -115,7 +115,8 @@ function normalizeSearxVersion(v) {
     if (typeof (v) !== 'string') {
         return [0, 0, 0, 0, ''];
     }
-    const asDate = new Date(v.split("-")[0].replaceAll('.', "-"));
+    const vdate = v.replaceAll("+", "-").split("-")[0].replaceAll('.', "-")
+    const asDate = new Date(vdate);
     if (!isNaN(asDate)) {
         // version format "YYYY.MM.DD-HASH" (for example "2022.03.01-0ddcc124")
         // group version per month
