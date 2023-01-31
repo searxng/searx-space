@@ -63,7 +63,7 @@ class CheckResult:
 
 CheckResultByTheme = {
     'simple': CheckResult(
-        results=etree.XPath("//div[@id='urls']/article"),
+        results=etree.XPath("//div[@id='urls']//article"),
         engines=etree.XPath("//div[contains(@class, 'engines')]/span"),
         alert_danger_main=etree.XPath("//div[@id='urls']/div[contains(@class, 'dialog-error')]"),
         alter_danger_side=etree.XPath("//div[@id='sidebar']/div[contains(@class, 'dialog-error')]"),
