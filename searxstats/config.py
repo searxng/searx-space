@@ -30,8 +30,7 @@ DEFAULT_COOKIES = {
     'image_proxy': '0',
     'method': 'GET',
     'safesearch': '0',
-    'theme': 'oscar',
-    'oscar-style': 'logicodev'
+    'theme': 'simple',
 }
 
 # Default working directory
