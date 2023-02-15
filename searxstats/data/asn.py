@@ -69,7 +69,7 @@ ASN_PRIVACY = {
     "264167": AsnPrivacy.BAD,
     "19047": AsnPrivacy.BAD,
     "17493": AsnPrivacy.BAD,
-    "16509": AsnPrivacy.BAD,
+    # "16509": AsnPrivacy.BAD,
     "14618": AsnPrivacy.BAD,
     "135630": AsnPrivacy.BAD,
     "10124": AsnPrivacy.BAD,
