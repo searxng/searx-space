@@ -49,36 +49,8 @@ ASN_PRIVACY = {
     "16702": AsnPrivacy.BAD,
     "16625": AsnPrivacy.BAD,
     "12222": AsnPrivacy.BAD,
-    # Alibaba
-    "45104": AsnPrivacy.BAD,
-    "45103": AsnPrivacy.BAD,
-    "45102": AsnPrivacy.BAD,
-    "45096": AsnPrivacy.BAD,
-    "37963": AsnPrivacy.BAD,
-    "34947": AsnPrivacy.BAD,
-    "134963": AsnPrivacy.BAD,
-    # Amazon
-    "9059": AsnPrivacy.BAD,
-    "8987": AsnPrivacy.BAD,
-    "7224": AsnPrivacy.BAD,
-    "62785": AsnPrivacy.BAD,
-    "58588": AsnPrivacy.BAD,
-    "395343": AsnPrivacy.BAD,
-    "39111": AsnPrivacy.BAD,
-    "38895": AsnPrivacy.BAD,
-    "264167": AsnPrivacy.BAD,
-    "19047": AsnPrivacy.BAD,
-    "17493": AsnPrivacy.BAD,
-    # "16509": AsnPrivacy.BAD,
-    "14618": AsnPrivacy.BAD,
-    "135630": AsnPrivacy.BAD,
-    "10124": AsnPrivacy.BAD,
     # Aryaka Networks, Inc
     "11179": AsnPrivacy.BAD,
-    # Azure
-    "53587": AsnPrivacy.BAD,
-    "24221": AsnPrivacy.BAD,
-    "134235": AsnPrivacy.BAD,
     # Cloudflare
     "395747": AsnPrivacy.BAD,
     "394536": AsnPrivacy.BAD,
@@ -153,32 +125,8 @@ ASN_PRIVACY = {
     # Fastly
     "54113": AsnPrivacy.BAD,
     "394192": AsnPrivacy.BAD,
-    # Google
-    "45566": AsnPrivacy.BAD,
-    "43515": AsnPrivacy.BAD,
-    "41264": AsnPrivacy.BAD,
-    "40873": AsnPrivacy.BAD,
-    "396982": AsnPrivacy.BAD,
-    "395973": AsnPrivacy.BAD,
-    "394699": AsnPrivacy.BAD,
-    "394639": AsnPrivacy.BAD,
-    "394507": AsnPrivacy.BAD,
-    "36987": AsnPrivacy.BAD,
-    "36492": AsnPrivacy.BAD,
-    "36385": AsnPrivacy.BAD,
-    "36384": AsnPrivacy.BAD,
-    "36040": AsnPrivacy.BAD,
-    "36039": AsnPrivacy.BAD,
-    "26910": AsnPrivacy.BAD,
-    "26684": AsnPrivacy.BAD,
-    "22859": AsnPrivacy.BAD,
-    "22577": AsnPrivacy.BAD,
-    "19527": AsnPrivacy.BAD,
-    "16550": AsnPrivacy.BAD,
+    # Google Cloud CDN
     "15169": AsnPrivacy.BAD,
-    "13949": AsnPrivacy.BAD,
-    "139190": AsnPrivacy.BAD,
-    "139070": AsnPrivacy.BAD,
     # Limelight
     "60261": AsnPrivacy.BAD,
     "55429": AsnPrivacy.BAD,
@@ -196,4 +144,12 @@ ASN_PRIVACY = {
     "12411": AsnPrivacy.BAD,
     # Yottaa, Inc
     "393259": AsnPrivacy.BAD,
+    # Sucuri
+    "30148": AsnPrivacy.BAD,
+    # StackPath
+    "12989": AsnPrivacy.BAD,
+    # KeyCDN
+    "44239": AsnPrivacy.BAD,
+    # CacheFly
+    "30081": AsnPrivacy.BAD,
 }
