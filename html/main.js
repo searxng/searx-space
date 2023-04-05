@@ -473,7 +473,7 @@ Vue.component('engine-component', {
         if (this.instance !== undefined && this.engine !== undefined) {
             const engine = this.instance.engines[this.engine];
             if (engine !== undefined) {
-                const href= this.instance.url + 'search?q=!' + this.engine.replace(' ', '_') + ' time&theme=oscar&language=en';
+                const href= this.instance.url + 'search?q=!' + this.engine.replace(' ', '_') + ' time&language=en';
 
                 let text;
                 let working_engine = false;
