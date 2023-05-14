@@ -42,12 +42,12 @@ CACHE_FILE_NAME = 'searxstats-cache.yaml'
 # Database URL
 DATABASE_URL = 'sqlite:////tmp/searxstats.db'
 
-# Directory where searx will be git clone
+# Directory where SearXNG will be git clone
 SEARX_GIT_DIRECTORY = 'searxstats-git'
 
 SEARXINSTANCES_GIT_DIRECTORY = 'searxinstances-git'
 
-# Git URL of searx (to fetch static file content hashes)
+# Git URL of SeaerXNG (to fetch static file content hashes)
 SEARX_GIT_REPOSITORY = 'https://github.com/searx/searx'
 SEARXNG_GIT_REPOSITORY = 'https://github.com/searxng/searxng'
 

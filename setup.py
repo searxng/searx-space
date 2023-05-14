@@ -34,7 +34,7 @@ dev_requirements = map(str.strip, open('requirements-dev.txt').readlines())
 setup(
     name="searxstats",
     version=find_version("searxstats", "__version__.py"),
-    description="Searx statistics.",
+    description="SearXNG statistics.",
     long_description=long_description,
 
     license='GNU Affero General Public License',
@@ -51,7 +51,7 @@ setup(
         "Programming Language :: Python :: Implementation :: CPython",
     ],
     url='https://github.com/searxng/searx-space',
-    keywords='searx',
+    keywords='SearXNG, searx',
 
     author='Alexandre Flament',
     author_email='alex.andre@al-f.net',

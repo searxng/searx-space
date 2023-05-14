@@ -12,11 +12,11 @@
     <link rel="icon" href="favicon.png" sizes="any">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
-    <title>SearXNG and searx instances</title>
-    <meta name="description" content="Online and offline Searx instances">
+    <title>SearXNG instances</title>
+    <meta name="description" content="Online and offline SearXNG instances">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://searx.space/">
-    <meta property="og:title" content="Searx instances">
+    <meta property="og:title" content="SearXNG instances">
     <meta property="og:image" content="https://searx.space/searx.png">
     <meta property="og:description" content="Online and offline instances">
     <link rel="apple-touch-icon" href="/searx.png">
@@ -45,7 +45,7 @@
           <nav class="navbar navbar-inverse navbar-static-top">
             <div class="container full-width">
               <div class="navbar-header">
-                <a class="navbar-brand" href="#">SearXNG and SearX instances</a>
+                <a class="navbar-brand" href="#">SearXNG instances</a>
               </div>
               <ul class="nav navbar-nav" role="tablist">
                 <li :class="selected_tab=='online_https'?'active':''"><a href="#" v-on:click="selected_tab='online_https'">Online HTTPS</a></li>
@@ -60,12 +60,15 @@
               </ul>
             </div>
           </nav>
+	  <div class="announcement">
+	    SearX instances (not SearXNG) will soon get removed from this list, <a href="https://github.com/searxng/searx-instances/discussions/336">see here</a>.
+	  </div>
       </header>
 
       <main role="main" class="container theme-showcase" v-if="selected_tab === 'about'">
         <div class="row">
           <h2>About</h2>
-          <p>This website shows the SearXNG (and searx) public instances. It is updated every 24 hours, except the response times which are updated every 3 hours.
+          <p>This website shows the SearXNG public instances. It is updated every 24 hours, except the response times which are updated every 3 hours.
           It requires Javascript until the <a href="https://github.com/searxng/searx-space/issues/9">issue #9</a> is fixed.</p>
           <p><a href="https://github.com/searxng/searxng">SearXNG</a> is a free internet metasearch engine which aggregates results from more than 70 search services. Users are neither tracked nor profiled.</p>
           <p>Public instances listed here may yield less accurate results as they have much higher traffic and consequently have a higher chance of being blocked
@@ -74,8 +77,8 @@
           <p>The source code of this website: <a href="https://github.com/searxng/searx-space">https://github.com/searxng/searx-space</a></p>
           <p>If something doesn't work as expected on this website, or you have a feature request, you can <a href="https://github.com/searxng/searx-space/issues">create an issue</a></p>
 
-          <h3>Meta-searx instances</h3>
-          <p>These are websites that source from other searx instances. These are useful if you can't decide which SearXNG instance to use:</p>
+          <h3>Meta-SearXNG instances</h3>
+          <p>These are websites that source from other SearXNG instances. These are useful if you can't decide which SearXNG instance to use:</p>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover">
               <thead>
@@ -101,7 +104,7 @@
                   <td class="column_url"></td>
                   <td class="column_url"><a href="http://7tcuoi57curagdk7nsvmzedcxgwlrq2d6jach4ksa3vj72uxrzadmqqd.onion/">Gimmeasearx</a></td>
                   <td>
-                    <p>Configurable, JavaScript-less Neocities alternative, giving you a random searx instance each time you visit the page.</p>
+                    <p>Configurable, JavaScript-less Neocities alternative, giving you a random SearXNG instance each time you visit the page.</p>
                     <p>Only an onion service is available. If you can't or don't want to use Tor, you can build and run it from source.</p>
                     <p><a href="https://github.com/demostanis/gimmeasearx">Source code</a></p>
                   </td>
@@ -114,17 +117,12 @@
           <p>See the <a href="https://github.com/searxng/searx-instances">searx-instances</a> project</p>
 
           <h3>How can I install SearXNG ?</h3>
-          <p>See the <a href="https://docs.searxng.org/admin/">searx documentation</a></p>
+          <p>See the <a href="https://docs.searxng.org/admin/installation.html">SearXNG documentation</a></p>
           <p>Or if you want to use docker: <a href="https://github.com/searxng/searxng-docker">https://github.com/searxng/searxng-docker</a></p>
 
           <h3>How can I use the results in another project ?</h3>
           <p>You can fetch <a href="data/instances.json">instances.json</a> directly.</p>
           <p>Do note that the format may change in the future.</p>
-
-          <h3>Similar projects</h3>
-          <ul>
-            <li><a href="https://github.com/pointhi/searx_stats">https://github.com/pointhi/searx_stats</a></li>
-          </ul>
         </div>
       </main>
       <main role="main" class="container theme-showcase full-width" v-if="instances.length > 0 && selected_tab != 'about'">
@@ -142,7 +140,7 @@
         </p>
         <div v-if="selected_tab === 'online_https'">
           <h2>{{instances_filtered.length}}&nbsp;online instances</h2>
-          <p>See the <a href="#" v-on:click="selected_tab='about'">About</a> section to know how to edit this list or look for the meta searx instances</p>
+          <p>See the <a href="#" v-on:click="selected_tab='about'">About</a> section to know how to edit this list or look for the meta SearXNG instances</p>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover">
                 <thead>

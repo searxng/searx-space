@@ -16,7 +16,7 @@ from searxstats.data import get_fork_list
 from searxstats.config import DEFAULT_HEADERS, SEARX_GIT_REPOSITORY
 
 
-# in a HTML page produced by searx(ng), regex to find the searx version
+# in a HTML page produced by SearXNG, regex to find the SearXNG version
 HTML_GENERATOR_RE = r'<meta name=[\"]?generator[\"]? content="([^\"]+)">'
 
 
@@ -113,7 +113,7 @@ async def fetch_one(instance_url: str, git_url: str, private: bool) -> dict:
                     detail['alternativeUrls'][instance_url] = 'redirect from'
                     instance_url = response_url
 
-                # get the searx version
+                # get the SearXNG version
                 if error is None:
                     await asyncio.sleep(0.5)
                     await set_searx_version(detail, git_url, session, response_url, response)
