@@ -1,4 +1,4 @@
-# searx-stats2
+# searx-space
 
 Statistics on the [searx](https://searx.github.io/searx/) instances: https://searx.space ([Onion URL](http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion/))
 
@@ -6,7 +6,7 @@ Statistics on the [searx](https://searx.github.io/searx/) instances: https://sea
 
 ### Download and run cryptcheck-backend
 
-searx-stats2 expects [cryptcheck-backend](https://github.com/dalf/cryptcheck-backend) to respond on localhost:7000:
+searx-space expects [cryptcheck-backend](https://github.com/dalf/cryptcheck-backend) to respond on localhost:7000:
 
 ```sh
 docker run --rm -p 7000:7000 dalf/cryptcheck-backend:latest
@@ -30,16 +30,16 @@ Install searxstats:
 
 ```sh
 cd /usr/local
-sudo git clone https://github.com/searx/searx-stats2
-sudo useradd searxstats -d /usr/local/searx-stats2
-sudo chown searxstats:searxstats -R /usr/local/searx-stats2
+sudo git clone https://github.com/searxng/searx-space
+sudo useradd searxstats -d /usr/local/searx-space
+sudo chown searxstats:searxstats -R /usr/local/searx-space
 ```
 
 ### Project install
 
 ```sh
 sudo -u searxstats -i
-cd /usr/local/searx-stats2
+cd /usr/local/searx-space
 python3 -m venv --system-site-packages ve
 . ./ve/bin/activate
 pip install -r requirements.txt
@@ -54,7 +54,7 @@ touch html/data/instances.json
 Run (it takes between 30 minutes and 1 hour):
 
 ```sh
-python3 -m searxstats --cache /usr/local/searx-stats2/cache --all
+python3 -m searxstats --cache /usr/local/searx-space/cache --all
 ```
 
 Output in `html/data/instances.json`.

@@ -50,7 +50,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
-    url='https://github.com/searx/searx-stats2',
+    url='https://github.com/searxng/searx-space',
     keywords='searx',
 
     author='Alexandre Flament',
