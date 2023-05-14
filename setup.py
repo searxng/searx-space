@@ -45,9 +45,10 @@ setup(
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
     url='https://github.com/searx/searx-stats2',
@@ -81,7 +82,7 @@ setup(
     ],
 
     zip_safe=False,
-    python_requires='>=3.6.*',
+    python_requires='>=3.8',
 
     install_requires=requirements,
     extras_require={
