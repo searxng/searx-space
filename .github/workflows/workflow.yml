@@ -1,4 +1,4 @@
-name: searx-stats2 application
+name: searx-space application
 
 on:
   push:
