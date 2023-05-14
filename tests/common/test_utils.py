@@ -35,7 +35,7 @@ def dummy_raise_exception():
 
 
 @pytest.fixture
-async def task_list_with_exception(event_loop):
+def task_list_with_exception(event_loop):
     tasks = []
     tasks.append(utils.create_task(event_loop, None, dummy_coroutine, 12, second=42))
     tasks.append(utils.create_task(event_loop, None, dummy_raise_exception))
@@ -43,7 +43,7 @@ async def task_list_with_exception(event_loop):
 
 
 @pytest.fixture
-async def simple_task_list(event_loop):
+def simple_task_list(event_loop):
     tasks = []
     tasks.append(utils.create_task(event_loop, None, dummy_coroutine, 12, second=42))
     return tasks
