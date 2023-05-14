@@ -74,7 +74,7 @@ def main():
                         default='html/data/instances.json')
     parser.add_argument('--private',
                         action='store_true', dest='private',
-                        help='In private execution mode, fetch data even if the website is not a searx instance',
+                        help='In private execution mode, fetch data even if the website is not a SearXNG instance',
                         default=False)
     parser.add_argument('--cache',
                         type=str, nargs='?', dest='user_cache_directory',

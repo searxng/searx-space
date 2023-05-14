@@ -1,5 +1,5 @@
 #!/bin/sh
-# from https://github.com/searx/searx/blob/master/manage.sh
+# from https://github.com/searxng/searxng/blob/master/manage (see gecko.driver)
 
 BASE_DIR="$(dirname -- "`readlink -f -- "$0"`")"
 
