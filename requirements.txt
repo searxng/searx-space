@@ -10,7 +10,7 @@ pyyaml==6.0
 GitPython==3.1.30
 sqlalchemy==2.0.0
 httpobs @ git+https://github.com/dalf/http-observatory@master#egg=httpobs
-requests==2.28.2
+requests==2.31.0
 beautifulsoup4==4.11.1
 publicsuffixlist==0.9.2
 psutil==5.9.4
