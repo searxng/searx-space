@@ -25,17 +25,43 @@ class CheckResult:
     # There are results, error on the side (above infoboxes)
     alter_danger_side: etree.XPath
 
+    @staticmethod
+    def is_wikiengine(engine_name):
+        return engine_name.startswith('wiki')
+
     async def _check_html_result_page(self, engine_name, response):
+        result_count = 0
         document = await html_fromstring(response.text)
-        result_element_list = self.results(document)
-        if len(result_element_list) == 0:
+        for result_element, engine_names in self._iter_meaningful_results(document):
+            engine_names = [
+                extract_text(engine_element)
+                for engine_element in self.engines(result_element)
+            ]
+            result_count += 1
+            if engine_name in engine_names:
+                continue
+            return False, f'A result is not from the {engine_name}'
+        if result_count == 0:
             return False, 'No result'
-        for result_element in result_element_list:
-            for engine_element in self.engines(result_element):
-                if extract_text(engine_element).find(engine_name) >= 0:
-                    continue
-                return False, f'A result is not from the {engine_name}'
         return True, None
+
+    def _get_meaningful_result_count(self, document):
+        return len(list(self._iter_meaningful_results(document)))
+
+    def _iter_meaningful_results(self, document):
+        """Iterator over meaningful results
+        = results from generic engines, not from wiki* engines
+        """
+        result_element_list = self.results(document)
+        for result_element in result_element_list:
+            engine_names = [
+                extract_text(engine_element)
+                for engine_element in self.engines(result_element)
+            ]
+            only_wiki_engine = all(map(self.is_wikiengine, engine_names))
+            if only_wiki_engine:
+                continue
+            yield result_element, engine_names
 
     async def check_google_result(self, response):
         return await self._check_html_result_page('google', response)
@@ -45,34 +71,31 @@ class CheckResult:
 
     async def check_search_result(self, response):
         document = await html_fromstring(response.text)
+        message = None
         result_element_list = self.results(document)
         alert_danger_list = self.alert_danger_main(document)
         if len(alert_danger_list) > 0:
-            return True, extract_text(alert_danger_list)
-        alert_danger_list = self.alter_danger_side(document)
-        if len(alert_danger_list) > 0:
-            return True, extract_text(alert_danger_list)
+            return False, extract_text(alert_danger_list)
+        alert_danger_side_list = self.alter_danger_side(document)
+        if len(alert_danger_side_list) > 0:
+            message = extract_text(alert_danger_side_list)
         if len(result_element_list) == 0:
             return False, 'No result'
+        if self._get_meaningful_result_count(document) == 0:
+            return False, 'Only result(s) from wiki* engines'
         if len(result_element_list) == 1:
             return False, 'Only one result'
         if len(result_element_list) == 2:
             return False, 'Only two results'
-        return True, None
+        return True, message
 
 
 CheckResultByTheme = {
     'simple': CheckResult(
         results=etree.XPath("//div[@id='urls']//article"),
-        engines=etree.XPath("//div[contains(@class, 'engines')]/span"),
+        engines=etree.XPath(".//div[contains(@class, 'engines')]/span"),
         alert_danger_main=etree.XPath("//div[@id='urls']/div[contains(@class, 'dialog-error')]"),
         alter_danger_side=etree.XPath("//div[@id='sidebar']/div[contains(@class, 'dialog-error')]"),
-    ),
-    'oscar': CheckResult(
-        results=etree.XPath("//div[@id='main_results']/div[contains(@class,'result-default')]"),
-        engines=etree.XPath("//span[contains(@class, 'label label-default')]"),
-        alert_danger_main=etree.XPath("//div[contains(@class, 'alert-danger')]/p[2]"),
-        alter_danger_side=etree.XPath("//div[contains(@class, 'alert-danger')]/text()"),
     ),
 }
 
@@ -157,16 +180,16 @@ async def fetch_one(instance_url: str, detail) -> dict:
 
             # /search instead of / : https://github.com/searx/searx/pull/1681
             search_url = urljoin(instance_url, 'search')
-            theme = 'simple' if detail['generator'] == 'searxng' else 'oscar'
+            theme = 'simple'
             print(search_url, '(', theme, ')')
             check_result = CheckResultByTheme[theme]
-            default_params = {'theme': theme}
+            default_params = {'theme': 'simple'}
 
             # check the default engines
             print('🔎 ' + instance_url)
             await request_stat_with_log(search_url, timing, 'search',
                                         client, instance_url,
-                                        3, 120, 160, check_result.check_search_result,
+                                        5, 120, 160, check_result.check_search_result,
                                         params={'q': 'time', **default_params},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
 

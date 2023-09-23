@@ -26,8 +26,18 @@ const COMMON_ERROR_MESSAGE = {
     'Tor Error: ': 'Tor Error'
 };
 
-const SORT_CRITERIAS = ['http.status_code', 'error', 'timing.search.error', 'version', 'tls.grade',
-    'http.grade', 'html.grade', 'timing.search.all', 'url'];
+const SORT_CRITERIAS = [
+    'http.status_code',
+    'error',
+    'timing.search.error',
+    'timing.search_go.error',
+    'version',
+    'tls.grade',
+    'http.grade',
+    'html.grade',
+    'timing.search.all',
+    'url'
+];
 
 const HTML_GRADE_MAPPING = {
     'V': 3,
@@ -212,16 +222,18 @@ function getTime(timing) {
 }
 
 function isError(timing) {
-    if (timing.success_percentage > 0) {
-        return false;
+    if (timing.success_percentage < 100) {
+        return 100 - timing.success_percentage;
     }
-    return (timing.error !== undefined);
+    if (timing.error !== undefined) {
+        return 100;
+    }
+    return 0;
 }
 
 const CompareFunctionCriterias = {
     'http.status_code': (a, b) => -compareTool(a, b, null, 'http', 'status_code'),
     'error': (a, b) => -compareTool(a, b, null, 'error'),
-    'error_wp': (a, b) => compareTool(a, b, null, 'timing', 'search_wp', 'error'),
     'network.asn_privacy': (a, b) => compareTool(a, b, null, 'network', 'asn_privacy'),
     'version': (a, b) => compareVersion(a.version, b.version),
     'tls.grade': (a, b) => compareTool(a, b, normalizeGrade, 'tls', 'grade'),
@@ -229,8 +241,8 @@ const CompareFunctionCriterias = {
     'http.grade': (a, b) => compareTool(a, b, normalizeGrade, 'http', 'grade'),
     'timing.initial.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'initial', 'all'),
     'timing.search.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search'),
+    'timing.search_go.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search_go'),
     'timing.search.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search', 'all'),
-    'timing.search_wp.server': (a, b) => -compareTool(a, b, getTime, 'timing', 'search_wp', 'server'),
     'timing.search_wp.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search_wp', 'all'),
     'url': (a, b) => -compareTool(a, b, null, 'url'),
 };
