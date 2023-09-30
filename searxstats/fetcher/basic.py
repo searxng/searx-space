@@ -74,6 +74,12 @@ async def set_searx_version(detail, git_url, session, response_url, response):
         detail['version'] = version
         detail['contact_url'] = config.get('brand', {}).get('CONTACT_URL')
         detail['docs_url'] = await resolve_https_redirect(session, doc_url)
+        detail['public_instance'] = config.get('public_instance', False)
+        detail['limiter'] = config.get('limiter', {
+            'botdetection.ip_limit.link_token':	False,
+            'botdetection.ip_lists.pass_searxng_org': False,
+            'enabled': False,
+        })
     if git_url:
         git_url = await resolve_https_redirect(session, git_url)
     else:
@@ -133,6 +139,8 @@ async def fetch_one(instance_url: str, git_url: str, private: bool) -> dict:
     if error is not None:
         detail['http']['error'] = error
         detail['error'] = error
+    elif not detail.get('public_instance', False):
+        detail['error'] = 'Not configured as a public instance'
 
     return instance_url, detail
 

@@ -23,7 +23,8 @@ const COMMON_ERROR_MESSAGE = {
     '[Errno -2] Name does not resolve': 'Unknown host',
     'certificate verify failed': 'Certificate verify failed',
     'hostname \'': 'Hostname doesn\'t match certificate',
-    'Tor Error: ': 'Tor Error'
+    'Tor Error: ': 'Tor Error',
+    'Not configured as a public instance': 'Not configured as a public instance',
 };
 
 const SORT_CRITERIAS = [
