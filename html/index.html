@@ -146,7 +146,7 @@
                     <th class="column-version">Version</th>
                     <th v-if="!display.comments" class="column-tls">TLS<a class="help" href="#help-tls-grade">?</a></th>
                     <th v-if="!display.comments" class="column-csp">CSP<a class="help" href="#help-csp-grade">?</a></th>
-                    <th v-if="!display.comments" class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
+                    <th v-if="!display.comments" class="column-html">HTML<a class="help" href="#help-html-grade">?</a></th>
                     <th v-if="!display.comments" class="column-certificate">Certificate</th>
                     <th v-if="!display.comments" class="column-ipv6">IPv6<a class="help" href="#help-ipv6">?</a></th>
                     <th v-if="!display.comments" class="column-country">Country<a class="help" href="#help-country">?</a></th>
@@ -215,7 +215,7 @@
             <p>Grade from <a href="https://github.com/dalf/http-observatory">dalf/http-observatory</a> updated fork of <a href="https://observatory.mozilla.org/faq.html">Observatory by mozilla</a>.
             <p>Note: The grade shown here might be different from observatory.mozilla.org: searx.space checks the full SearXNG URL, observatory.mozilla.org checks the root path.</p>
 
-            <h4 id="help-http-grade">HTTP grade</h4>
+            <h4 id="help-html-grade">HTML grade</h4>
             <p>When the page is loaded by Firefox, are the scripts well-known ?</p>
             <ul>
               <li>V - Vanilla instance: all static files comes from the SearXNG git repository.</li>
@@ -262,7 +262,7 @@
                     <tr>
                       <th class="column-url">URL</th>
                       <th class="column-version">Version</th>
-                      <th v-if="!display.comments" class="column-html">HTML<a class="help" href="#help-http-grade">?</a></th>
+                      <th v-if="!display.comments" class="column-html">HTML<a class="help" href="#help-html-grade">?</a></th>
                       <th v-if="!display.comments" class="column-responsetime">Search response time</th>
                       <th v-if="!display.comments" class="column-responsetime">Google response time</th>
                       <th v-if="!display.comments" class="column-responsetime">Initial response time</th>
@@ -383,7 +383,7 @@
                   </tbody>
               </table>
             </div>
-            <h4 id="help-http-grade">Labels:</h4>
+            <h4 id="help-html-grade">Labels:</h4>
             <table class="engine-status-list">
               <tr><td class="engine-status"><span class="ok"></span></td><td>The engine crashes less than 6% of the time</td></tr>
               <tr><td class="engine-status"><span class="warning"></span></td><td>The engine crashes between 6% and 90% of the time</td></tr>
