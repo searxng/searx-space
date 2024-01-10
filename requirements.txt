@@ -16,4 +16,4 @@ beautifulsoup4==4.11.1
 publicsuffixlist==0.10.0.20231214
 psutil==5.9.4
 celery==5.2.7
-geoip2==4.6.0
+geoip2==4.8.0
