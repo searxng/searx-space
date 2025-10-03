@@ -3,7 +3,7 @@ httpx[http2,socks]==0.25.2
 brotlipy==0.7.0
 uvloop==0.17.0
 rfc3986==2.0.0
-dnspython==1.16.0
+dnspython==2.7.0
 ipwhois==1.2.0
 lxml==4.9.3
 selenium==3.141.0
