@@ -1,4 +1,4 @@
-pyOpenSSL==23.0.0
+pyOpenSSL==26.0.0
 httpx[http2,socks]==0.25.2
 brotli==1.2.0
 uvloop==0.22.1
