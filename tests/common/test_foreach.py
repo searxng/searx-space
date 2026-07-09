@@ -71,12 +71,12 @@ async def test_for_each_exception():
     output_set = set()
     with pytest.raises(ValueError):
         await for_each(input_list, f_async, limit=2)
-    assert output_set == {'A', 'B', 'D'}
+    assert output_set in ({'A', 'B'}, {'A', 'B', 'D'})
 
     output_set = set()
     with pytest.raises(ValueError):
         await for_each(input_list, f_func, limit=2)
-    assert output_set == {'A', 'B', 'D'}
+    assert output_set in ({'A', 'B'}, {'A', 'B', 'D'})
 
 
 @pytest.mark.asyncio

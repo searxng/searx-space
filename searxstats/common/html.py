@@ -3,7 +3,6 @@ import concurrent.futures
 
 from itertools import chain
 from lxml import etree, html
-from lxml.etree import _ElementStringResult, _ElementUnicodeResult  # pylint: disable=no-name-in-module
 
 FROMSTRING_THREADPOOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
 
@@ -27,7 +26,7 @@ def extract_text(xpath_results):
         for element in xpath_results:
             result = result + extract_text(element)
         return result.strip()
-    elif isinstance(xpath_results, (_ElementStringResult, _ElementUnicodeResult)):
+    elif isinstance(xpath_results, str):
         # it's a string
         return ''.join(xpath_results)
     else:
@@ -41,7 +40,7 @@ def extract_text(xpath_results):
 
 def stringify_children(node):
     parts = ([node.text] +
-             list(chain(*([c.text, str(etree.tostring(c)), c.tail] for c in node.getchildren()))) +
+             list(chain(*([c.text, str(etree.tostring(c)), c.tail] for c in node))) +
              [node.tail])
     # filter removes possible Nones in texts and tails
     return ''.join(filter(None, parts))

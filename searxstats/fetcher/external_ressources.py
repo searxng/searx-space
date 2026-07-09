@@ -8,7 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
 from searxstats.config import SEARX_GIT_REPOSITORY, SEARXNG_GIT_REPOSITORY, FORKS, \
-                              BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT,\
+                              BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT, \
                               get_geckodriver_file_name
 from searxstats.data import get_repositories_for_content_sha, is_wellknown_content_sha
 from searxstats.common.http import get_network_type, NetworkType

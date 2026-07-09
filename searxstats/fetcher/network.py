@@ -85,7 +85,7 @@ def dns_query(qname, field):
     dns_answers = None
     dns_error = None
     try:
-        dns_answers = dns.resolver.query(qname, field)
+        dns_answers = dns.resolver.resolve(qname, field, search=True)
     except dns.resolver.NXDOMAIN:
         # ignore: The DNS query name does not exist.
         dns_answers = None
@@ -118,7 +118,7 @@ def dns_query_field_dnspython(host: str, field: str):
     """
     string everywhere to allow @MemoizeToDisk
 
-    Equivalent of dns.resolver.query(qname, field)
+    Equivalent of dns.resolver.resolve(qname, field, search=True)
 
     No exception
 

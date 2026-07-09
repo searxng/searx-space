@@ -45,10 +45,11 @@ setup(
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Programming Language :: Python :: Implementation :: CPython",
     ],
     url='https://github.com/searxng/searx-space',
@@ -82,7 +83,7 @@ setup(
     ],
 
     zip_safe=False,
-    python_requires='>=3.8',
+    python_requires='>=3.10',
 
     install_requires=requirements,
     extras_require={
