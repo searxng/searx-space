@@ -1,6 +1,6 @@
 pylint==3.3.9
-pytest==8.4.2
-pytest-asyncio==0.26.0
+pytest==9.0.3
+pytest-asyncio==1.4.0
 pytest-cov==6.2.1
 pytest-httpserver==1.0.8
 pytest-mock==3.15.1

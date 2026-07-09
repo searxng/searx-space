@@ -1,6 +1,7 @@
 # pylint: disable=unused-argument, redefined-outer-name
 import asyncio
 import pytest
+import pytest_asyncio
 
 import searxstats.common.utils as utils
 
@@ -34,29 +35,32 @@ def dummy_raise_exception():
     raise ValueError('excepted exception')
 
 
-@pytest.fixture
-def task_list_with_exception(event_loop):
+@pytest_asyncio.fixture
+async def task_list_with_exception():
+    loop = asyncio.get_running_loop()
     tasks = []
-    tasks.append(utils.create_task(event_loop, None, dummy_coroutine, 12, second=42))
-    tasks.append(utils.create_task(event_loop, None, dummy_raise_exception))
+    tasks.append(utils.create_task(loop, None, dummy_coroutine, 12, second=42))
+    tasks.append(utils.create_task(loop, None, dummy_raise_exception))
     return tasks
 
 
-@pytest.fixture
-def simple_task_list(event_loop):
+@pytest_asyncio.fixture
+async def simple_task_list():
+    loop = asyncio.get_running_loop()
     tasks = []
-    tasks.append(utils.create_task(event_loop, None, dummy_coroutine, 12, second=42))
+    tasks.append(utils.create_task(loop, None, dummy_coroutine, 12, second=42))
     return tasks
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("dummy", [dummy_function, dummy_coroutine])
-async def test_create_task(event_loop, dummy):
-    first, second = await utils.create_task(event_loop, None, dummy, 12)
+async def test_create_task(dummy):
+    loop = asyncio.get_running_loop()
+    first, second = await utils.create_task(loop, None, dummy, 12)
     assert first == 12
     assert second is None
 
-    first, second = await utils.create_task(event_loop, None, dummy, 12, second=42)
+    first, second = await utils.create_task(loop, None, dummy, 12, second=42)
     assert first == 12
     assert second == 42
 
@@ -71,7 +75,7 @@ async def test_wait_tasks_empty():
 
 
 @pytest.mark.asyncio
-async def test_wait_tasks_ok(event_loop, simple_task_list):
+async def test_wait_tasks_ok(simple_task_list):
     results = await utils.wait_get_results(*simple_task_list)
 
     assert len(results) == 1
@@ -79,7 +83,7 @@ async def test_wait_tasks_ok(event_loop, simple_task_list):
 
 
 @pytest.mark.asyncio
-async def test_wait_tasks_exception(event_loop, task_list_with_exception):
+async def test_wait_tasks_exception(task_list_with_exception):
     with pytest.raises(ValueError):
         await utils.wait_get_results(*task_list_with_exception)
 
