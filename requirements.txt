@@ -12,7 +12,7 @@ GitPython==3.1.50
 sqlalchemy==2.0.36
 httpobs @ git+https://github.com/dalf/http-observatory@master#egg=httpobs
 requests==2.33.0
-urllib3<2
+urllib3<3
 beautifulsoup4==4.14.2
 publicsuffixlist==0.10.0.20231214
 psutil==5.9.4
