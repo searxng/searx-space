@@ -1,5 +1,5 @@
 pyOpenSSL==26.0.0
-httpx[http2,socks]==0.25.2
+httpx[http2,socks]==0.28.1
 brotli==1.2.0
 uvloop==0.22.1
 rfc3986==2.0.0
