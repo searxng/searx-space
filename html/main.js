@@ -11,9 +11,6 @@
 
 'use strict';
 
-const GROUP_VERSION_PER_DAYS = 30;
-const VERSION_START_DATE = new Date("2022-01-01").getTime();
-
 const COMMON_ERROR_MESSAGE = {
     'Connection refused': 'Connection refused',
     'Connection timed out': 'Connection timed out',
@@ -243,7 +240,6 @@ const CompareFunctionCriterias = {
     'timing.search.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search'),
     'timing.search_go.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search_go'),
     'timing.search.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search', 'all'),
-    'timing.search_wp.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search_wp', 'all'),
     'url': (a, b) => -compareTool(a, b, null, 'url'),
 };
 
@@ -556,11 +552,6 @@ Vue.component('engine-component', {
             }
         }
     },
-});
-
-Vue.component('timestamp-component', {
-    props: ['value'],
-    template: '<time datetime="{{ new Date(value * 1000).toString() }}">{{ new Date(value * 1000).toString() }}</time>',
 });
 
 Vue.component('html-component', {
@@ -950,7 +941,6 @@ new Vue({
     el: '#searxinstances',
     data: () => ({
         filters: {
-            fork_select: '',
             version: '',
             html_grade: '',
             csp_grade: '',
@@ -970,25 +960,19 @@ new Vue({
             comments: false,
         },
         selected_tab: 'online_https',
-        timestamp: undefined,
         instances: [],
         instances_nosearx: [],
         instances_ko: [],
         instances_tor: [],
-        forks: [],
         hashes: [],
         engines: {},
         engine_errors: [],
         categories: [],
-        asns: {},
         selected_category: 'general',
     }),
     computed: {
         instances_filtered: function () {
             let result = this.instances;
-            if (this.filters.fork_select != '') {
-                result = result.filter((detail) => detail.git_url == this.filters.fork_select)
-            }
             result = applyStrFilter(result, this.filters.version, (f, detail) => filterStartsWith(f, detail.version));
             result = applyStrFilter(result, this.filters.csp_grade, (f, detail) => filterIndexOf(f, detail.http.grade));
             result = applyStrFilter(result, this.filters.tls_grade, (f, detail) => filterIndexOf(f, detail.tls.grade));
@@ -1066,7 +1050,6 @@ new Vue({
         fetch('data/instances.json').then((response) => {
             return response.json().then((json) => {
                 const rawInstances = json.instances;
-                this.timestamp = json.timestamp;
                 const instances = [];
                 const instancesWithError = {};
                 const instancesWithoutSearx = [];
@@ -1083,14 +1066,11 @@ new Vue({
                     setDefault(instance.timing.initial, 'all', {});
                     setDefault(instance.timing, 'search', {});
                     setDefault(instance.timing.search, 'all', {});
-                    setDefault(instance.timing, 'search_wp', {});
-                    setDefault(instance.timing.search_wp, 'all', {});
                     setDefault(instance.timing, 'search_go', {});
                     setDefault(instance.timing.search_go, 'all', {});
                     setDefault(instance, 'html', {});
                     setDefault(instance.html, 'grade', '');
                     setComputedTimes(instance.timing.search);
-                    setComputedTimes(instance.timing.search_wp);
                     setComputedTimes(instance.timing.search_go);
 
                     // dispatch instance
@@ -1121,9 +1101,6 @@ new Vue({
                 this.instances_ko = instancesWithError;
                 this.instances_nosearx = instancesWithoutSearx;
                 this.instances_tor = instancesTor;
-                this.forks = ['', ...json.forks.map(f => ({text: f, value:f}))];
-                this.forks[1].text = 'Vanilla'
-                this.display.fork_select = json.forks[0];
                 this.hashes = json.hashes;
                 this.engines = json.engines;
                 this.engine_errors = json.engine_errors;
@@ -1131,7 +1108,7 @@ new Vue({
                 this.cidrs = json.cidrs;
                 this.selected_category = this.categories[0];
                 for(const engine_name of Object.keys(json.engines)) {
-                    this.filters[engine_name] = false;
+                    this.filters.engines[engine_name] = false;
                 }
             });
         });

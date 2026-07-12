@@ -1,6 +1,7 @@
 from sqlalchemy import Table, Column, Integer, String, ForeignKey, create_engine
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
+from sqlalchemy.pool import StaticPool
 
 from .config import get_database_url
 
@@ -67,7 +68,14 @@ class Fork(Base):
 def initialize_database(url=None):
     global engine, Session   # pylint: disable=global-statement,invalid-name
     url = url or get_database_url()
-    engine = create_engine(get_database_url(), future=True)
+    if url == ':memory:':
+        url = 'sqlite:///:memory:'
+    engine_kwargs = {'future': True}
+    if url == 'sqlite:///:memory:':
+        # share one in-memory DB across connections (create_all + sessions)
+        engine_kwargs['connect_args'] = {'check_same_thread': False}
+        engine_kwargs['poolclass'] = StaticPool
+    engine = create_engine(url, **engine_kwargs)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, future=True)
 

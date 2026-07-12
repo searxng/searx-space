@@ -8,6 +8,7 @@ from .common.memoize import erase_by_name
 from .common.utils import dict_update, create_task, print_exception_wrapper
 from .common.foreach import for_each
 from .common.http import get_network_type, NetworkType
+from .config import SEARXNG_GIT_REPOSITORY
 
 
 class AsnPrivacy(Enum):
@@ -35,8 +36,7 @@ class SearxStatisticsResult:
         self.hashes = []
         self.cidrs = {}
         self.forks = [
-            'https://github.com/searx/searx',
-            'https://github.com/searxng/searxng',
+            SEARXNG_GIT_REPOSITORY,
         ]
         self.private = private
 
@@ -59,9 +59,6 @@ class SearxStatisticsResult:
 
     def get_instance(self, url):
         return self.instances[url]
-
-    def create_instance(self, url, detail):
-        self.instances[url] = detail
 
     def update_instance(self, url, detail):
         if url in self.instances:

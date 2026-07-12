@@ -1,8 +1,7 @@
 import asyncio
 import concurrent.futures
 
-from itertools import chain
-from lxml import etree, html
+from lxml import html
 
 FROMSTRING_THREADPOOL = concurrent.futures.ThreadPoolExecutor(max_workers=8)
 
@@ -36,11 +35,3 @@ def extract_text(xpath_results):
         )
         text = text.strip().replace('\n', ' ')
         return ' '.join(text.split())
-
-
-def stringify_children(node):
-    parts = ([node.text] +
-             list(chain(*([c.text, str(etree.tostring(c)), c.tail] for c in node))) +
-             [node.tail])
-    # filter removes possible Nones in texts and tails
-    return ''.join(filter(None, parts))

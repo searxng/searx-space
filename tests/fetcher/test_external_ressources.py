@@ -88,15 +88,8 @@ def fake_httpserver(httpserver):
 def fake_searxstatisticsresult(fake_httpserver):
     result = searxstats.model.SearxStatisticsResult()
     result.update_instance(fake_httpserver.url_for('index.html'), {
-        'http': {
-            'status_code': 200,
-            'error': None
-        },
-        'git_url': 'https://github.com/searx/searx',
-        'version': '0.15.0',
-        'timing': {
-            'initial': 200
-        },
+        'git_url': 'https://github.com/searxng/searxng',
+        'version': '2026.7.8+abc123',
         'analytics': False,
     })
     yield result
@@ -150,9 +143,13 @@ def test_fetch_ressource_hashes_js(selenium_driver, fake_httpserver: pytest_http
     assert list(ressources['link'].values())[0]['hashRef'] == data_index_css_info['index']
 
 
-def test_fetch(selenium_driver,
-               fake_httpserver: pytest_httpserver.HTTPServer,
+def test_fetch(fake_httpserver: pytest_httpserver.HTTPServer,
                fake_searxstatisticsresult):
     searxstats.database.initialize_database(':memory:')
     searxstats.common.memoize.nobinding()
     external_ressources.fetch(fake_searxstatisticsresult)
+    detail = fake_searxstatisticsresult.get_instance(
+        fake_httpserver.url_for('index.html'))
+    assert 'html' in detail
+    assert 'ressources' in detail['html']
+    assert 'grade' in detail['html']

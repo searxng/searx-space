@@ -7,11 +7,11 @@ import sys
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-from searxstats.config import SEARX_GIT_REPOSITORY, SEARXNG_GIT_REPOSITORY, FORKS, \
+from searxstats.config import SEARXNG_GIT_REPOSITORY, \
                               BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT, \
                               get_geckodriver_file_name
 from searxstats.data import get_repositories_for_content_sha, is_wellknown_content_sha
-from searxstats.common.http import get_network_type, NetworkType
+from searxstats.common.http import NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
 
@@ -35,9 +35,7 @@ def new_driver(network_type=NetworkType.NORMAL):
     firefox_profile.set_preference('browser.download.manager.showWhenStarting', False)
     firefox_profile.set_preference('browser.download.folderList', 0)
     firefox_profile.accept_untrusted_certs = False
-    if network_type == NetworkType.NORMAL:
-        pass
-    elif network_type == NetworkType.TOR:
+    if network_type == NetworkType.TOR:
         firefox_profile.set_preference('network.proxy.type', 1)
         firefox_profile.set_preference('network.proxy.socks', TOR_SOCKS_PROXY_HOST)
         firefox_profile.set_preference('network.proxy.socks_port', TOR_SOCKS_PROXY_PORT)
@@ -52,13 +50,6 @@ def new_driver(network_type=NetworkType.NORMAL):
                                service_args=['--log', 'info'])
     driver.set_page_load_timeout(BROWSER_LOAD_TIMEOUT)
     return driver
-
-
-def get_relative_url(base_url, url):
-    if url.startswith(base_url):
-        return url[len(base_url):]
-    else:
-        return url
 
 
 def result_hash_iterator(result):
@@ -138,11 +129,14 @@ def replace_hash_by_hashref(result, hashes, forks):
                         repo_url_list = get_repositories_for_content_sha(ressource_hash)
                         if not repo_url_list:
                             new_hash_desc['unknown'] = True
-                        elif (
-                                SEARX_GIT_REPOSITORY not in repo_url_list
-                                and SEARXNG_GIT_REPOSITORY not in repo_url_list
-                        ):
-                            new_hash_desc['forks'] = [forks.index(f) for f in repo_url_list]
+                        elif SEARXNG_GIT_REPOSITORY not in repo_url_list:
+                            # expose forks that match live instances
+                            fork_refs = []
+                            for repo_url in repo_url_list:
+                                if repo_url not in forks:
+                                    forks.append(repo_url)
+                                fork_refs.append(forks.index(repo_url))
+                            new_hash_desc['forks'] = fork_refs
                     # ressource_hash first seen for the whole run
                     hashes[ressource_hash] = new_hash_desc
                     # the next hash will uses the next index
@@ -271,20 +265,18 @@ def find_forks(ressources, hashes, forks) -> typing.List[str]:
 
     # Example:
     # found_forks = {
-    #  'https://github.com/searx/searx': 7,
     #  'https://github.com/searxng/searxng': 7,
-    #  'https://salsa.debian.org/debian/searx': 6,
     # }
 
     if found_forks:
         # sort criterias:
-        # * give priority to forks in searxstats.config.FORKS
+        # * give priority to upstream SearXNG
         # * then sort by the number of found hashes in a fork.
         # Example:
         # len(hashes) = 8
         # * 6 hashes exist in fork A
-        # * 7 hashes exist in fork B (B in FORKS)
-        # * 7 hashes exist in fork C (C not in FORKS)
+        # * 7 hashes exist in fork B (B is upstream)
+        # * 7 hashes exist in fork C (C is not upstream)
         # --> found_fork_tuples = [(B, 7), (C, 7), (A, 6)]
         # --> find_forks returns [B, C, A]
         # possible enhancement:
@@ -292,7 +284,7 @@ def find_forks(ressources, hashes, forks) -> typing.List[str]:
         # * example: https://api.github.com/repos/<org>/<repo> see "parent" key.
         found_fork_tuples = sorted(
             found_forks.items(),
-            key=lambda o: (o[0] not in FORKS, o[1])
+            key=lambda o: (o[0] != SEARXNG_GIT_REPOSITORY, o[1])
         )
         return [f[0] for f in found_fork_tuples]
     return []
@@ -302,21 +294,20 @@ def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: Net
     driver = new_driver(network_type=network_type)
     try:
         for url, detail in searx_stats_result.iter_instances(only_valid=True, network_type=network_type):
-            if get_network_type(url) == network_type:
-                ressources = fetch_ressource_hashes(driver, url, ressource_hashes, searx_stats_result.forks)
-                if 'error' in ressources:
-                    # don't reuse the browser if there was an error
-                    driver.quit()
-                    driver = new_driver(network_type=network_type)
-                # temporary storage
-                detail['html'] = {
-                    'ressources': ressources
-                }
-                # output progress
-                external_js = len(ressources.get('script', []))
-                inline_js = len(ressources.get('inline_script', []))
-                error_msg = ressources.get('error', '').strip()
-                print('🔗 {0:60} {1:3} loaded js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
+            ressources = fetch_ressource_hashes(driver, url, ressource_hashes, searx_stats_result.forks)
+            if 'error' in ressources:
+                # don't reuse the browser if there was an error
+                driver.quit()
+                driver = new_driver(network_type=network_type)
+            # temporary storage
+            detail['html'] = {
+                'ressources': ressources
+            }
+            # output progress
+            external_js = len(ressources.get('script', []))
+            inline_js = len(ressources.get('inline_script', []))
+            error_msg = ressources.get('error', '').strip()
+            print('🔗 {0:60} {1:3} loaded js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
     finally:
         driver.quit()
 

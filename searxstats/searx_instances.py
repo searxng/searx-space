@@ -58,7 +58,7 @@ async def get_searx_stats_result_from_repository() -> SearxStatisticsResult:
 
 async def get_searx_stats_result_from_list(instance_urls: list, private: bool) -> SearxStatisticsResult:
     """
-    Fetch searx instances from instance_urls given parameter.
+    Fetch SearXNG instances from instance_urls given paramter.
     """
     searx_stats_result = SearxStatisticsResult(private=private)
     for url in instance_urls:
