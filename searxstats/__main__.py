@@ -67,7 +67,7 @@ def run(server_mode: bool, output_file_name: str, user_cache_directory: str, dat
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Check searx instances.')
+    parser = argparse.ArgumentParser(description='Check SearXNG instances.')
     parser.add_argument('--output', '-o',
                         type=str, nargs='?', dest='output_file_name',
                         help='JSON output file name',

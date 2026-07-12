@@ -137,10 +137,6 @@ async def get(session, *args, **kwargs):
     return await request(session.get, *args, **kwargs)
 
 
-async def post(session, *args, **kwargs):
-    return await request(session.post, *args, **kwargs)
-
-
 # pylint: disable=global-variable-undefined, invalid-name
 async def initialize():
     for logger_name in ('hpack.hpack', 'hpack.table', 'httpx._client'):

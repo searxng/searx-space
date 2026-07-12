@@ -66,9 +66,6 @@ class CheckResult:
     async def check_google_result(self, response):
         return await self._check_html_result_page('google cse', response)
 
-    async def check_wikipedia_result(self, response):
-        return await self._check_html_result_page('wikipedia', response)
-
     async def check_search_result(self, response):
         document = await html_fromstring(response.text)
         message = None
@@ -90,25 +87,18 @@ class CheckResult:
         return True, message
 
 
-CheckResultByTheme = {
-    'simple': CheckResult(
-        results=etree.XPath("//div[@id='urls']//article"),
-        engines=etree.XPath(".//div[contains(@class, 'engines')]/span"),
-        alert_danger_main=etree.XPath("//div[@id='urls']/div[contains(@class, 'dialog-error')]"),
-        alter_danger_side=etree.XPath("//div[@id='sidebar']/div[contains(@class, 'dialog-error')]"),
-    ),
-}
-
-
-async def check_results_always_valid(_):
-    return True, None
+CHECK_RESULT = CheckResult(
+    results=etree.XPath("//div[@id='urls']//article"),
+    engines=etree.XPath(".//div[contains(@class, 'engines')]/span"),
+    alert_danger_main=etree.XPath("//div[@id='urls']/div[contains(@class, 'dialog-error')]"),
+    alter_danger_side=etree.XPath("//div[@id='sidebar']/div[contains(@class, 'dialog-error')]"),
+)
 
 
 # pylint: disable=too-many-arguments, too-many-locals
 async def request_stat(client, url, count, between_a, and_b, check_results, **kwargs):
     error_count = 0
     response_time_stats = ResponseTimeStats()
-    check_results = check_results or check_results_always_valid
     # loop
     for _ in range(0, count):
         await asyncio.sleep(random.randint(a=between_a, b=and_b))
@@ -168,7 +158,7 @@ def only_instance_url(instance_url, _):
 
 
 @MemoizeToDisk(func_key=only_instance_url, expire_time=3600)
-async def fetch_one(instance_url: str, detail) -> dict:
+async def fetch_one(instance_url: str) -> dict:
     timing = {}
     try:
         network_type = get_network_type(instance_url)
@@ -180,16 +170,14 @@ async def fetch_one(instance_url: str, detail) -> dict:
 
             # /search instead of / : https://github.com/searx/searx/pull/1681
             search_url = urljoin(instance_url, 'search')
-            theme = 'simple'
-            print(search_url, '(', theme, ')')
-            check_result = CheckResultByTheme[theme]
+            print(search_url)
             default_params = {'theme': 'simple'}
 
             # check the default engines
             print('🔎 ' + instance_url)
             await request_stat_with_log(search_url, timing, 'search',
                                         client, instance_url,
-                                        5, 120, 160, check_result.check_search_result,
+                                        5, 120, 160, CHECK_RESULT.check_search_result,
                                         params={'q': 'time', **default_params},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
 
@@ -197,7 +185,7 @@ async def fetch_one(instance_url: str, detail) -> dict:
             print('🔍 ' + instance_url)
             await request_stat_with_log(search_url, timing, 'search_go',
                                         client, instance_url,
-                                        2, 60, 160, check_result.check_google_result,
+                                        2, 60, 160, CHECK_RESULT.check_google_result,
                                         params={'q': '!goc time', **default_params},
                                         cookies=cookies, headers=DEFAULT_HEADERS)
     except Exception as ex:
@@ -210,7 +198,7 @@ async def fetch_one(instance_url: str, detail) -> dict:
 
 
 async def fetch_and_set(instance_url: str, detail):
-    detail['timing'].update(await fetch_one(instance_url, detail))
+    detail['timing'].update(await fetch_one(instance_url))
 
 
 async def fetch(searx_stats_result: SearxStatisticsResult):

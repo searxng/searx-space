@@ -42,13 +42,7 @@ CACHE_FILE_NAME = 'searxstats-cache.yaml'
 # Database URL
 DATABASE_URL = 'sqlite:////tmp/searxstats.db'
 
-# Directory where SearXNG will be git clone
-SEARX_GIT_DIRECTORY = 'searxstats-git'
-
-SEARXINSTANCES_GIT_DIRECTORY = 'searxinstances-git'
-
-# Git URL of SeaerXNG (to fetch static file content hashes)
-SEARX_GIT_REPOSITORY = 'https://github.com/searx/searx'
+# Git URL of SearXNG (to fetch static file content hashes)
 SEARXNG_GIT_REPOSITORY = 'https://github.com/searxng/searxng'
 
 SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/searxng/searx-instances'
@@ -58,19 +52,6 @@ GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'
 
 # mmdb
 MMDB_FILENAME = os.environ.get("MMDB_FILENAME")
-
-# debian
-DEBIAN_GIT_URL = 'https://salsa.debian.org/debian/searx'
-DEBIAN_SOURCE_PACKAGE_NAMES = [
-    'searx', 'twitter-bootstrap3', 'jquery', 'leaflet', 'requirejs', 'typeahead.js']
-
-#
-FORKS = [
-    'https://github.com/searx/searx',
-    'https://github.com/searxng/searxng',
-    'https://salsa.debian.org/debian/searx',
-    'https://gitlab.e.foundation/e/cloud/my-spot',
-]
 
 
 def set_cache_directory(directory):
