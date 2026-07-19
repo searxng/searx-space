@@ -15,8 +15,11 @@ jobs:
     name: Python ${{ matrix.python-version }} QA
     steps:
     - uses: actions/checkout@v4
+    - uses: browser-actions/setup-firefox@v1
+      with:
+        firefox-version: latest-esr
     - name: Install Ubuntu packages
-      run: sudo apt-get install -y firefox wget git build-essential python3-dev libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev
+      run: sudo apt-get update && sudo apt-get install -y build-essential python3-dev libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev
     - name: Set up Python
       uses: actions/setup-python@v5
       with:

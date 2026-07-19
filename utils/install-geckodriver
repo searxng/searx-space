@@ -13,7 +13,7 @@ set +e
 if [ -z "$NOTFOUND" ]; then
     return
 fi
-GECKODRIVER_VERSION="v0.32.0"
+GECKODRIVER_VERSION="v0.37.0"
 PLATFORM="`python3 -c "import platform; print(platform.system().lower(), str(platform.machine()).lower())"`"
 # Possible values for platform().machine
 # Linux & Mac: 
