@@ -152,8 +152,7 @@ async def get_cookie_settings(client, url):
     return DEFAULT_COOKIES
 
 
-# pylint: disable=unused-argument
-def only_instance_url(instance_url, _):
+def only_instance_url(instance_url):
     return instance_url
 
 
