@@ -6,6 +6,7 @@ import sys
 
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
 
 from searxstats.config import SEARXNG_GIT_REPOSITORY, \
                               BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT, \
@@ -28,26 +29,25 @@ with open(os.path.dirname(os.path.realpath(__file__))
 
 
 def new_driver(network_type=NetworkType.NORMAL):
-    firefox_profile = webdriver.FirefoxProfile()
-    firefox_profile.set_preference('javascript.options.showInConsole', True)
-    firefox_profile.set_preference('browser.preferences.instantApply', True)
-    firefox_profile.set_preference('browser.helperApps.alwaysAsk.force', False)
-    firefox_profile.set_preference('browser.download.manager.showWhenStarting', False)
-    firefox_profile.set_preference('browser.download.folderList', 0)
-    firefox_profile.accept_untrusted_certs = False
-    if network_type == NetworkType.TOR:
-        firefox_profile.set_preference('network.proxy.type', 1)
-        firefox_profile.set_preference('network.proxy.socks', TOR_SOCKS_PROXY_HOST)
-        firefox_profile.set_preference('network.proxy.socks_port', TOR_SOCKS_PROXY_PORT)
-        firefox_profile.set_preference('network.proxy.socks_remote_dns', True)
-    firefox_profile.update_preferences()
     options = Options()
     options.add_argument('--headless')
+    options.accept_insecure_certs = False
+    options.set_preference('javascript.options.showInConsole', True)
+    options.set_preference('browser.preferences.instantApply', True)
+    options.set_preference('browser.helperApps.alwaysAsk.force', False)
+    options.set_preference('browser.download.manager.showWhenStarting', False)
+    options.set_preference('browser.download.folderList', 0)
+    if network_type == NetworkType.TOR:
+        options.set_preference('network.proxy.type', 1)
+        options.set_preference('network.proxy.socks', TOR_SOCKS_PROXY_HOST)
+        options.set_preference('network.proxy.socks_port', TOR_SOCKS_PROXY_PORT)
+        options.set_preference('network.proxy.socks_remote_dns', True)
 
-    driver = webdriver.Firefox(options=options,
-                               firefox_profile=firefox_profile,
-                               service_log_path=get_geckodriver_file_name(),
-                               service_args=['--log', 'info'])
+    service = Service(
+        log_output=get_geckodriver_file_name(),
+        service_args=['--log', 'info'],
+    )
+    driver = webdriver.Firefox(options=options, service=service)
     driver.set_page_load_timeout(BROWSER_LOAD_TIMEOUT)
     return driver
 

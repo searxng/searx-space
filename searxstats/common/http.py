@@ -24,8 +24,7 @@ class NetworkType(Enum):
 
 
 NETWORK_PROXIES = {
-    NetworkType.TOR: httpx.Proxy(
-        url=f'socks5://{TOR_SOCKS_PROXY_HOST}:{TOR_SOCKS_PROXY_PORT}')
+    NetworkType.TOR: f'socks5://{TOR_SOCKS_PROXY_HOST}:{TOR_SOCKS_PROXY_PORT}',
 }
 
 TOR_PROXY_ERROR = {
@@ -59,7 +58,9 @@ async def new_client(*args, **kwargs):
     if 'network_type' in kwargs:
         if kwargs['network_type']:
             network_type = kwargs['network_type']
-            kwargs['proxies'] = NETWORK_PROXIES.get(network_type, None)
+            proxy = NETWORK_PROXIES.get(network_type)
+            if proxy:
+                kwargs['proxy'] = proxy
         del kwargs['network_type']
     async with httpx.AsyncClient(*args, **kwargs, verify=SSL_CONTEXT, http2=True, follow_redirects=True) as session:
         session._network_type = network_type  # pylint: disable=protected-access
