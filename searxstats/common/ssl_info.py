@@ -55,7 +55,7 @@ _wrap_bio = SSL_CONTEXT.wrap_bio
 def patched_wrap_bio(incoming: ssl.MemoryBIO, outgoing: ssl.MemoryBIO, server_hostname: str, **kwargs) -> ssl.SSLObject:
     global _SSL_OBJECTS  # pylint: disable=global-statement
     ssl_object = _wrap_bio(incoming, outgoing, server_hostname=server_hostname, **kwargs)
-    _SSL_OBJECTS[server_hostname] = ssl_object
+    _SSL_OBJECTS[server_hostname.decode()] = ssl_object
     return ssl_object
 
 
