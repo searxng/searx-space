@@ -13,6 +13,6 @@ httpobs @ git+https://github.com/dalf/http-observatory@master#egg=httpobs
 requests==2.33.0
 urllib3<3
 beautifulsoup4==4.14.2
-publicsuffixlist==1.0.2.20260716
+publicsuffixlist==1.0.2.20260723
 celery==5.2.7
 geoip2==5.1.0
