@@ -1,4 +1,4 @@
-pyOpenSSL==26.0.0
+pyOpenSSL==26.3.0
 httpx[http2,socks]==0.28.1
 brotli==1.2.0
 dnspython==2.7.0
