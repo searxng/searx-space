@@ -697,16 +697,17 @@ Vue.component('csp-component', {
     props: ['value'],
     render: function (h) {
         if (this.value != null && this.value !== undefined) {
-            const { grade, gradeUrl, version } = this.value;
+            const { grade, gradeUrl, score } = this.value;
             if (grade != null) {
-                return h('a', {
-                    class: 'value-tls',
-                    attrs: {
-                        href: gradeUrl,
-                        title: version,
-                        style: `background-color:${hslGrade(grade)}`,
-                    },
-                }, grade);
+                return createTooltip(h,
+                    h('a', {
+                        class: 'value-tls',
+                        attrs: {
+                            href: gradeUrl,
+                            style: `background-color:${hslGrade(grade)}`,
+                        },
+                    }, grade),
+                    score != null ? [String(score)] : []);
             }
         }
         return undefined;
