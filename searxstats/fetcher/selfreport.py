@@ -16,7 +16,6 @@ def only_instance_url(_, instance_url):
 @MemoizeToDisk(func_key=only_instance_url)
 async def get_config(session, instance_url):
     result_engines = None
-    result_categories = None
     response, error = await get(session, urljoin(instance_url, 'config'), timeout=5)
     if response is not None and error is None:
         try:
@@ -25,22 +24,15 @@ async def get_config(session, instance_url):
             pass
         else:
             result_engines = {}
-            result_categories = []
-            # categories
-            for category in config.get('categories', {}):
-                if category not in result_categories:
-                    result_categories.append(category)
-            # engines
             for engine in config.get('engines', {}):
                 result_engines[engine['name']] = {
-                    'categories': engine['categories'],
                     'language_support': engine['language_support'],
                     'paging': engine['paging'],
                     'safesearch': engine['safesearch'],
                     'time_range_support': engine['time_range_support'],
                     'shortcut': engine['shortcut']
                 }
-    return result_engines, result_categories
+    return result_engines
 
 
 @MemoizeToDisk(func_key=only_instance_url)
@@ -120,7 +112,7 @@ async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail)
     network_type = get_network_type(url)
     async with new_client(network_type=network_type) as session:
         # /config
-        result_engines, result_categories = await get_config(session, url)
+        result_engines = await get_config(session, url)
         # /stats/checker
         result_checker = await get_stats_checker(session, url)
         # /stats/errors
@@ -164,11 +156,6 @@ async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail)
                     engine_stat['total_error_rate'] += result_stats_errors[engine_name].get('error_rate', 0)
                     engine_stat['stats_count'] += 1
 
-        # update existing category list
-        if result_categories is not None:
-            for category in result_categories:
-                if category not in searx_stats_result.categories:
-                    searx_stats_result.categories.append(category)
         print('💡 {0:30}'.format(url))
 
 

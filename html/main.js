@@ -968,8 +968,6 @@ new Vue({
         hashes: [],
         engines: {},
         engine_errors: [],
-        categories: [],
-        selected_category: 'general',
     }),
     computed: {
         instances_filtered: function () {
@@ -1036,7 +1034,7 @@ new Vue({
             return result;
         },
         selected_engines: function() {
-            let result = Object.keys(this.engines).filter((engine) => (this.engines[engine].categories.includes(this.selected_category)));
+            let result = Object.keys(this.engines);
             if (this.filters.well_known_engines) {
                 result = result.filter(n => this.engines[n].stats.instance_count > 20);
             } else {
@@ -1105,9 +1103,7 @@ new Vue({
                 this.hashes = json.hashes;
                 this.engines = json.engines;
                 this.engine_errors = json.engine_errors;
-                this.categories = json.categories;
                 this.cidrs = json.cidrs;
-                this.selected_category = this.categories[0];
                 for(const engine_name of Object.keys(json.engines)) {
                     this.filters.engines[engine_name] = false;
                 }
