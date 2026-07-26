@@ -362,7 +362,7 @@ function tooltip_add_timing(h, tooltip_lines, timing, time_label) {
 }
 
 Vue.component('url-component', {
-    props: ['url', 'alternativeurls', 'comments', 'git_url'],
+    props: ['url', 'alternativeurls', 'comments', 'git_url', 'contact_url'],
     render: function(h) {
         if (this.url != null && this.url !== undefined) {
             let tooltipLines = [];
@@ -386,10 +386,21 @@ Vue.component('url-component', {
                     ]));
                 }
             }
-            tooltipLines.push(h('tr', [
-                h('td', 'Git URL'),
-                h('td', [ h('a', { attrs: { href: this.git_url } }, this.git_url) ]),
-            ]));
+            if (this.git_url) {
+                tooltipLines.push(h('tr', [
+                    h('td', 'Git URL'),
+                    h('td', [ h('a', { attrs: { href: this.git_url } }, this.git_url) ]),
+                ]));
+            }
+            if (this.contact_url) {
+                const contactLabel = this.contact_url.toLowerCase().startsWith('mailto:')
+                    ? this.contact_url.slice(7)
+                    : this.contact_url;
+                tooltipLines.push(h('tr', [
+                    h('td', 'Contact'),
+                    h('td', [ h('a', { attrs: { href: this.contact_url } }, contactLabel) ]),
+                ]));
+            }
             const ahrefElement = h('a', { attrs: {  href: this.url } }, this.url);
             if (tooltipLines.length > 0) {
                 return createTooltip(h,

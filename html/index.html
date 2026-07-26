@@ -193,7 +193,7 @@
                 </thead>
                 <tbody>
                   <tr v-for="detail in instances_filtered">
-                    <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments="detail.comments" :git_url="detail.git_url"></url-component></td>
+                    <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments="detail.comments" :git_url="detail.git_url" :contact_url="detail.contact_url"></url-component></td>
                     <td class="column-version">{{detail.version}}</td>
                     <td v-if="!display.comments" class="column-tls"><tls-component :value="detail.tls"></tls-component></td>
                     <td v-if="!display.comments" class="column-csp"><csp-component :value="detail.http"></csp-component></td>
@@ -385,7 +385,7 @@
                   </thead>
                   <tbody>
                       <tr v-for="detail in instances_filtered" v-if="detail.engines">
-                          <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments="detail.comments" :git_url="detail.git_url"></url-component></td>
+                          <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments="detail.comments" :git_url="detail.git_url" :contact_url="detail.contact_url"></url-component></td>
                           <td class="engine-status" v-for="engine in selected_engines"><engine-component :instance='detail' :engine='engine' :engine_errors='$root.engine_errors'></engine-component></td>
                       </tr>
                   </tbody>
