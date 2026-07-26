@@ -104,6 +104,18 @@ def fetch_ressource_hashes_js(driver, url):
         }
 
 
+def _hash_fork_refs(ressource_hash, forks):
+    if is_wellknown_content_sha(ressource_hash):
+        return {}
+    repo_urls = get_repositories_for_content_sha(ressource_hash)
+    if not repo_urls:
+        return {'unknown': True}
+    if SEARXNG_GIT_REPOSITORY in repo_urls:
+        return {}
+    fork_refs = [forks.index(url) for url in repo_urls if url in forks]
+    return {'forks': fork_refs} if fork_refs else {'unknown': True}
+
+
 def replace_hash_by_hashref(result, hashes, forks):
     """
     Update 'unknown' field for each hash.
@@ -120,25 +132,12 @@ def replace_hash_by_hashref(result, hashes, forks):
                 # ressource_hash first seen for this instance
                 ressource_hashes.add(ressource_hash)
                 if ressource_hash not in hashes:
-                    new_hash_desc = {
-                        'count': 1,
-                        'index': hashes['index']
-                    }
-                    # unknown hash ?
-                    if not is_wellknown_content_sha(ressource_hash):
-                        repo_url_list = get_repositories_for_content_sha(ressource_hash)
-                        if not repo_url_list:
-                            new_hash_desc['unknown'] = True
-                        elif SEARXNG_GIT_REPOSITORY not in repo_url_list:
-                            # expose forks that match live instances
-                            fork_refs = []
-                            for repo_url in repo_url_list:
-                                if repo_url not in forks:
-                                    forks.append(repo_url)
-                                fork_refs.append(forks.index(repo_url))
-                            new_hash_desc['forks'] = fork_refs
                     # ressource_hash first seen for the whole run
-                    hashes[ressource_hash] = new_hash_desc
+                    hashes[ressource_hash] = {
+                        'count': 1,
+                        'index': hashes['index'],
+                        **_hash_fork_refs(ressource_hash, forks),
+                    }
                     # the next hash will uses the next index
                     hashes['index'] += 1
                 else:
