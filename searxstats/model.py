@@ -1,7 +1,9 @@
 import inspect
 import calendar
+import copy
 import datetime
 import json
+import os
 from enum import Enum
 
 from .common.memoize import erase_by_name
@@ -43,6 +45,22 @@ class SearxStatisticsResult:
     def _is_valid_instance(detail):
         return detail.get('version', None) is not None and 'error' not in detail
 
+    @staticmethod
+    def _load_json(file_name):
+        try:
+            with open(file_name) as input_file:
+                return json.load(input_file)
+        except (OSError, TypeError, json.JSONDecodeError):
+            return None
+
+    @staticmethod
+    def _merge_missing(dst, src):
+        for key, value in src.items():
+            if key not in dst:
+                dst[key] = copy.deepcopy(value)
+            elif isinstance(dst[key], dict) and isinstance(value, dict):
+                SearxStatisticsResult._merge_missing(dst[key], value)
+
     def iter_instances(self, only_valid=False, valid_or_private=True, network_type=NetworkType):
         if isinstance(network_type, NetworkType):
             network_type = [network_type]
@@ -66,17 +84,28 @@ class SearxStatisticsResult:
             self.instances[url] = detail
 
     def write(self, output_file_name):
-        searx_json = {
-            'metadata': self.metadata,
-            'instances': self.instances,
-            'engines': self.engines,
-            'engine_errors': self.engine_errors,
-            'hashes': self.hashes,
-            'cidrs': self.cidrs,
-            'forks': self.forks,
-        }
+        previous = self._load_json(output_file_name) if os.path.isfile(output_file_name) else None
+        if previous:
+            for url, detail in self.instances.items():
+                old = previous.get('instances', {}).get(url)
+                if old:
+                    self._merge_missing(detail, old)
+            for name in ('engines', 'engine_errors', 'hashes', 'cidrs'):
+                if not getattr(self, name):
+                    setattr(self, name, previous.get(name) or getattr(self, name))
+            if not self.metadata.get('ips'):
+                self.metadata['ips'] = (previous.get('metadata') or {}).get('ips') or {}
+
         with open(output_file_name, "w") as output_file:
-            json.dump(searx_json, output_file, ensure_ascii=False)
+            json.dump({
+                'metadata': self.metadata,
+                'instances': self.instances,
+                'engines': self.engines,
+                'engine_errors': self.engine_errors,
+                'hashes': self.hashes,
+                'cidrs': self.cidrs,
+                'forks': self.forks,
+            }, output_file, ensure_ascii=False)
 
 
 class Fetcher:
