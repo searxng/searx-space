@@ -938,13 +938,13 @@ function getErrorKey(errorMessage) {
 }
 
 function setComputedTimes(timing) {
-    if (timing.server !== undefined && timing.all !== undefined) {
+    if (timing.server && timing.all) {
         timing.network = {
             'median': timing.all.median - timing.server.median || undefined,
             'value': timing.all.value - timing.server.value || undefined
         }
     }
-    if (timing.load !== undefined && timing.server !== undefined) {
+    if (timing.load && timing.server) {
         timing.processing = {
             'median': timing.server.median - timing.load.median || undefined,
             'value': timing.server.value - timing.load.value || undefined
