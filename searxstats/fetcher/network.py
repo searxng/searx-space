@@ -275,15 +275,18 @@ def get_address_info(searx_stats_result: SearxStatisticsResult, address: str, fi
 
     if reverse_dns_error is not None:
         result['reverse_error'] = reverse_dns_error
+    else:
+        result['reverse_error'] = None
     if whois_info_error is not None:
         result['whois_error'] = whois_info_error
+    else:
+        result['whois_error'] = None
 
     # check https ports
     if https_port:
         https_port, https_port_error = check_https_port(address)
         result['https_port'] = https_port
-        if https_port_error is not None:
-            result['https_port_error'] = https_port_error
+        result['https_port_error'] = https_port_error
 
     return result
 
@@ -293,6 +296,7 @@ def get_network_info(searx_stats_result: SearxStatisticsResult, host: str):
         'ips': {},
         'ipv6': False,
         'asn_privacy': AsnPrivacy.UNKNOWN.value,
+        'error': None,
     }
 
     if searx_stats_result.metadata['ipv6']:
@@ -326,7 +330,7 @@ def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail):
     instance_host = get_host(url)
     network_detail = get_network_info(searx_stats_result, instance_host)
     detail['network'] = network_detail
-    print('🌏 {0:30} {1}'.format(instance_host, network_detail.get('error', '')))
+    print('🌏 {0:30} {1}'.format(instance_host, network_detail.get('error') or ''))
 
 
 async def _fetch_network(searx_stats_result: SearxStatisticsResult):

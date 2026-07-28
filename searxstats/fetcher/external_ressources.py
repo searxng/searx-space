@@ -294,7 +294,8 @@ def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: Net
     try:
         for url, detail in searx_stats_result.iter_instances(only_valid=True, network_type=network_type):
             ressources = fetch_ressource_hashes(driver, url, ressource_hashes, searx_stats_result.forks)
-            if 'error' in ressources:
+            ressources.setdefault('error', None)
+            if ressources.get('error'):
                 # don't reuse the browser if there was an error
                 driver.quit()
                 driver = new_driver(network_type=network_type)
@@ -305,7 +306,7 @@ def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: Net
             # output progress
             external_js = len(ressources.get('script', []))
             inline_js = len(ressources.get('inline_script', []))
-            error_msg = ressources.get('error', '').strip()
+            error_msg = (ressources.get('error') or '').strip()
             print('🔗 {0:60} {1:3} loaded js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
     finally:
         driver.quit()

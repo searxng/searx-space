@@ -127,9 +127,10 @@ async def fetch_one(instance_url: str, git_url: str, private: bool) -> dict:
     if (detail['version'] is not None or private) and network_type == NetworkType.NORMAL:
         detail['tls'] = get_ssl_info(get_host(instance_url))
 
-    if error is not None:
-        detail['http']['error'] = error
-        detail['error'] = error
+    if 'status_code' not in detail['http']:
+        detail['http']['status_code'] = None
+    detail['http']['error'] = error
+    detail['error'] = error
 
     return instance_url, detail
 

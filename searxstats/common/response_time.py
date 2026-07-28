@@ -65,9 +65,7 @@ def get_load_time(one_server_timings):
 
 
 def set_timings_stats(result, key, timings):
-    stats = timings_stats(timings)
-    if stats is not None:
-        result[key] = stats
+    result[key] = timings_stats(timings)
 
 
 class ResponseTimeStats:
@@ -104,6 +102,5 @@ class ResponseTimeStats:
             set_timings_stats(result, 'all', self.all_timings)
             set_timings_stats(result, 'server', self.server_timings)
             set_timings_stats(result, 'load', self.load_timings)
-            if self.error_msg is not None:
-                result['error'] = self.error_msg
+            result['error'] = self.error_msg
         return result

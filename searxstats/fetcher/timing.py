@@ -124,7 +124,7 @@ async def request_stat(client, url, count, between_a, and_b, check_results, **kw
 async def request_stat_with_log(instance, obj, key, *args, **kwargs):
     result = await request_stat(*args, **kwargs)
     obj[key] = result
-    if 'error' in result:
+    if result.get('error'):
         print(f'❌ {str(instance)}: {key}: {result["error"]}')
 
 
@@ -192,6 +192,7 @@ async def fetch_one(instance_url: str) -> dict:
         timing['error'] = exception_to_str(ex)
         traceback.print_exc(file=sys.stdout)
     else:
+        timing['error'] = None
         print('🏁 {0}'.format(str(instance_url)))
     return timing
 

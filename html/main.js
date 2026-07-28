@@ -222,7 +222,7 @@ function isError(timing) {
     if (timing.success_percentage < 100) {
         return 100 - timing.success_percentage;
     }
-    if (timing.error !== undefined) {
+    if (timing.error) {
         return 100;
     }
     return 0;
@@ -453,7 +453,7 @@ Vue.component('time-component', {
                     tooltip_lines.push(h('p', `${successRate}% success`));
                 }
             }
-            if (this.value.error !== undefined ) {
+            if (this.value.error) {
                 tooltip_lines.push(h('p', `Error: ${this.value.error}`));
                 if (value === undefined) {
                     value = 'Error';
@@ -664,7 +664,7 @@ Vue.component('html-component', {
                         tooltip.push(h('table', r));
                     }
                 }
-                if (error !== undefined) {
+                if (error) {
                     tooltip.push(h('p', error));
                 }
             }
@@ -1084,7 +1084,7 @@ new Vue({
                     setComputedTimes(instance.timing.search_go);
 
                     // dispatch instance
-                    if (instance.error !== undefined) {
+                    if (instance.error) {
                         const errorKey = getErrorKey(instance.error);
                         setDefault(instancesWithError, errorKey, []);
                         instancesWithError[errorKey].push(instance);

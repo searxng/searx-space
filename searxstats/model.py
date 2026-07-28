@@ -43,7 +43,7 @@ class SearxStatisticsResult:
 
     @staticmethod
     def _is_valid_instance(detail):
-        return detail.get('version', None) is not None and 'error' not in detail
+        return detail.get('version', None) is not None and not detail.get('error')
 
     @staticmethod
     def _load_json(file_name):
@@ -55,9 +55,18 @@ class SearxStatisticsResult:
 
     @staticmethod
     def _merge_missing(dst, src):
+        replace_dicts = frozenset({
+            'engines',
+            'network',
+            'html',
+            'alternativeUrls',
+            'tls',
+        })
         for key, value in src.items():
             if key not in dst:
                 dst[key] = copy.deepcopy(value)
+            elif key in replace_dicts:
+                continue
             elif isinstance(dst[key], dict) and isinstance(value, dict):
                 SearxStatisticsResult._merge_missing(dst[key], value)
 

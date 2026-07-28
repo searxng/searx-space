@@ -104,7 +104,7 @@ def set_engine_errors(searx_stats_result: SearxStatisticsResult, result_stats_er
         if len(error_indexes):
             errors['errors'] = error_indexes
         else:
-            del errors['errors']
+            errors['errors'] = []
     searx_stats_result.engine_errors = engine_errors
 
 
