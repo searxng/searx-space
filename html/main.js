@@ -94,14 +94,13 @@ function getValue(f, obj, ...keys) {
         if (k === undefined) {
             break;
         }
-        if ((value === undefined)
-            || (!value.hasOwnProperty(k))) {
+        if (value == null || !value.hasOwnProperty(k)) {
             value = undefined;
             break;
         }
         value = value[k];
     }
-    if (value !== undefined && f !== null) {
+    if (value != null && f !== null) {
         value = f(value);
     }
     return value;
@@ -209,6 +208,9 @@ function compareVersion(a, b) {
 
 
 function getTime(timing) {
+    if (timing == null) {
+        return undefined;
+    }
     if (timing.value !== undefined) {
         return timing.value;
     }
@@ -353,7 +355,7 @@ function createTooltip(h, e, tooltipContent) {
 }
 
 function tooltip_add_timing(h, tooltip_lines, timing, time_label) {
-    if (timing !== undefined) {
+    if (timing != null) {
         const median = timing.median || timing.value;
         if (median !== undefined) {
             tooltip_lines.push(h('p', `${time_label}: ${formatResponseTime(median)}`));
@@ -443,7 +445,7 @@ Vue.component('time-component', {
             let value;
             let tooltip_lines = [];
             const timing = this.value[this.time_select];
-            if (timing !== undefined) {
+            if (timing != null) {
                 value = timing.median;
                 if (value === undefined) {
                     value = timing.value;
@@ -459,7 +461,7 @@ Vue.component('time-component', {
                     value = 'Error';
                 }
             }
-            if (timing !== undefined) {
+            if (timing != null) {
                 tooltip_add_timing(h, tooltip_lines, this.value.all, 'Total time');
                 tooltip_add_timing(h, tooltip_lines, this.value.server, 'Server time');
                 tooltip_add_timing(h, tooltip_lines, this.value.load, 'Load time');
