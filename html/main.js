@@ -580,7 +580,7 @@ Vue.component('html-component', {
                     const grade_id = grade.split(',')[0];
                     let label = HTML_GRADE_LABEL[grade_id];
                     const attrs = {};
-                    if (grade_id != 'F') {
+                    if (label) {
                         r.push(h('tr', [
                             h('td', { attrs: attrs }, ''),
                             h('td', { attrs: attrs }, label),
@@ -710,15 +710,19 @@ Vue.component('csp-component', {
         if (this.value != null && this.value !== undefined) {
             const { grade, gradeUrl, score } = this.value;
             if (grade != null) {
+                const tooltip = [];
+                if (score != null) {
+                    tooltip.push(h('p', `Score ${score}`));
+                }
                 return createTooltip(h,
                     h('a', {
-                        class: 'value-tls',
+                        class: 'value-csp',
                         attrs: {
                             href: gradeUrl,
                             style: `background-color:${hslGrade(grade)}`,
                         },
                     }, grade),
-                    score != null ? [String(score)] : []);
+                    tooltip);
             }
         }
         return undefined;
