@@ -570,12 +570,16 @@ Vue.component('html-component', {
     render: function (h) {
         if (this.value != null && this.value !== undefined) {
             // eslint-disable-next-line prefer-const
-            let { grade, ressources } = this.value;
+            let { grade, resources } = this.value;
+            // TODO: remove after instances.json reloads again
+            if (resources === undefined) {
+                resources = this.value.ressources;
+            }
             const tooltip = [];
-            if (ressources !== undefined && this.hashes != null && this.hashes !== undefined) {
+            if (resources !== undefined && this.hashes != null && this.hashes !== undefined) {
                 const r = [];
-                const {  error } = ressources;
-                if (ressources.script || ressources.style || ressources.inline_script) {
+                const {  error } = resources;
+                if (resources.script || resources.style || resources.inline_script) {
                     //
                     const grade_id = grade.split(',')[0];
                     let label = HTML_GRADE_LABEL[grade_id];
@@ -595,12 +599,12 @@ Vue.component('html-component', {
                     // inline scripts
                     let unknownCountMin = 1000000;
                     let unknownInlineScriptCount = 0;
-                    for (const ressourceDetail of ressources.inline_script) {
-                        const ressourceHash = this.hashes[ressourceDetail.hashRef];
-                        if (ressourceHash) {
-                            if ('unknown' in ressourceHash) {
+                    for (const resourceDetail of resources.inline_script) {
+                        const resourceHash = this.hashes[resourceDetail.hashRef];
+                        if (resourceHash) {
+                            if ('unknown' in resourceHash) {
                                 unknownInlineScriptCount += 1;
-                                unknownCountMin = Math.min(unknownCountMin, ressourceHash.count);
+                                unknownCountMin = Math.min(unknownCountMin, resourceHash.count);
                             }
                         }
                     }
@@ -625,34 +629,34 @@ Vue.component('html-component', {
                             h('td', { attrs: attrs }, ''),
                         ]));
                     }
-                    // external ressources
-                    for (const ressourceType of ['iframe', 'script', 'style', 'link', 'other', 'img']) {
-                        if (ressources[ressourceType] !== undefined) {
-                            for (const [url, ressourceDetail] of Object.entries(ressources[ressourceType])) {
+                    // external resources
+                    for (const resourceType of ['iframe', 'script', 'style', 'link', 'other', 'img']) {
+                        if (resources[resourceType] !== undefined) {
+                            for (const [url, resourceDetail] of Object.entries(resources[resourceType])) {
                                 const attrs = {};
-                                const ressourceHash = this.hashes[ressourceDetail.hashRef];
+                                const resourceHash = this.hashes[resourceDetail.hashRef];
                                 let extraInfo = null;
-                                let addThisRessource = false;
-                                if (ressourceDetail.external) {
-                                    addThisRessource = true;
+                                let addThisResource = false;
+                                if (resourceDetail.external) {
+                                    addThisResource = true;
                                     attrs.style = `background-color:${hslNormalizedGradeHtml(0)}; color:white`;
-                                } else if (ressourceDetail.notFetched) {
-                                    addThisRessource = true;
+                                } else if (resourceDetail.notFetched) {
+                                    addThisResource = true;
                                     attrs.style = `background-color:${hslNormalizedGradeHtml(-1)}; color:white`;
-                                    extraInfo = ressourceDetail.error;
-                                } else if (ressourceHash) {
+                                    extraInfo = resourceDetail.error;
+                                } else if (resourceHash) {
                                     extraInfo = '';
-                                    if (ressourceHash.unknown) {
-                                        addThisRessource = true;
+                                    if (resourceHash.unknown) {
+                                        addThisResource = true;
                                         attrs.style = `background-color:${hslNormalizedGradeHtml(1)}; color:white`;
                                     }
                                 }
-                                if (addThisRessource) {
-                                    let ressourceHRef = new URL(url, this.url).href;
+                                if (addThisResource) {
+                                    let resourceHRef = new URL(url, this.url).href;
                                     r.push(h('tr', [
-                                        h('td', { attrs: attrs }, ressourceType),
+                                        h('td', { attrs: attrs }, resourceType),
                                         h('td', { attrs: attrs }, [
-                                            h('a', { attrs: { href: ressourceHRef } }, ressourceHRef)
+                                            h('a', { attrs: { href: resourceHRef } }, resourceHRef)
                                         ]),
                                         h('td', { attrs: attrs }, extraInfo),
                                     ]));

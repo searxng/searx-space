@@ -6,7 +6,7 @@ from searxstats.model import SearxStatisticsResult, Fetcher
 
 from . import basic
 from . import fetch_source
-from . import external_ressources
+from . import external_resources
 from . import network
 from . import selfreport
 from . import cryptcheck_backend
@@ -30,9 +30,9 @@ FETCHERS = [
             'Fetch git sources',
             'mandatory.phase2',
             True),
-    Fetcher(external_ressources,
+    Fetcher(external_resources,
             'html-grade',
-            'Load page with a browser and check the used external ressources 🔗',
+            'Load page with a browser and check the used external resources 🔗',
             'browser'),
     Fetcher(network,
             'network',

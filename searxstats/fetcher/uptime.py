@@ -10,7 +10,7 @@ def percent_str_to_float(s):
 
 
 # pylint: disable=unsubscriptable-object, unsupported-delete-operation, unsupported-assignment-operation
-# pylint thinks that ressource_desc is None
+# pylint thinks that resource_desc is None
 async def fetch(searx_stats_result: SearxStatisticsResult):
     async with new_client(network_type=NetworkType.NORMAL) as session:
         response, error = await get(session, UPTIME_URL)
