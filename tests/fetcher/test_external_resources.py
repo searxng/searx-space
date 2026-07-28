@@ -9,14 +9,14 @@ import pytest_httpserver
 import searxstats.common.memoize
 import searxstats.database
 import searxstats.model
-import searxstats.fetcher.external_ressources as external_ressources
+import searxstats.fetcher.external_resources as external_resources
 
 
 DATA_INDEX = """<!DOCTYPE html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test external_ressources</title>
+  <title>Test external_resources</title>
   <script type="text/javascript" src="index.js"></script>
   <link rel="stylesheet" href="index.css" type="text/css" />
   <script>{0}</script>
@@ -61,9 +61,9 @@ def get_sha256(content):
     return get_sha256_binary(content.encode('utf-8'))
 
 
-def find_sha256_info(ressource_hashes, content) -> dict:
+def find_sha256_info(resource_hashes, content) -> dict:
     lookfor = get_sha256(content)
-    for sha256, info in ressource_hashes.items():
+    for sha256, info in resource_hashes.items():
         if sha256 == lookfor:
             return info
     return None
@@ -97,37 +97,37 @@ def fake_searxstatisticsresult(fake_httpserver):
 
 @pytest.fixture
 def selenium_driver():
-    driver = external_ressources.new_driver()
+    driver = external_resources.new_driver()
     try:
         yield driver
     finally:
         driver.close()
 
 
-def test_fetch_ressource_hashes_js(selenium_driver, fake_httpserver: pytest_httpserver.HTTPServer):
+def test_fetch_resource_hashes_js(selenium_driver, fake_httpserver: pytest_httpserver.HTTPServer):
     searxstats.database.initialize_database(':memory:')
-    ressources = external_ressources.fetch_ressource_hashes_js.no_memoize(
+    resources = external_resources.fetch_resource_hashes_js.no_memoize(
         selenium_driver, fake_httpserver.url_for('/index.html'))
 
-    assert isinstance(ressources, dict)
+    assert isinstance(resources, dict)
     for hashes_key in ['inline_script', 'inline_style', 'link', 'script']:
-        assert hashes_key in ressources
-    assert ressources['inline_script'][0]['hash'] == get_sha256(DATA_INLINE_JS)
-    assert list(ressources['link'].values())[0]['hash'] == get_sha256(DATA_INDEX_CSS)
-    assert list(ressources['script'].values())[0]['hash'] == get_sha256(DATA_INDEX_JS)
-    if 'other' in ressources:
+        assert hashes_key in resources
+    assert resources['inline_script'][0]['hash'] == get_sha256(DATA_INLINE_JS)
+    assert list(resources['link'].values())[0]['hash'] == get_sha256(DATA_INDEX_CSS)
+    assert list(resources['script'].values())[0]['hash'] == get_sha256(DATA_INDEX_JS)
+    if 'other' in resources:
         # Firefox may not load the favicon, no deterministic behavior
-        assert list(ressources['other'].values())[0]['hash'] == get_sha256_binary(FAVICON_BINARY)
+        assert list(resources['other'].values())[0]['hash'] == get_sha256_binary(FAVICON_BINARY)
 
-    ressource_hashes = {
+    resource_hashes = {
         'index': 0,
     }
     forks = []
-    external_ressources.replace_hash_by_hashref(ressources, ressource_hashes, forks)
+    external_resources.replace_hash_by_hashref(resources, resource_hashes, forks)
 
-    data_inline_js_info = find_sha256_info(ressource_hashes, DATA_INLINE_JS)
-    data_index_css_info = find_sha256_info(ressource_hashes, DATA_INDEX_CSS)
-    data_index_js_info = find_sha256_info(ressource_hashes, DATA_INDEX_JS)
+    data_inline_js_info = find_sha256_info(resource_hashes, DATA_INLINE_JS)
+    data_index_css_info = find_sha256_info(resource_hashes, DATA_INDEX_CSS)
+    data_index_js_info = find_sha256_info(resource_hashes, DATA_INDEX_JS)
 
     assert isinstance(data_inline_js_info, dict)
     assert isinstance(data_index_js_info, dict)
@@ -138,18 +138,18 @@ def test_fetch_ressource_hashes_js(selenium_driver, fake_httpserver: pytest_http
     assert data_index_css_info['count'] == 1
     assert data_index_js_info['count'] == 1
 
-    assert ressources['inline_script'][0]['hashRef'] == data_inline_js_info['index']
-    assert list(ressources['script'].values())[0]['hashRef'] == data_index_js_info['index']
-    assert list(ressources['link'].values())[0]['hashRef'] == data_index_css_info['index']
+    assert resources['inline_script'][0]['hashRef'] == data_inline_js_info['index']
+    assert list(resources['script'].values())[0]['hashRef'] == data_index_js_info['index']
+    assert list(resources['link'].values())[0]['hashRef'] == data_index_css_info['index']
 
 
 def test_fetch(fake_httpserver: pytest_httpserver.HTTPServer,
                fake_searxstatisticsresult):
     searxstats.database.initialize_database(':memory:')
     searxstats.common.memoize.nobinding()
-    external_ressources.fetch(fake_searxstatisticsresult)
+    external_resources.fetch(fake_searxstatisticsresult)
     detail = fake_searxstatisticsresult.get_instance(
         fake_httpserver.url_for('index.html'))
     assert 'html' in detail
-    assert 'ressources' in detail['html']
+    assert 'resources' in detail['html']
     assert 'grade' in detail['html']

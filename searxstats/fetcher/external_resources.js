@@ -1,7 +1,7 @@
-function fetchRessourceHashes() {
+function fetchResourceHashes() {
     'use strict';
 
-    const allRessources = { };
+    const allResources = { };
     const fetchOptions = {
         method: 'GET',
         mode: 'cors',
@@ -16,7 +16,7 @@ function fetchRessourceHashes() {
         return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
     }
 
-    function resssource_hash_subtle(textBuffer) {
+    function resource_hash_subtle(textBuffer) {
         return new Promise((resolutionFunc,rejectionFunc) => {
             crypto.subtle.digest('SHA-256', textBuffer).then((hashBuffer) => {
                 resolutionFunc(bufferToHex(hashBuffer));
@@ -26,7 +26,7 @@ function fetchRessourceHashes() {
         });
     }
 
-    function resssource_hash_fallback(textBuffer) {
+    function resource_hash_fallback(textBuffer) {
         return new Promise((resolutionFunc,rejectionFunc) => {
             try {
                 resolutionFunc(bufferToHex(window.sha256.hash(textBuffer)));
@@ -37,48 +37,48 @@ function fetchRessourceHashes() {
     }
 
     // Use the Javascript implementation by default (http:// websites)
-    let ressource_hash = resssource_hash_fallback;
+    let resource_hash = resource_hash_fallback;
     if ("crypto" in window && "subtle" in window.crypto) {
         // Use native implementation (available only for https:// websites)
-        ressource_hash = resssource_hash_subtle;
+        resource_hash = resource_hash_subtle;
     }
 
-    function addInlineRessource(key, text) {
+    function addInlineResource(key, text) {
         // Encode as (utf-8) Uint8Array
         const textBuffer = new TextEncoder().encode(text);
 
-        ressource_hash(textBuffer).then((hash) => {
-            allRessources[key].push({hash});
+        resource_hash(textBuffer).then((hash) => {
+            allResources[key].push({hash});
         })
     }
 
-    function addInlineRessourceFromTags(key, tagName) {
+    function addInlineResourceFromTags(key, tagName) {
         const elements = document.getElementsByTagName(tagName);
-        if (typeof allRessources[key] === 'undefined') {
-            allRessources[key] = [];
+        if (typeof allResources[key] === 'undefined') {
+            allResources[key] = [];
         }
         for (let i = 0; i < elements.length; i += 1) {
             const s = elements[i];
             const text = s.text;
     
             if (typeof text === 'string' && text.length > 0) {
-                addInlineRessource(key, text);
+                addInlineResource(key, text);
             }
         }
     }
 
-    function fetchExternalRessource(relativeUrl, initiatorType, url) {
+    function fetchExternalResource(relativeUrl, initiatorType, url) {
         const catchNetworkError = (error) => {
             if (typeof error == 'Error') {
                 error = error.toString();
             }
-            // the ressource has NOT been fetched
-            allRessources[initiatorType][relativeUrl].error = error || 'error';
+            // the resource has NOT been fetched
+            allResources[initiatorType][relativeUrl].error = error || 'error';
         };
         const catchInternalError = (error) => {
-            // the ressource has been fetched
-            delete allRessources[initiatorType][relativeUrl].notFetched;
-            allRessources[initiatorType][relativeUrl].error = error;
+            // the resource has been fetched
+            delete allResources[initiatorType][relativeUrl].notFetched;
+            allResources[initiatorType][relativeUrl].error = error;
         };
 
         fetch(url, fetchOptions)
@@ -86,10 +86,10 @@ function fetchRessourceHashes() {
                 if (response.ok) {
                     return response.arrayBuffer()
                         .then((buffer) => {
-                            ressource_hash(new Uint8Array(buffer)).then((hash) => {
+                            resource_hash(new Uint8Array(buffer)).then((hash) => {
                                 if (typeof hash !== 'undefined') {
-                                    allRessources[initiatorType][relativeUrl].hash = hash;
-                                    delete allRessources[initiatorType][relativeUrl].notFetched;
+                                    allResources[initiatorType][relativeUrl].hash = hash;
+                                    delete allResources[initiatorType][relativeUrl].notFetched;
                                 }
                             }).catch(catchInternalError);
                         })
@@ -100,17 +100,17 @@ function fetchRessourceHashes() {
             .catch(catchNetworkError);
     }
 
-    // External ressources
+    // External resources
     performance.getEntriesByType('resource').forEach((r) => {
-        // key is by default the URL of the ressource (r.name)
-        // notFetched is removed once the ressource has been fetched
+        // key is by default the URL of the resource (r.name)
+        // notFetched is removed once the resource has been fetched
         let key = r.name;
         const value = {
             notFetched: true,
         };
-        // lazy init of allRessources[r.initiatorType]
-        if (typeof allRessources[r.initiatorType] === 'undefined') {
-            allRessources[r.initiatorType] = {};
+        // lazy init of allResources[r.initiatorType]
+        if (typeof allResources[r.initiatorType] === 'undefined') {
+            allResources[r.initiatorType] = {};
         }
         // external if the URL is not a subpath of the document URL
         if (r.name.startsWith(document.URL)) {
@@ -119,30 +119,30 @@ function fetchRessourceHashes() {
             value.external = true;
         }
         // set
-        allRessources[r.initiatorType][key] = value;
-        // HTTP fetch of the ressource to get the hash
-        fetchExternalRessource(key, r.initiatorType, r.name);
+        allResources[r.initiatorType][key] = value;
+        // HTTP fetch of the resource to get the hash
+        fetchExternalResource(key, r.initiatorType, r.name);
     });
 
     // Inline scripts and style
-    addInlineRessourceFromTags('inline_script', 'script');
-    addInlineRessourceFromTags('inline_style', 'style');
+    addInlineResourceFromTags('inline_script', 'script');
+    addInlineResourceFromTags('inline_style', 'style');
 
     // set getter function
-    window.getRessourceHashes = () => {
-        const scripts = allRessources.script;
+    window.getResourceHashes = () => {
+        const scripts = allResources.script;
         if (typeof scripts !== 'undefined') {
-            for (const ressource of Object.values(scripts)) {
+            for (const resource of Object.values(scripts)) {
                 // no error, still to fetch: wait more
-                if (typeof ressource.notFetched !== 'undefined' && typeof ressource.error === 'undefined') {
+                if (typeof resource.notFetched !== 'undefined' && typeof resource.error === 'undefined') {
                     return null;
                 }
             }
         }
 
-        return allRessources;
+        return allResources;
     };
 
-    return 'return getRessourceHashes()';
+    return 'return getResourceHashes()';
 }
-return fetchRessourceHashes();
+return fetchResourceHashes();

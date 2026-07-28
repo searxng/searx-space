@@ -27,7 +27,7 @@ def iter_git_urls(searx_stats_result: SearxStatisticsResult):
 
 
 # pylint: disable=unsubscriptable-object, unsupported-delete-operation, unsupported-assignment-operation
-# pylint thinks that ressource_desc is None
+# pylint thinks that resource_desc is None
 async def fetch(searx_stats_result: SearxStatisticsResult):
     seen_git_url = set()
     for git_url in iter_git_urls(searx_stats_result):

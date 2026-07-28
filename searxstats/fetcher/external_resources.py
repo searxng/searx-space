@@ -18,8 +18,8 @@ from searxstats.model import SearxStatisticsResult
 
 
 with open(os.path.dirname(os.path.realpath(__file__))
-          + "/external_ressources.js", 'r', encoding='utf-8') as f:
-    FETCH_RESSOURCE_HASHES_JS = f.read()
+          + "/external_resources.js", 'r', encoding='utf-8') as f:
+    FETCH_RESOURCE_HASHES_JS = f.read()
 
 
 # https://raw.githubusercontent.com/dchest/fast-sha256-js/master/sha256.js
@@ -54,23 +54,23 @@ def new_driver(network_type=NetworkType.NORMAL):
 
 def result_hash_iterator(result):
     if isinstance(result, dict):
-        for ressource_type in result:
-            ressources = result[ressource_type]
-            if isinstance(ressources, list):
-                for ressource in ressources:
-                    yield ressource, ressource_type
-            elif isinstance(ressources, dict):
-                for ressource_url in ressources:
-                    yield ressources[ressource_url], ressource_type
+        for resource_type in result:
+            resources = result[resource_type]
+            if isinstance(resources, list):
+                for resource in resources:
+                    yield resource, resource_type
+            elif isinstance(resources, dict):
+                for resource_url in resources:
+                    yield resources[resource_url], resource_type
 
 
 # pylint: disable=unused-argument
-def fetch_ressource_hashes_js_key(driver, url):
+def fetch_resource_hashes_js_key(driver, url):
     return url
 
 
-@MemoizeToDisk(func_key=fetch_ressource_hashes_js_key)
-def fetch_ressource_hashes_js(driver, url):
+@MemoizeToDisk(func_key=fetch_resource_hashes_js_key)
+def fetch_resource_hashes_js(driver, url):
     try:
         # load page
         driver.get(url)
@@ -79,24 +79,24 @@ def fetch_ressource_hashes_js(driver, url):
         # Load fast-sha256 fallback
         driver.execute_script(SHA256_JS)
 
-        # extract external ressources (use fetch Javascript function)
+        # extract external resources (use fetch Javascript function)
         # HACK: await is the solution
         # Here, Python waits for Firefox and check every second if the result is available
-        callback_script = driver.execute_script(FETCH_RESSOURCE_HASHES_JS)
-        ressources = None
+        callback_script = driver.execute_script(FETCH_RESOURCE_HASHES_JS)
+        resources = None
         retry_count = 0
         wait_result = True
         while wait_result:
             time.sleep(1)
-            ressources = driver.execute_script(callback_script)
-            if ressources is not None:
+            resources = driver.execute_script(callback_script)
+            if resources is not None:
                 wait_result = False
             elif retry_count >= 10:
-                ressources = {}
+                resources = {}
                 wait_result = False
             else:
                 retry_count += 1
-        return ressources
+        return resources
     except Exception as ex:
         traceback.print_exc(file=sys.stdout)
         return {
@@ -104,10 +104,10 @@ def fetch_ressource_hashes_js(driver, url):
         }
 
 
-def _hash_fork_refs(ressource_hash, forks):
-    if is_wellknown_content_sha(ressource_hash):
+def _hash_fork_refs(resource_hash, forks):
+    if is_wellknown_content_sha(resource_hash):
         return {}
-    repo_urls = get_repositories_for_content_sha(ressource_hash)
+    repo_urls = get_repositories_for_content_sha(resource_hash)
     if not repo_urls:
         return {'unknown': True}
     if SEARXNG_GIT_REPOSITORY in repo_urls:
@@ -119,42 +119,42 @@ def _hash_fork_refs(ressource_hash, forks):
 def replace_hash_by_hashref(result, hashes, forks):
     """
     Update 'unknown' field for each hash.
-    Update hashes with one ressource set.
+    Update hashes with one resource set.
 
-    Return hashes of unknown ressources
+    Return hashes of unknown resources
     """
     # pylint: disable=too-many-nested-blocks
-    ressource_hashes = set()
-    for ressource, _ in result_hash_iterator(result):
-        ressource_hash = ressource.get('hash', None)
-        if ressource_hash is not None:
-            if ressource_hash not in ressource_hashes:
-                # ressource_hash first seen for this instance
-                ressource_hashes.add(ressource_hash)
-                if ressource_hash not in hashes:
-                    # ressource_hash first seen for the whole run
-                    hashes[ressource_hash] = {
+    resource_hashes = set()
+    for resource, _ in result_hash_iterator(result):
+        resource_hash = resource.get('hash', None)
+        if resource_hash is not None:
+            if resource_hash not in resource_hashes:
+                # resource_hash first seen for this instance
+                resource_hashes.add(resource_hash)
+                if resource_hash not in hashes:
+                    # resource_hash first seen for the whole run
+                    hashes[resource_hash] = {
                         'count': 1,
                         'index': hashes['index'],
-                        **_hash_fork_refs(ressource_hash, forks),
+                        **_hash_fork_refs(resource_hash, forks),
                     }
                     # the next hash will uses the next index
                     hashes['index'] += 1
                 else:
-                    # ressource_hash already seen but not in this instance
-                    hashes[ressource_hash]['count'] += 1
+                    # resource_hash already seen but not in this instance
+                    hashes[resource_hash]['count'] += 1
             # replace the hash field by the hashRef field
-            ressource['hashRef'] = hashes[ressource_hash]['index']
-            del ressource['hash']
+            resource['hashRef'] = hashes[resource_hash]['index']
+            del resource['hash']
 
 
-def fetch_ressource_hashes(driver, url, ressource_hashes, forks):
-    ressources = fetch_ressource_hashes_js(driver, url)
-    replace_hash_by_hashref(ressources, ressource_hashes, forks)
-    return ressources
+def fetch_resource_hashes(driver, url, resource_hashes, forks):
+    resources = fetch_resource_hashes_js(driver, url)
+    replace_hash_by_hashref(resources, resource_hashes, forks)
+    return resources
 
 
-class AnalyzeRessourcesResult:
+class AnalyzeResourcesResult:
 
     # pylint: disable=too-many-instance-attributes
 
@@ -171,24 +171,24 @@ class AnalyzeRessourcesResult:
         self.external = 0
 
 
-def analyze_ressources(ressources, hashes):
-    result = AnalyzeRessourcesResult()
-    for ressource, ressource_type in result_hash_iterator(ressources):
-        hash_ref = ressource.get('hashRef')
+def analyze_resources(resources, hashes):
+    result = AnalyzeResourcesResult()
+    for resource, resource_type in result_hash_iterator(resources):
+        hash_ref = resource.get('hashRef')
         result.count += 1
-        if ressource.get('external'):
+        if resource.get('external'):
             result.external += 1
-        elif ressource.get('notFetched', False) or hash_ref is None:
+        elif resource.get('notFetched', False) or hash_ref is None:
             # if the hashRef does not exists, there was an error fetching the content
             result.unfetched += 1
-            if ressource_type in ['script', 'inline_script']:
+            if resource_type in ['script', 'inline_script']:
                 result.unfetched_js += 1
         else:
             # update one_unknown_is_used_by_x_instances or well_known_count
             res_hash = hashes[hash_ref]
             if res_hash.get('unknown'):
                 result.unknown += 1
-                if ressource_type in ['script', 'inline_script']:
+                if resource_type in ['script', 'inline_script']:
                     result.unknown_js += 1
             elif res_hash.get('forks'):
                 result.fork += 1
@@ -197,42 +197,42 @@ def analyze_ressources(ressources, hashes):
     return result
 
 
-def get_grade(ressources, hashes, analytics):
+def get_grade(resources, hashes, analytics):
     """
     tags:
-    - vanilla: only well known ressources
-    - customize: modified ressource, but well known JS
-    - customize js: modified ressource including JS
+    - vanilla: only well known resources
+    - customize: modified resource, but well known JS
+    - customize js: modified resource including JS
     - external
     """
-    result = analyze_ressources(ressources, hashes)
+    result = analyze_resources(resources, hashes)
 
     grade = []
 
     if analytics:
-        # Analytics: same as external ressources
+        # Analytics: same as external resources
         grade.append('👁️')
     elif result.well_known == result.count:
-        # All ressources are well known
+        # All resources are well known
         grade.append('V')
     elif result.fork > 0 and result.fork + result.well_known == result.count:
         # It is a fork
         grade.append('F')
     elif result.count == 0:
-        # Nothing, most problably a problem occured while fetching the ressources
-        # FIXME check if there is no ressources at all
+        # Nothing, most problably a problem occured while fetching the resources
+        # FIXME check if there is no resources at all
         grade.append('?')
     elif result.external > 0:
-        # At least one external ressource
+        # At least one external resource
         grade.append('E')
     elif result.unknown_js > 0:
         # Reference to an external javascript (another host)
         grade.append('Cjs')
     elif result.unknown > 0:
-        # Reference to an external ressource (another host)
+        # Reference to an external resource (another host)
         grade.append('C')
     elif result.unfetched > 0:
-        # Error fetching some ressources
+        # Error fetching some resources
         # Deal with it later
         pass
     else:
@@ -247,15 +247,15 @@ def get_grade(ressources, hashes, analytics):
     return ', '.join(grade)
 
 
-def find_forks(ressources, hashes, forks) -> typing.List[str]:
+def find_forks(resources, hashes, forks) -> typing.List[str]:
     """From the hashes of the static files, return a list of fork URL.
     sorted by reference: the first URL is the most referenced.
     """
     found_forks: typing.Dict[str, int] = {}
-    for ressource, _ in result_hash_iterator(ressources):
-        hash_ref = ressource.get('hashRef')
-        if 'hashRef' not in ressource:
-            # the ressource was not found / error
+    for resource, _ in result_hash_iterator(resources):
+        hash_ref = resource.get('hashRef')
+        if 'hashRef' not in resource:
+            # the resource was not found / error
             continue
         hash_info = hashes[hash_ref]
         for fork_ref in hash_info.get('forks', []):
@@ -289,54 +289,54 @@ def find_forks(ressources, hashes, forks) -> typing.List[str]:
     return []
 
 
-def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: NetworkType, ressource_hashes):
+def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: NetworkType, resource_hashes):
     driver = new_driver(network_type=network_type)
     try:
         for url, detail in searx_stats_result.iter_instances(only_valid=True, network_type=network_type):
-            ressources = fetch_ressource_hashes(driver, url, ressource_hashes, searx_stats_result.forks)
-            ressources.setdefault('error', None)
-            if ressources.get('error'):
+            resources = fetch_resource_hashes(driver, url, resource_hashes, searx_stats_result.forks)
+            resources.setdefault('error', None)
+            if resources.get('error'):
                 # don't reuse the browser if there was an error
                 driver.quit()
                 driver = new_driver(network_type=network_type)
             # temporary storage
             detail['html'] = {
-                'ressources': ressources
+                'resources': resources
             }
             # output progress
-            external_js = len(ressources.get('script', []))
-            inline_js = len(ressources.get('inline_script', []))
-            error_msg = (ressources.get('error') or '').strip()
+            external_js = len(resources.get('script', []))
+            inline_js = len(resources.get('inline_script', []))
+            error_msg = (resources.get('error') or '').strip()
             print('🔗 {0:60} {1:3} loaded js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
     finally:
         driver.quit()
 
 
 # pylint: disable=unsubscriptable-object, unsupported-delete-operation, unsupported-assignment-operation
-# pylint thinks that ressource_desc is None
+# pylint thinks that resource_desc is None
 def fetch(searx_stats_result: SearxStatisticsResult):
-    ressource_hashes = {
+    resource_hashes = {
         'index': 0
     }
 
     for network_type in NetworkType:
-        fetch_instances(searx_stats_result, network_type, ressource_hashes)
+        fetch_instances(searx_stats_result, network_type, resource_hashes)
 
     # create searx_json['hashes']
-    searx_stats_result.hashes = [None] * ressource_hashes['index']
-    for ressource_hash, ressource_desc in ressource_hashes.items():
-        if ressource_hash != 'index':
-            i = ressource_desc['index']
-            del ressource_desc['index']
-            ressource_desc['hash'] = ressource_hash
-            searx_stats_result.hashes[i] = ressource_desc
+    searx_stats_result.hashes = [None] * resource_hashes['index']
+    for resource_hash, resource_desc in resource_hashes.items():
+        if resource_hash != 'index':
+            i = resource_desc['index']
+            del resource_desc['index']
+            resource_desc['hash'] = resource_hash
+            searx_stats_result.hashes[i] = resource_desc
 
     # detect fork using the static files
     for _, detail in searx_stats_result.iter_instances(only_valid=True):
-        ressources = detail.get('html', {}).get('ressources')
-        if ressources:
+        resources = detail.get('html', {}).get('resources')
+        if resources:
             found_forks = find_forks(
-                detail['html']['ressources'],
+                detail['html']['resources'],
                 searx_stats_result.hashes,
                 searx_stats_result.forks)
             if found_forks and detail['git_url'] not in found_forks:
@@ -346,4 +346,4 @@ def fetch(searx_stats_result: SearxStatisticsResult):
     for _, detail in searx_stats_result.iter_instances(only_valid=True):
         if 'html' in detail:
             html = detail['html']
-            html['grade'] = get_grade(html['ressources'], searx_stats_result.hashes, detail['analytics'])
+            html['grade'] = get_grade(html['resources'], searx_stats_result.hashes, detail['analytics'])
