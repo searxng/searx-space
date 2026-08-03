@@ -17,7 +17,7 @@ def cert_to_obj(cert):
         for keys_values_for_cert_field in cert.get(field, {}):
             for cert_key_value in keys_values_for_cert_field:
                 set_or_concat_value(obj[field], cert_key_value[0], cert_key_value[1])
-    for field in ['version', 'serialNumber', 'notBefore', 'notAfter', 'OCSP', 'caIssuers', 'crlDistributionPoints']:
+    for field in ['serialNumber', 'notBefore', 'notAfter']:
         if field in cert:
             obj[field] = cert.get(field)
     if 'subjectAltName' in cert:

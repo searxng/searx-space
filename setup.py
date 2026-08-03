@@ -36,6 +36,7 @@ setup(
     version=find_version("searxstats", "__version__.py"),
     description="SearXNG statistics.",
     long_description=long_description,
+    long_description_content_type='text/markdown',
 
     license='GNU Affero General Public License',
     classifiers=[
@@ -62,7 +63,7 @@ setup(
     package_data={
         'searxstats': [
             '*/*.js',
-            '../README.rst',
+            '../README.md',
             '../requirements.txt',
             '../requirements-dev.txt',
             '../html',

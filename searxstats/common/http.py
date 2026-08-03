@@ -1,6 +1,5 @@
 import ssl
 import asyncio
-import logging
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 from enum import Enum
@@ -20,15 +19,6 @@ class NetworkType(Enum):
 
 NETWORK_PROXIES = {
     NetworkType.TOR: f'socks5://{TOR_SOCKS_PROXY_HOST}:{TOR_SOCKS_PROXY_PORT}',
-}
-
-TOR_PROXY_ERROR = {
-    403: "Forbidden (connection refused|exit policy|connection reset|entry policy violation)",
-    404: "Not Found (resolve failed|no route)",
-    500: "Internal Server Error",
-    502: "Bad Gateway (destroy cell received|unexpected close|hibernating server|internal error"
-         + "|resource limit|tor protocol violation)",
-    504: "Gateway Timeout",
 }
 
 
@@ -80,8 +70,6 @@ async def request(method, *args, **kwargs):
     HTTP status code different from 200 is an error.
 
     Doesn't trigger an exception.
-
-    See the `initialize` function
     """
     response = None
     error = None
@@ -107,7 +95,6 @@ async def request(method, *args, **kwargs):
         else:  # socket.gaierror, ssl.SSLError, h11._util.RemoteProtocolError
             error = exception_to_str(wrapped_ex)
     except httpx.ProxyError as ex:
-        print(ex)
         error = exception_to_str(ex)
         session = getattr(method, '__self__', None)
         network_type = NetworkType.NORMAL
@@ -131,9 +118,3 @@ async def request(method, *args, **kwargs):
 
 async def get(session, *args, **kwargs):
     return await request(session.get, *args, **kwargs)
-
-
-# pylint: disable=global-variable-undefined, invalid-name
-async def initialize():
-    for logger_name in ('hpack.hpack', 'hpack.table', 'httpx._client'):
-        logging.getLogger(logger_name).setLevel(logging.WARNING)

@@ -8,7 +8,7 @@ from .config import (
     CACHE_DIRECTORY, DATABASE_URL, MMDB_FILENAME, SEARXINSTANCES_GIT_REPOSITORY,
     set_cache_directory, set_database_url, get_cache_file_name)
 from .fetcher import FETCHERS
-from . import initialize, run_once, run_server, erase_memoize, finalize
+from . import initialize, run_once, run_server, erase_memoize
 
 
 # pylint: disable=too-many-arguments
@@ -49,21 +49,17 @@ def run(server_mode: bool, output_file_name: str, user_cache_directory: str, dat
     # initialize
     loop.run_until_complete(initialize())
 
-    try:
-        # set cache directory
-        set_cache_directory(user_cache_directory)
+    # set cache directory
+    set_cache_directory(user_cache_directory)
 
-        # load cache
-        bind_to_file_name(get_cache_file_name())
+    # load cache
+    bind_to_file_name(get_cache_file_name())
 
-        # erase cache entries to update
-        erase_memoize(update_fetcher_memoize_list)
+    # erase cache entries to update
+    erase_memoize(update_fetcher_memoize_list)
 
-        # run
-        loop.run_until_complete(run_function(output_file_name, private, instance_urls, selected_fetcher_names))
-    finally:
-        # finalize
-        loop.run_until_complete(finalize())
+    # run
+    loop.run_until_complete(run_function(output_file_name, private, instance_urls, selected_fetcher_names))
 
 
 def main():
