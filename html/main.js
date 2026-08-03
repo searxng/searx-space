@@ -571,12 +571,7 @@ Vue.component('html-component', {
     props: ['value', 'hashes', 'url', 'git_url'],
     render: function (h) {
         if (this.value != null && this.value !== undefined) {
-            // eslint-disable-next-line prefer-const
-            let { grade, resources } = this.value;
-            // TODO: remove after instances.json reloads again
-            if (resources === undefined) {
-                resources = this.value.ressources;
-            }
+            const { grade, resources } = this.value;
             const tooltip = [];
             if (resources !== undefined && this.hashes != null && this.hashes !== undefined) {
                 const r = [];
