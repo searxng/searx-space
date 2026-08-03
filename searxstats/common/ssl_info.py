@@ -1,6 +1,6 @@
+import hashlib
 import ssl
 from typing import Dict
-from OpenSSL.crypto import load_certificate, FILETYPE_ASN1
 
 
 def set_or_concat_value(obj, key, value):
@@ -20,29 +20,28 @@ def cert_to_obj(cert):
     for field in ['version', 'serialNumber', 'notBefore', 'notAfter', 'OCSP', 'caIssuers', 'crlDistributionPoints']:
         if field in cert:
             obj[field] = cert.get(field)
+    if 'subjectAltName' in cert:
+        obj.setdefault('subject', {})['altName'] = ', '.join(
+            f'{kind}:{value}' for kind, value in cert['subjectAltName'])
     return obj
 
 
 def update_obj_with_bin(cert_obj, cert_bin):
-    bincert = load_certificate(FILETYPE_ASN1, cert_bin)
-    cert_obj['sha256'] = bincert.digest('sha256').decode('utf-8')
-    cert_obj['notAfter'] = bincert.get_notAfter().decode('utf-8')
-    cert_obj['notBefore'] = bincert.get_notBefore().decode('utf-8')
-    cert_obj['signatureAlgorithm'] = bincert.get_signature_algorithm().decode('utf-8')
+    subject = cert_obj.get('subject') or {}
+    issuer = cert_obj.get('issuer') or {}
+    cert_obj['sha256'] = ':'.join(f'{b:02X}' for b in hashlib.sha256(cert_bin).digest())
     cert_obj['subject'] = {
-        'commonName': bincert.get_subject().commonName,
-        'countryName': bincert.get_subject().countryName,
-        'organizationName': bincert.get_subject().organizationName,
+        'commonName': subject.get('commonName'),
+        'countryName': subject.get('countryName'),
+        'organizationName': subject.get('organizationName'),
     }
     cert_obj['issuer'] = {
-        'commonName': bincert.get_issuer().commonName,
-        'countryName': bincert.get_issuer().countryName,
-        'organizationName': bincert.get_issuer().organizationName,
+        'commonName': issuer.get('commonName'),
+        'countryName': issuer.get('countryName'),
+        'organizationName': issuer.get('organizationName'),
     }
-    for i in range(0, bincert.get_extension_count()):
-        ex = bincert.get_extension(i)
-        if ex.get_short_name() == b'subjectAltName':
-            cert_obj['subject']['altName'] = str(ex)
+    if 'altName' in subject:
+        cert_obj['subject']['altName'] = subject['altName']
 
 
 SSL_CONTEXT = ssl.create_default_context()
@@ -59,8 +58,6 @@ def patched_wrap_bio(incoming: ssl.MemoryBIO, outgoing: ssl.MemoryBIO, server_ho
     return ssl_object
 
 
-# we monkey patch SSL_CONTEXT to store SSLObjects in _ssl_objects
-# (subclassing ssl.SSLContext for some reason didn't work reliably)
 SSL_CONTEXT.wrap_bio = patched_wrap_bio
 
 
@@ -70,13 +67,11 @@ def get_ssl_info(hostname):
     if ssl_object:
         cert_dict = ssl_object.getpeercert(binary_form=False)
         cert_bin = ssl_object.getpeercert(binary_form=True)
-        # make cert_obj using cert_dict and cert_bin
         cert_obj = cert_to_obj(cert_dict)
         if cert_bin is not None and 'sha256' not in cert_obj:
             update_obj_with_bin(cert_obj, cert_bin)
         return {
             'version': ssl_object.version(),
-            'certificate': cert_obj
+            'certificate': cert_obj,
         }
-    else:
-        return {}
+    return {}
