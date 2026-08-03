@@ -97,7 +97,8 @@ class SearxStatisticsResult:
         if previous:
             for url, detail in self.instances.items():
                 old = previous.get('instances', {}).get(url)
-                if old:
+                # offline / error rows only show status
+                if old and self._is_valid_instance(detail):
                     self._merge_missing(detail, old)
             for name in ('engines', 'engine_errors', 'hashes', 'cidrs'):
                 if not getattr(self, name):
