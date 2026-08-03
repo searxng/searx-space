@@ -1,7 +1,7 @@
-import sys
 import ssl
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 from enum import Enum
 
@@ -11,11 +11,6 @@ from .utils import exception_to_str
 from .memoize import Memoize
 from .ssl_info import SSL_CONTEXT
 from ..config import TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT
-
-if not sys.version_info.major == 3 and sys.version_info.minor >= 7:
-    from contextlib import asynccontextmanager  # pylint: disable=no-name-in-module
-else:
-    from .contextlib import asynccontextmanager
 
 
 class NetworkType(Enum):

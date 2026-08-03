@@ -250,13 +250,6 @@ tbody .column-responsetime {
   right: 6rem;
 }
 
-.urls,
-.ips {
-  list-style: none;
-  margin: 0;
-  padding: 0.25rem;
-}
-
 /* Engine table */
 
 .engine-headers {

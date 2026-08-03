@@ -1,7 +1,7 @@
 import logging
 import asyncio
 
-from .common import initialize as initialize_common, finalize as finalize_common
+from .common import initialize as initialize_common
 from .fetcher import fetch, initialize as initialize_fetcher, FETCHERS
 from .database import initialize_database
 from .searx_instances import get_searx_stats_result_from_repository, get_searx_stats_result_from_list
@@ -14,7 +14,7 @@ async def initialize():
 
 
 async def finalize():
-    await finalize_common()
+    pass
 
 
 def initialize_logging():
