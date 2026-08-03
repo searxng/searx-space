@@ -576,7 +576,7 @@ Vue.component('html-component', {
             if (resources !== undefined && this.hashes != null && this.hashes !== undefined) {
                 const r = [];
                 const {  error } = resources;
-                if (resources.script || resources.style || resources.inline_script) {
+                if (resources.script || resources.css || resources.inline_script) {
                     //
                     const grade_id = grade.split(',')[0];
                     let label = HTML_GRADE_LABEL[grade_id];
@@ -627,7 +627,7 @@ Vue.component('html-component', {
                         ]));
                     }
                     // external resources
-                    for (const resourceType of ['iframe', 'script', 'style', 'link', 'other', 'img']) {
+                    for (const resourceType of ['iframe', 'script', 'css', 'link', 'other', 'img']) {
                         if (resources[resourceType] !== undefined) {
                             for (const [url, resourceDetail] of Object.entries(resources[resourceType])) {
                                 const attrs = {};
