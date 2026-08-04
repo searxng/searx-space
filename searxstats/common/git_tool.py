@@ -21,25 +21,22 @@ def get_repository(directory, url):
     os.environ['GIT_ASKPASS'] = str(pathlib.Path(os.getcwd(), __file__).parent / 'askpassword.sh')
 
     # is it a git repository ?
-    repo = None
     try:
         repo = git.Repo(directory)
-        print('* Use existing git repository, branch=', repo.active_branch.name)
-    except Exception as ex:  # pylint: disable=no-member
+    except Exception as ex:  # pylint: disable=broad-except
         print('* exception', ex)
+        repo = None
 
     if repo is None:
         # it is not a git repository
         print('* clone repository from {}'.format(url))
         repo = git.Repo.clone_from(url, directory)
     else:
-        # it is a git repository
-        # clean
-        repo.git.reset('--hard')
+        # mirror remote default tip
+        repo.remotes.origin.fetch()
+        branch = repo.git.rev_parse('--abbrev-ref', 'origin/HEAD').split('/', 1)[-1]
+        print('* Use existing git repository, branch=', branch)
+        repo.git.checkout('-B', branch, f'origin/{branch}')
         repo.git.clean('-xdf')
-        # checkout current branch
-        repo.git.checkout(repo.heads[0].name)
-        # pull
-        repo.git.pull()
 
     return repo
