@@ -8,7 +8,7 @@ from searxstats.config import CRYPTCHECK_BACKEND
 
 API_ENDPOINT = CRYPTCHECK_BACKEND + '/https/{0}.json'
 USER_ENDPOINT = 'https://cryptcheck.fr/https/{0}'
-HTTP_REQUEST_TIMEOUT = 600
+HTTP_REQUEST_TIMEOUT = 120
 CACHE_EXPIRE_TIME = 24*3600
 
 
@@ -67,4 +67,4 @@ async def fetch_one(url: str) -> dict:
     return {'grade': grade, 'gradeUrl': grade_url}
 
 
-fetch = create_fetch(['tls'], fetch_one, valid_or_private=True, network_type=NetworkType.NORMAL, limit=2)
+fetch = create_fetch(['tls'], fetch_one, valid_or_private=True, network_type=NetworkType.NORMAL, limit=8)

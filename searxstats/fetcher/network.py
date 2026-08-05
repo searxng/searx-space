@@ -335,7 +335,7 @@ def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail):
 
 async def _fetch_network(searx_stats_result: SearxStatisticsResult):
     await for_each(searx_stats_result.iter_instances(valid_or_private=True, network_type=NetworkType.NORMAL),
-                   fetch_one, searx_stats_result)
+                   fetch_one, searx_stats_result, limit=12)
 
 
 async def _find_similar_instances(searx_stats_result: SearxStatisticsResult):

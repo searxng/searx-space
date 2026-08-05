@@ -171,5 +171,5 @@ def finalize_stats(searx_stats_result: SearxStatisticsResult):
 
 
 async def fetch(searx_stats_result: SearxStatisticsResult):
-    await for_each(searx_stats_result.iter_instances(only_valid=True), fetch_one, searx_stats_result)
+    await for_each(searx_stats_result.iter_instances(only_valid=True), fetch_one, searx_stats_result, limit=12)
     finalize_stats(searx_stats_result)

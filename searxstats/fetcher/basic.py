@@ -1,6 +1,5 @@
 # pylint: disable=invalid-name
 import re
-import asyncio
 import json
 import concurrent.futures
 from urllib.parse import urljoin
@@ -112,7 +111,6 @@ async def fetch_one(instance_url: str, git_url: str, private: bool) -> dict:
 
                 # get the SearXNG version
                 if error is None:
-                    await asyncio.sleep(0.5)
                     await set_searx_version(detail, git_url, session, response_url, response)
 
                 # set initial response time
@@ -180,7 +178,7 @@ async def fetch(searx_stats_result: SearxStatisticsResult):
             url_to_update[r_url] = r_detail
 
     instance_iterator = searx_stats_result.iter_instances(only_valid=False, valid_or_private=False)
-    await for_each(instance_iterator, fetch_and_store_change, limit=1)
+    await for_each(instance_iterator, fetch_and_store_change, limit=12)
 
     # apply the changes
     for url in url_to_deleted:
