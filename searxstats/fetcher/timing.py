@@ -131,16 +131,16 @@ async def request_stat_with_log(instance, obj, key, *args, **kwargs):
 async def get_cookie_settings(client, url):
     # an user request without outgoing request:
     # currency will never match "ip".
+    client.cookies.update(DEFAULT_COOKIES)
     kwargs = {
         'params': {'q': '!currency ip'},
         'headers': DEFAULT_HEADERS,
-        'cookies': DEFAULT_COOKIES,
     }
 
     _, error_msg = await get(client, url, **kwargs)
     if error_msg is not None and error_msg.startswith('HTTP status code 5'):
         # cookie settings may cause a server error: disable them and try again
-        del kwargs['cookies']
+        client.cookies.clear()
         _, error_msg = await get(client, url, **kwargs)
         if error_msg is None:
             # no more error: cookies are (most probably) the cause.
@@ -165,7 +165,7 @@ async def fetch_one(instance_url: str) -> dict:
         async with new_client(timeout=timeout, network_type=network_type) as client:
             # check if cookie settings is supported
             # intended side effect: add one HTTP connection to the pool
-            cookies = await get_cookie_settings(client, instance_url)
+            await get_cookie_settings(client, instance_url)
 
             # /search instead of / : https://github.com/searx/searx/pull/1681
             search_url = urljoin(instance_url, 'search')
@@ -178,7 +178,7 @@ async def fetch_one(instance_url: str) -> dict:
                                         client, instance_url,
                                         5, 120, 160, CHECK_RESULT.check_search_result,
                                         params={'q': 'time', **default_params},
-                                        cookies=cookies, headers=DEFAULT_HEADERS)
+                                        headers=DEFAULT_HEADERS)
 
             # check the google engine
             print('🔍 ' + instance_url)
@@ -186,7 +186,7 @@ async def fetch_one(instance_url: str) -> dict:
                                         client, instance_url,
                                         2, 60, 160, CHECK_RESULT.check_google_result,
                                         params={'q': '!goc time', **default_params},
-                                        cookies=cookies, headers=DEFAULT_HEADERS)
+                                        headers=DEFAULT_HEADERS)
     except Exception as ex:
         print('❌❌ {0}: unexpected {1} {2}'.format(str(instance_url), type(ex), str(ex)))
         timing['error'] = exception_to_str(ex)
