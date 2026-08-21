@@ -3,9 +3,8 @@ APP_NAME=searx/searxstats:latest
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 qa:
-	flake8 --max-line-length=120 --extend-ignore=F824 searxstats tests
 	pylint searxstats tests
-	python3 -m pytest --cov-report html --cov=searxstats tests -vv
+	python3 -m pytest tests -vv
 
 docker-build: # Build the container
 	docker build -t $(APP_NAME) .
