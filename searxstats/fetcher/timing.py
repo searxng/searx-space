@@ -63,11 +63,20 @@ class CheckResult:
                 continue
             yield result_element, engine_names
 
+    def working_search_engines(self, document):
+        return sorted({
+            name
+            for _result, engine_names in self._iter_meaningful_results(document)
+            for name in engine_names
+            if name and not self.is_wikiengine(name)
+        })
+
     async def check_google_result(self, response):
         return await self._check_html_result_page('google cse', response)
 
     async def check_search_result(self, response):
         document = await html_fromstring(response.text)
+        response.working_engine_names = self.working_search_engines(document)
         message = None
         result_element_list = self.results(document)
         alert_danger_list = self.alert_danger_main(document)
@@ -99,6 +108,7 @@ CHECK_RESULT = CheckResult(
 async def request_stat(client, url, count, between_a, and_b, check_results, **kwargs):
     error_count = 0
     response_time_stats = ResponseTimeStats()
+    working = None
     # loop
     for _ in range(0, count):
         await asyncio.sleep(random.randint(a=between_a, b=and_b))
@@ -111,6 +121,9 @@ async def request_stat(client, url, count, between_a, and_b, check_results, **kw
             await response.aread()
             # check response
             valid_response, error_msg = await check_results(response)
+            names = getattr(response, 'working_engine_names', None)
+            if names is not None:
+                working = names
             if valid_response:
                 response_time_stats.add_response(response)
             else:
@@ -118,7 +131,11 @@ async def request_stat(client, url, count, between_a, and_b, check_results, **kw
                 error_count += 1
                 if error_count > 3:
                     break
-    return response_time_stats.get()
+    result = response_time_stats.get()
+    if working is not None:
+        result['working_engines'] = len(working)
+        result['working_engine_names'] = working
+    return result
 
 
 async def request_stat_with_log(instance, obj, key, *args, **kwargs):

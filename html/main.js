@@ -27,6 +27,7 @@ const SORT_CRITERIAS = [
     'http.status_code',
     'error',
     'timing.search.error',
+    'timing.search.working_engines',
     'timing.search_go.error',
     'version',
     'tls.grade',
@@ -240,6 +241,7 @@ const CompareFunctionCriterias = {
     'http.grade': (a, b) => compareTool(a, b, normalizeGrade, 'http', 'grade'),
     'timing.initial.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'initial', 'all'),
     'timing.search.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search'),
+    'timing.search.working_engines': (a, b) => compareTool(a, b, (n) => Math.min(n || 0, 3), 'timing', 'search', 'working_engines'),
     'timing.search_go.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search_go'),
     'timing.search.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search', 'all'),
     'url': (a, b) => -compareTool(a, b, null, 'url'),
@@ -453,6 +455,16 @@ Vue.component('time-component', {
                 successRate = this.value.success_percentage;
                 if (successRate !== undefined) {
                     tooltip_lines.push(h('p', `${successRate}% success`));
+                }
+                if (this.value.working_engines != null) {
+                    const names = this.value.working_engine_names || [];
+                    const count = this.value.working_engines;
+                    const label = count < 1 ? 'No engines' : `${count} engine${count === 1 ? '' : 's'}`;
+                    const text = names.length ? `${label}: ${names.join(', ')}` : label;
+                    const grade = ['F', 'E', 'D'][count];
+                    tooltip_lines.push(h('p', grade ? {
+                        attrs: { style: `background-color:${hslGrade(grade)}; color:white` },
+                    } : {}, text));
                 }
             }
             if (this.value.error) {
