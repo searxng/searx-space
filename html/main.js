@@ -26,14 +26,16 @@ const COMMON_ERROR_MESSAGE = {
 const SORT_CRITERIAS = [
     'http.status_code',
     'error',
+    'html.grade',
     'timing.search.error',
-    'timing.search.working_engines',
-    'timing.search_go.error',
-    'version',
     'tls.grade',
     'http.grade',
-    'html.grade',
+    'uptime',
+    'version',
+    'timing.search.working_engines',
+    'timing.search_go.error',
     'timing.search.all',
+    'timing.search_go.all',
     'url'
 ];
 
@@ -122,14 +124,16 @@ function normalizeSearxVersion(v) {
     if (typeof (v) !== 'string') {
         return [0, 0, 0, 0, ''];
     }
-    const vdate = v.replaceAll("+", "-").split("-")[0].replaceAll('.', "-")
+    const vdate = v.replaceAll("+", "-").split("-")[0].replaceAll('.', "-");
     const asDate = new Date(vdate);
-    if (!isNaN(asDate)) {
-        // version format "YYYY.MM.DD-HASH" (for example "2022.03.01-0ddcc124")
-        // group version per month
-        const relativeDate = asDate.getYear() * 12 + asDate.getMonth();
-        const hash = v.split("-")[1];
-        return [relativeDate, 0, 0, 0, hash];
+    if (!isNaN(asDate) && asDate.getFullYear() >= 2020) {
+        // YYYY.MM.DD
+        const now = new Date();
+        const monthDiff = Math.max(0,
+            (now.getFullYear() - asDate.getFullYear()) * 12
+            + (now.getMonth() - asDate.getMonth()));
+        // this month and last month rank equally
+        return [10000 - (monthDiff < 2 ? 0 : monthDiff), 0, 0, 0, ''];
     }
     // version format "MAJOR.MINOR.PATCH-DISTANCE-HASH" (for example "1.0.0-356-c9e6d9f5")
     const vdash = v.split(/[\-\+]/);
@@ -141,6 +145,13 @@ function normalizeSearxVersion(v) {
         return [vdot[0], vdot[1], vdot[2], 0, ''];
     }
     return [vdot[0], vdot[1], vdot[2], parseInt(vdash[1], 10), vdash[2]];
+}
+
+function normalizeUptimeMonth(uptime) {
+    if (typeof uptime.uptimeMonth !== 'number') {
+        return -1;
+    }
+    return Math.round(uptime.uptimeMonth / 5) * 5;
 }
 
 function normalizeGrade(grade) {
@@ -236,14 +247,16 @@ const CompareFunctionCriterias = {
     'error': (a, b) => -compareTool(a, b, null, 'error'),
     'network.asn_privacy': (a, b) => compareTool(a, b, null, 'network', 'asn_privacy'),
     'version': (a, b) => compareVersion(a.version, b.version),
-    'tls.grade': (a, b) => compareTool(a, b, normalizeGrade, 'tls', 'grade'),
+    'uptime': (a, b) => compareTool(a, b, normalizeUptimeMonth, 'uptime'),
+    'tls.grade': (a, b) => compareTool(a, b, (tls) => normalizeGrade(tls.grade || '?'), 'tls'),
     'html.grade': (a, b) => compareTool(a, b, normalizeHtmlGrade, 'html', 'grade'),
-    'http.grade': (a, b) => compareTool(a, b, normalizeGrade, 'http', 'grade'),
+    'http.grade': (a, b) => compareTool(a, b, (http) => normalizeGrade(http.grade || '?'), 'http'),
     'timing.initial.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'initial', 'all'),
     'timing.search.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search'),
-    'timing.search.working_engines': (a, b) => compareTool(a, b, (n) => Math.min(n || 0, 3), 'timing', 'search', 'working_engines'),
+    'timing.search.working_engines': (a, b) => compareTool(a, b, (s) => Math.min(s.working_engines || 0, 3), 'timing', 'search'),
     'timing.search_go.error': (a, b) => -compareTool(a, b, isError, 'timing', 'search_go'),
     'timing.search.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search', 'all'),
+    'timing.search_go.all': (a, b) => -compareTool(a, b, getTime, 'timing', 'search_go', 'all'),
     'url': (a, b) => -compareTool(a, b, null, 'url'),
 };
 
@@ -1083,11 +1096,16 @@ new Vue({
                 const instancesTor = [];
                 for (const [url, instance] of Object.entries(rawInstances)) {
                     instance.url = url;
+                    if (typeof instance.version === 'string') {
+                        instance.version = instance.version.split(' ')[0];
+                    }
 
                     // easier templates
                     setDefault(instance, 'network', {});
                     setDefault(instance, 'tls', {});
                     setDefault(instance.tls, 'certificate', {});
+                    setDefault(instance, 'http', {});
+                    setDefault(instance, 'uptime', {});
                     setDefault(instance, 'timing', {});
                     setDefault(instance.timing, 'initial', {});
                     setDefault(instance.timing.initial, 'all', {});
