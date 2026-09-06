@@ -53,9 +53,6 @@
                 <li :class="selected_tab=='online_tor'?'active':''"><a href="#" v-on:click="selected_tab='online_tor'">Online Tor</a></li>
                 <li :class="selected_tab=='searxerrors'?'active':''"><a href="#" v-on:click="selected_tab='searxerrors'">Offline & error</a></li>
               </ul>
-              <ul class="nav navbar-nav" role="tablist">
-                  <li :class="selected_tab=='engines'?'active':''"><a href="#" v-on:click="selected_tab='engines'">Engines</a></li>
-              </ul>
               <ul class="nav navbar-nav navbar-right" role="tablist">
                   <li :class="selected_tab=='about'?'active':''"><a href="#" v-on:click="selected_tab='about'">About</a></li>
               </ul>
@@ -145,7 +142,7 @@
                         <span class="info-tooltip">Hide networks with privacy issue</span>
                       </div></th>
                       <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.standard_search" type="checkbox" /></div></th>
-                      <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.engines.google" type="checkbox" /></div></th>
+                      <th v-if="!display.comments" class="column-responsetime"><div class="column-filter"><input v-model="filters.google" type="checkbox" /></div></th>
                       <th v-if="!display.comments" class="column-responsetime"></th>
                       <th v-if="!display.comments" class="column-uptime"></th>
                       <th v-if="display.comments" class="column-comments"></th>
@@ -337,44 +334,6 @@
                 </table>
               </div>
             </template>
-          </div>
-          <div v-if="selected_tab === 'engines'">
-            <div class="engine-headers">
-              <h2>Working engines of {{instances_filtered.length}} instance(s) (on total {{instances.length}} instances)</h2>
-              <span style="float:right">
-                <label title="Engine with more than 20 instances">
-                  <input type="checkbox" v-model="$root.filters.well_known_engines"/>
-                  Engine with more than 20 instances
-                </label>
-              </span>
-            </div>
-
-            <div>
-              <table class="table table-widthauto table-bordered table-striped table-engines">
-                  <thead>
-                    <tr>
-                      <td><span class="engine-label"></span></td>
-                      <td v-for="engine in selected_engines">
-                        <label class="engine-label" :title="engine"><input type="checkbox" v-model="$root.filters.engines[engine]"/> {{engine}}</label>
-                      </td>
-                    </tr>
-                  </thead>
-                  <tbody>
-                      <tr v-for="detail in instances_filtered" v-if="detail.engines">
-                          <td class="column-url"><url-component :url="detail.url" :alternativeurls="detail.alternativeUrls" :comments="detail.comments" :git_url="detail.git_url" :contact_url="detail.contact_url"></url-component></td>
-                          <td class="engine-status" v-for="engine in selected_engines"><engine-component :instance='detail' :engine='engine' :engine_errors='$root.engine_errors'></engine-component></td>
-                      </tr>
-                  </tbody>
-              </table>
-            </div>
-            <h4 id="help-html-grade">Labels:</h4>
-            <table class="engine-status-list">
-              <tr><td class="engine-status"><span class="ok"></span></td><td>The engine crashes less than 6% of the time</td></tr>
-              <tr><td class="engine-status"><span class="warning"></span></td><td>The engine crashes between 6% and 90% of the time</td></tr>
-              <tr><td class="engine-status"><span class="error"></span></td><td>The engine crashes more than 90% of the time</td></tr>
-              <tr><td class="engine-status"><span class="unknow"></span></td><td>The engine exists, but there is no statistics about it</td></tr>
-              <tr><td class="engine-status"></td><td>The engine doesn't exist for this instance.</td></tr>
-            </table>
           </div>
       </main>
       <footer class="page-footer">

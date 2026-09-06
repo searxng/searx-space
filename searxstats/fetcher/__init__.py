@@ -8,7 +8,6 @@ from . import basic
 from . import fetch_source
 from . import external_resources
 from . import network
-from . import selfreport
 from . import cryptcheck_backend
 from . import mozillaobs
 from . import timing
@@ -37,10 +36,6 @@ FETCHERS = [
     Fetcher(network,
             'network',
             'Fetch whois information 🌏',
-            'other'),
-    Fetcher(selfreport,
-            'self-report',
-            'Fetch the /config and /stats/errors URLs 💡',
             'other'),
     Fetcher(cryptcheck_backend,
             'https-grade',
