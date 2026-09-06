@@ -113,12 +113,12 @@ def _collect(session, page_url, pending):
         try:
             response = session.get(url)
             if response.status_code != 200:
-                info.update(notFetched=True, error=f'HTTP status {response.status_code}')
+                info.update(notFetched=True, error=f'HTTP status {response.status_code}: {response.reason}')
             else:
                 info['hash'] = _sha256(response.content)
                 pending.extend(_nested(url, response))
         except Exception as ex:  # pylint: disable=broad-except
-            info.update(notFetched=True, error=str(ex))
+            info.update(notFetched=True, error=str(ex).partition('. See ')[0])
         key = url[len(page_url):] if url.startswith(page_url) else url
         resources.setdefault(kind, {})[key] = info
     return resources
@@ -145,7 +145,7 @@ def fetch_page_resources(session, url):
     except Exception as ex:  # pylint: disable=broad-except
         traceback.print_exc(file=sys.stdout)
         return {
-            'error': str(ex)
+            'error': str(ex).partition('. See ')[0]
         }
 
 
