@@ -330,15 +330,6 @@ function hslGradeHtml(grade) {
     return hslNormalizedGradeHtml(normalizeHtmlGrade(grade));
 }
 
-function hslErrorPercentage(percentage) {
-    const l = 54;
-    const normalizedPercentage = 100 - Math.min(100, Math.max(0, percentage));
-    const value = normalizedPercentage / 5;
-    const h = translateValue(value, 0, 20, 0, 128, false);
-    const s = translateValue(value, 0, 20, 39, 54, true);
-    return hslCss(h, s, l);
-}
-
 function hslUptimePercentage(percentage) {
     const l = 54;
     const value1 = Math.min(100, Math.max(90, percentage)) - 90; // from 0 to 10
@@ -510,70 +501,6 @@ Vue.component('time-component', {
             }
         }
         return undefined;
-    },
-});
-
-Vue.component('engine-component', {
-    props: ['instance', 'instance_url', 'engine', 'engine_errors'],
-    render: function(h) {
-        if (this.instance !== undefined && this.engine !== undefined) {
-            const engine = this.instance.engines[this.engine];
-            if (engine !== undefined) {
-                const href= this.instance.url + 'search?q=!' + this.engine.replace(' ', '_') + ' time&language=en';
-
-                let text;
-                let working_engine = false;
-                let error_rate = typeof engine.error_rate!=='undefined'?engine.error_rate:null;
-                let engine_css_class;
-                if (error_rate === null) {
-                    engine_css_class = 'unknow';
-                } else if (error_rate >= 90) {
-                    engine_css_class = 'error';
-                } else if (error_rate > 5) {
-                    engine_css_class = 'warning';
-                } else {
-                    engine_css_class = 'ok';
-                    working_engine = true;                        
-                }
-                text = [ h('span', { attrs: { 'class': engine_css_class } }, '') ];
-                // data about stats/errors
-                const tableTooltipContent = [];
-                if (working_engine) {
-                    const error_th_style = 'padding: 0.25rem; color: white; background-color:' + hslErrorPercentage(0);
-                    tableTooltipContent.push(h('tr', [ h('th', { attrs: { 'colspan': 2, 'style': error_th_style } }, 'No error')]));
-                } else if (error_rate !== null) {
-                    const normalizedErrorRate = engine.error_rate || 0;
-                    let error_th_style = 'padding: 0.25rem; color: white; background-color:' + hslErrorPercentage(normalizedErrorRate);
-                    if ((normalizedErrorRate) === 0) {
-                        error_th_style = 'padding: 0.25rem';
-                    }
-                    tableTooltipContent.push(h('tr',
-                        [
-                            h('th', { attrs: { 'scope': 'row', 'style': error_th_style } }, 'Error rate'),
-                            h('th', { attrs: { 'scope': 'row', 'style': error_th_style } }, (normalizedErrorRate) + '%')
-                        ])
-                    );
-                }
-
-                if (engine.errors) {
-                    for(const error_index of engine.errors) {
-                        tableTooltipContent.push(h('tr', [ h('td', { attrs: { 'colspan': 2  } }, [ this.engine_errors[error_index]])]));
-                    }
-                }
-
-                let content = h('a', {
-                    staticClass: 'engine-result',
-                    attrs: { href: href },
-                }, text);
-                if (tableTooltipContent.length > 0) {
-                    const tooltipContent = h('table', { attrs: {'class': 'engine-tooltip'} }, tableTooltipContent);
-                    return createTooltip(h, content, [ tooltipContent ]);
-                } else {
-                    return content;
-                }
-                
-            }
-        }
     },
 });
 
@@ -977,10 +904,7 @@ new Vue({
             network_name: '',
             network_country: '',
             standard_search: false,
-            engines: {
-
-            },
-            well_known_engines: true,
+            google: false,
         },
         display: {
             time_select: 'all',
@@ -992,8 +916,6 @@ new Vue({
         instances_ko: [],
         instances_tor: [],
         hashes: [],
-        engines: {},
-        engine_errors: [],
     }),
     computed: {
         instances_filtered: function () {
@@ -1025,23 +947,6 @@ new Vue({
                     }
                     return false;
                 });
-            for(let [engine_name, no_error] of Object.entries(this.filters.engines)) {
-                if (no_error) {
-                    result = result.filter((detail) => {
-                        let engine_detail = detail.engines[engine_name];
-                        if (engine_detail === undefined) {
-                            return false;
-                        }
-                        if (engine_name == 'google' && detail.timing.search_go.success_percentage === 0) {
-                            return false;
-                        }
-                        if (engine_detail['error_rate']) {
-                            return engine_detail['error_rate'] <= 10;
-                        }
-                        return true;
-                    })
-                }
-            }
             if (this.filters.ipv6) {
                 result = result.filter((detail) => detail.network.ipv6 == true);
             }
@@ -1051,19 +956,12 @@ new Vue({
             if (this.filters.standard_search) {
                 result = result.filter((detail) => detail.timing.search.success_percentage > 0);
             }
+            if (this.filters.google) {
+                result = result.filter((detail) => detail.timing.search_go.success_percentage > 0);
+            }
             // sort
             const compareInstance = compareFunctionCompose(...SORT_CRITERIAS);
             result.sort(compareInstance);
-            return result;
-        },
-        selected_engines: function() {
-            let result = Object.keys(this.engines);
-            if (this.filters.well_known_engines) {
-                result = result.filter(n => this.engines[n].stats.instance_count > 20);
-            } else {
-                result = result.filter(n => this.engines[n].stats.instance_count <= 20);
-            }
-            result = result.sort();
             return result;
         },
     },
@@ -1129,12 +1027,7 @@ new Vue({
                 this.instances_nosearx = instancesWithoutSearx;
                 this.instances_tor = instancesTor;
                 this.hashes = json.hashes;
-                this.engines = json.engines;
-                this.engine_errors = json.engine_errors;
                 this.cidrs = json.cidrs;
-                for(const engine_name of Object.keys(json.engines)) {
-                    this.filters.engines[engine_name] = false;
-                }
             });
         });
     },

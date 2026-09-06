@@ -22,8 +22,8 @@ class AsnPrivacy(Enum):
 class SearxStatisticsResult:
 
     __slots__ = (
-        'metadata', 'instances', 'engines', 'hashes', 'cidrs', 'forks',
-        'engine_errors', 'private'
+        'metadata', 'instances', 'hashes', 'cidrs', 'forks',
+        'private'
     )
 
     def __init__(self, private=False):
@@ -32,8 +32,6 @@ class SearxStatisticsResult:
             'ips': {},
         }
         self.instances = {}
-        self.engines = {}
-        self.engine_errors = []
         self.hashes = []
         self.cidrs = {}
         self.forks = [
@@ -56,7 +54,6 @@ class SearxStatisticsResult:
     @staticmethod
     def _merge_missing(dst, src):
         replace_dicts = frozenset({
-            'engines',
             'network',
             'html',
             'alternativeUrls',
@@ -100,7 +97,7 @@ class SearxStatisticsResult:
                 # offline / error rows only show status
                 if old and self._is_valid_instance(detail):
                     self._merge_missing(detail, old)
-            for name in ('engines', 'engine_errors', 'hashes', 'cidrs'):
+            for name in ('hashes', 'cidrs'):
                 if not getattr(self, name):
                     setattr(self, name, previous.get(name) or getattr(self, name))
             if not self.metadata.get('ips'):
@@ -110,8 +107,6 @@ class SearxStatisticsResult:
             json.dump({
                 'metadata': self.metadata,
                 'instances': self.instances,
-                'engines': self.engines,
-                'engine_errors': self.engine_errors,
                 'hashes': self.hashes,
                 'cidrs': self.cidrs,
                 'forks': self.forks,
