@@ -32,7 +32,7 @@ FETCHERS = [
             True),
     Fetcher(external_resources,
             'html-grade',
-            'Load page with a browser and check the used external resources 🔗',
+            'Fetch the page and check the external resources being used 🔗',
             'browser'),
     Fetcher(network,
             'network',

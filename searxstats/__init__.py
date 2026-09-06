@@ -15,7 +15,6 @@ def initialize_logging():
     logging.basicConfig(level=logging.DEBUG)
     for logger_name in ('httpx', 'httpcore', 'hpack.hpack', 'hpack.table',
                         'ipwhois.rdap', 'ipwhois.ipwhois', 'ipwhois.net', 'ipwhois.asn',
-                        'selenium.webdriver.remote', 'selenium.webdriver.common',
                         'urllib3.connectionpool',
                         'git.cmd', 'git.repo', 'git.util'):
         logging.getLogger(logger_name).setLevel(logging.WARNING)

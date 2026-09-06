@@ -95,19 +95,11 @@ def fake_searxstatisticsresult(fake_httpserver):
     yield result
 
 
-@pytest.fixture
-def selenium_driver():
-    driver = external_resources.new_driver()
-    try:
-        yield driver
-    finally:
-        driver.close()
-
-
-def test_fetch_resource_hashes_js(selenium_driver, fake_httpserver: pytest_httpserver.HTTPServer):
+def test_fetch_page_resources(fake_httpserver: pytest_httpserver.HTTPServer):
     searxstats.database.initialize_database(':memory:')
-    resources = external_resources.fetch_resource_hashes_js.no_memoize(
-        selenium_driver, fake_httpserver.url_for('/index.html'))
+    with external_resources.new_session() as session:
+        resources = external_resources.fetch_page_resources.no_memoize(
+            session, fake_httpserver.url_for('/index.html'))
 
     assert isinstance(resources, dict)
     for hashes_key in ['inline_script', 'inline_style', 'link', 'script']:

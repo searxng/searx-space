@@ -19,10 +19,8 @@ Note: cryptcheck-backend is used to get the TLS grade.
 Install packages (for Ubuntu):
 
 ```sh
-apt install firefox wget git build-essential python3-dev virtualenv python3-virtualenv libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev python3-ldns python3-venv tor
+apt install git build-essential python3-dev virtualenv python3-virtualenv libxslt-dev zlib1g-dev libffi-dev libssl-dev libyaml-dev python3-ldns python3-venv tor
 ```
-
-For Debian, `firefox` should be replaced with `firefox-esr`.
 
 ### Get the project
 
@@ -43,7 +41,6 @@ cd /usr/local/searx-space
 python3 -m venv --system-site-packages ve
 . ./ve/bin/activate
 pip install -r requirements.txt
-./utils/install-geckodriver
 mkdir cache
 mkdir html/data
 touch html/data/instances.json

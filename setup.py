@@ -62,7 +62,6 @@ setup(
     packages=find_namespace_packages(include=['searxstats', 'searxstats.*']),
     package_data={
         'searxstats': [
-            '*/*.js',
             '../README.md',
             '../requirements.txt',
             '../requirements-dev.txt',
@@ -79,10 +78,6 @@ setup(
             'searxstats=searxstats.__main__:main',
         ],
     },
-    scripts=[
-        'utils/install-geckodriver',
-    ],
-
     zip_safe=False,
     python_requires='>=3.10',
 

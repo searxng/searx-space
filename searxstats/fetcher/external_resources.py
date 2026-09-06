@@ -1,55 +1,46 @@
 import typing
-import os
-import time
+import hashlib
+import re
 import traceback
 import sys
+from urllib.parse import urljoin
 
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
+from curl_cffi.requests import Session
+from lxml import html as lxml_html
 
 from searxstats.config import SEARXNG_GIT_REPOSITORY, \
-                              BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT, \
-                              get_geckodriver_file_name
+                              BROWSER_LOAD_TIMEOUT, TOR_SOCKS_PROXY_HOST, TOR_SOCKS_PROXY_PORT
 from searxstats.data import get_repositories_for_content_sha, is_wellknown_content_sha
 from searxstats.common.http import NetworkType
 from searxstats.common.memoize import MemoizeToDisk
 from searxstats.model import SearxStatisticsResult
 
 
-with open(os.path.dirname(os.path.realpath(__file__))
-          + "/external_resources.js", 'r', encoding='utf-8') as f:
-    FETCH_RESOURCE_HASHES_JS = f.read()
+# import(`./chunk/CFmKEewG.min.js`)
+_IMPORT_RE = re.compile(r'''(?:import\s*\(\s*|import\s+|from\s+)['"`]([^'"`]+)['"`]''')
+# url(./img/searxng.png)
+_CSS_URL_RE = re.compile(r'''url\(\s*['"]?([^'")]+)['"]?\s*\)''')
+# data:image/svg+xml;charset=UTF-8
+# javascript:
+# blob:
+# href="#"
+_SKIP_HREF = ('data:', 'javascript:', 'blob:', '#')
+# rel="canonical"
+# rel="alternate" type="application/rss+xml"
+# rel="search" href="/opensearch.xml"
+# rel="dns-prefetch"
+# rel="preconnect"
+# rel="manifest" href="/manifest.json"
+_META_REL = {'canonical', 'alternate', 'search', 'dns-prefetch', 'preconnect', 'manifest'}
 
 
-# https://raw.githubusercontent.com/dchest/fast-sha256-js/master/sha256.js
-with open(os.path.dirname(os.path.realpath(__file__))
-          + "/sha256.js", 'r', encoding='utf-8') as f:
-    SHA256_JS = f.read()
-
-
-def new_driver(network_type=NetworkType.NORMAL):
-    options = Options()
-    options.add_argument('--headless')
-    options.accept_insecure_certs = False
-    options.set_preference('javascript.options.showInConsole', True)
-    options.set_preference('browser.preferences.instantApply', True)
-    options.set_preference('browser.helperApps.alwaysAsk.force', False)
-    options.set_preference('browser.download.manager.showWhenStarting', False)
-    options.set_preference('browser.download.folderList', 0)
-    if network_type == NetworkType.TOR:
-        options.set_preference('network.proxy.type', 1)
-        options.set_preference('network.proxy.socks', TOR_SOCKS_PROXY_HOST)
-        options.set_preference('network.proxy.socks_port', TOR_SOCKS_PROXY_PORT)
-        options.set_preference('network.proxy.socks_remote_dns', True)
-
-    service = Service(
-        log_output=get_geckodriver_file_name(),
-        service_args=['--log', 'info'],
+def new_session(network_type=NetworkType.NORMAL):
+    tor = network_type == NetworkType.TOR
+    return Session(
+        impersonate='tor' if tor else 'firefox',
+        timeout=BROWSER_LOAD_TIMEOUT,
+        proxy=f'socks5h://{TOR_SOCKS_PROXY_HOST}:{TOR_SOCKS_PROXY_PORT}' if tor else None,
     )
-    driver = webdriver.Firefox(options=options, service=service)
-    driver.set_page_load_timeout(BROWSER_LOAD_TIMEOUT)
-    return driver
 
 
 def result_hash_iterator(result):
@@ -64,40 +55,94 @@ def result_hash_iterator(result):
                     yield resources[resource_url], resource_type
 
 
+def _sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _rel_tokens(rel):
+    if isinstance(rel, (list, tuple)):
+        return {token.lower() for token in rel}
+    return set((rel or '').lower().split())
+
+
+def _inline_hashes(tree, xpath):
+    return [{'hash': _sha256(text.encode('utf-8'))}
+            for text in tree.xpath(xpath) if isinstance(text, str) and text]
+
+
+def _seeds(tree, page_url):
+    # custom logo on some instances
+    seeds = [('script', el.get('src'), page_url) for el in tree.xpath('//script[@src]')]
+    for el in tree.xpath('//link[@href]'):
+        if not _rel_tokens(el.get('rel')) & _META_REL:
+            seeds.append(('link', el.get('href'), page_url))
+    for tag in ('img', 'iframe'):
+        seeds.extend((tag, el.get('src'), page_url) for el in tree.xpath(f'//{tag}[@src]'))
+    for text in tree.xpath('//style/text()'):
+        if isinstance(text, str):
+            seeds.extend(('css', ref, page_url) for ref in _CSS_URL_RE.findall(text))
+    for style in tree.xpath('//@style'):
+        seeds.extend(('css', ref, page_url) for ref in _CSS_URL_RE.findall(style))
+    return seeds
+
+
+def _nested(url, response):
+    # scripts imported after load
+    # or images referenced from CSS
+    ctype = (response.headers.get('content-type') or '').lower()
+    if 'javascript' in ctype or 'ecmascript' in ctype:
+        return [('link', ref, url) for ref in _IMPORT_RE.findall(response.text)
+                if ref.startswith(('.', '/', 'http://', 'https://'))]
+    if 'css' in ctype:
+        return [('css', ref, url) for ref in _CSS_URL_RE.findall(response.text)]
+    return []
+
+
+def _collect(session, page_url, pending):
+    resources, seen = {}, set()
+    while pending:
+        kind, href, base = pending.pop()
+        if not href or href.startswith(_SKIP_HREF):
+            continue
+        url = urljoin(base, href)
+        if url in seen:
+            continue
+        seen.add(url)
+        # if not a subpath of the URL, it is external
+        info = {} if url.startswith(page_url) else {'external': True}
+        try:
+            response = session.get(url)
+            if response.status_code != 200:
+                info.update(notFetched=True, error=f'HTTP status {response.status_code}')
+            else:
+                info['hash'] = _sha256(response.content)
+                pending.extend(_nested(url, response))
+        except Exception as ex:  # pylint: disable=broad-except
+            info.update(notFetched=True, error=str(ex))
+        key = url[len(page_url):] if url.startswith(page_url) else url
+        resources.setdefault(kind, {})[key] = info
+    return resources
+
+
 # pylint: disable=unused-argument
-def fetch_resource_hashes_js_key(driver, url):
+def fetch_page_resources_key(session, url):
     return url
 
 
-@MemoizeToDisk(func_key=fetch_resource_hashes_js_key)
-def fetch_resource_hashes_js(driver, url):
+@MemoizeToDisk(func_key=fetch_page_resources_key)
+def fetch_page_resources(session, url):
     try:
-        # load page
-        driver.get(url)
-
-        # http:// website don't have crypt.subtle (.onion)
-        # Load fast-sha256 fallback
-        driver.execute_script(SHA256_JS)
-
-        # extract external resources (use fetch Javascript function)
-        # HACK: await is the solution
-        # Here, Python waits for Firefox and check every second if the result is available
-        callback_script = driver.execute_script(FETCH_RESOURCE_HASHES_JS)
-        resources = None
-        retry_count = 0
-        wait_result = True
-        while wait_result:
-            time.sleep(1)
-            resources = driver.execute_script(callback_script)
-            if resources is not None:
-                wait_result = False
-            elif retry_count >= 10:
-                resources = {}
-                wait_result = False
-            else:
-                retry_count += 1
-        return resources
-    except Exception as ex:
+        response = session.get(url)
+        if response.status_code != 200:
+            return {'error': f'HTTP status code {response.status_code}'}
+        page_url = str(response.url)
+        tree = lxml_html.fromstring(response.content)
+        return {
+            'inline_script': _inline_hashes(tree, '//script[not(@src)]/text()'),
+            'inline_style': _inline_hashes(tree, '//style/text()'),
+            **_collect(session, page_url, _seeds(tree, page_url)),
+        }
+    except Exception as ex:  # pylint: disable=broad-except
         traceback.print_exc(file=sys.stdout)
         return {
             'error': str(ex)
@@ -148,8 +193,8 @@ def replace_hash_by_hashref(result, hashes, forks):
             del resource['hash']
 
 
-def fetch_resource_hashes(driver, url, resource_hashes, forks):
-    resources = fetch_resource_hashes_js(driver, url)
+def fetch_resource_hashes(session, url, resource_hashes, forks):
+    resources = fetch_page_resources(session, url)
     replace_hash_by_hashref(resources, resource_hashes, forks)
     return resources
 
@@ -290,15 +335,10 @@ def find_forks(resources, hashes, forks) -> typing.List[str]:
 
 
 def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: NetworkType, resource_hashes):
-    driver = new_driver(network_type=network_type)
-    try:
+    with new_session(network_type) as session:
         for url, detail in searx_stats_result.iter_instances(only_valid=True, network_type=network_type):
-            resources = fetch_resource_hashes(driver, url, resource_hashes, searx_stats_result.forks)
+            resources = fetch_resource_hashes(session, url, resource_hashes, searx_stats_result.forks)
             resources.setdefault('error', None)
-            if resources.get('error'):
-                # don't reuse the browser if there was an error
-                driver.quit()
-                driver = new_driver(network_type=network_type)
             # temporary storage
             detail['html'] = {
                 'resources': resources
@@ -308,8 +348,6 @@ def fetch_instances(searx_stats_result: SearxStatisticsResult, network_type: Net
             inline_js = len(resources.get('inline_script', []))
             error_msg = (resources.get('error') or '').strip()
             print('🔗 {0:60} {1:3} loaded js {2:3} inline js  {3}'.format(url, external_js, inline_js, error_msg))
-    finally:
-        driver.quit()
 
 
 # pylint: disable=unsubscriptable-object, unsupported-delete-operation, unsupported-assignment-operation
