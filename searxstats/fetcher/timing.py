@@ -72,7 +72,7 @@ class CheckResult:
         })
 
     async def check_google_result(self, response):
-        return await self._check_html_result_page('google cse', response)
+        return await self._check_html_result_page('google', response)
 
     async def check_search_result(self, response):
         document = await html_fromstring(response.text)
@@ -202,7 +202,7 @@ async def fetch_one(instance_url: str) -> dict:
             await request_stat_with_log(search_url, timing, 'search_go',
                                         client, instance_url,
                                         2, 60, 160, CHECK_RESULT.check_google_result,
-                                        params={'q': '!goc time', **default_params},
+                                        params={'q': '!google time', **default_params},
                                         headers=DEFAULT_HEADERS)
     except Exception as ex:
         print('❌❌ {0}: unexpected {1} {2}'.format(str(instance_url), type(ex), str(ex)))
