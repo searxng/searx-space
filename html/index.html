@@ -66,71 +66,32 @@
       <main role="main" class="container theme-showcase" v-if="selected_tab === 'about'">
         <div class="row">
           <h2>About</h2>
-          <p>This website shows the SearXNG public instances. It is updated every 24 hours, except the response times which are updated every 3 hours.
+          <p>This website lists the SearXNG public instances. It is updated every 24 hours, except the response times which are updated every 3 hours.
           It requires Javascript until the <a href="https://github.com/searxng/searx-space/issues/9">issue #9</a> is fixed.</p>
-          <p><a href="https://github.com/searxng/searxng">SearXNG</a> is a free internet metasearch engine which aggregates results from more than 70 search services. Users are neither tracked nor profiled.</p>
-          <p>Public instances listed here may yield less accurate results as they have much higher traffic and consequently have a higher chance of being blocked
+          <p><a href="https://github.com/searxng/searxng">SearXNG</a> is a free internet metasearch engine which aggregates results from more than 260 search services. Users are neither tracked nor profiled.</p>
+          <p>Public instances listed here can provide less accurate results as they have much higher traffic and consequently have a higher chance of being blocked
           by search providers such as Google, Qwant, Bing, Startpage, etc. Hosting your own instance or using an instance that isn't listed here
           may give you a more consistent search experience.</p>
           <p>The source code of this website: <a href="https://github.com/searxng/searx-space">https://github.com/searxng/searx-space</a></p>
           <p>If something doesn't work as expected on this website, or you have a feature request, you can <a href="https://github.com/searxng/searx-space/issues">create an issue</a></p>
 
-          <h3>Meta-SearXNG instances</h3>
-          <p>These are websites that source from other SearXNG instances. These are useful if you can't decide which SearXNG instance to use:</p>
-          <div class="table-responsive">
-            <table class="table table-bordered table-striped table-hover">
-              <thead>
-                <tr>
-                  <th>URL</th>
-                  <th>Onion URL</th>
-                  <th>Comment</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="column_url"><a href="https://searx.neocities.org/">Neocities</a></td>
-                  <td class="column_url"></td>
-                  <td>
-                    <p>Redirects users directly to a random selection of any known running
-                    server after entering query.</p>
-                    <p>Requires Javascript.</p>
-                    <p>Excludes servers with user tracking and analytics or are proxied through Cloudflare.</p>
-                    <p><a href="https://searx.neocities.org/changelog.html">Changelog</a></p>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="column_url"><a href="https://searloc.org/">Searloc</a></td>
-                  <td class="column_url"></td>
-                  <td>
-                    <p>Redirects searches to a random SearXNG instance from this list.</p>
-                    <p>Requires Javascript.</p>
-                    <p>Runs in the browser without any server side processing and supports !!external bangs.</p>
-                    <p><a href="https://codeberg.org/wazaby/searloc">Source code</a></p>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="column_url"></td>
-                  <td class="column_url"><a href="http://7tcuoi57curagdk7nsvmzedcxgwlrq2d6jach4ksa3vj72uxrzadmqqd.onion/">Gimmeasearx</a></td>
-                  <td>
-                    <p>Configurable, JavaScript-less Neocities alternative, giving you a random SearXNG instance each time you visit the page.</p>
-                    <p>Only an onion service is available. If you can't or don't want to use Tor, you can build and run it from source.</p>
-                    <p><a href="https://github.com/demostanis/gimmeasearx">Source code</a></p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <h3>Where can I ask questions ?</h3>
+          <p>Come join us on Matrix if you have questions or just want to chat about SearXNG:
+          <a href="https://matrix.to/#/#searxng:matrix.org">#searxng:matrix.org</a></p>
 
-          <h3>How can I add / remove my instance on this site ?</h3>
+          <h3>How can I add / delete my instance on this site ?</h3>
           <p>See the <a href="https://github.com/searxng/searx-instances">searx-instances</a> project</p>
 
           <h3>How can I install SearXNG ?</h3>
           <p>See the <a href="https://docs.searxng.org/admin/installation.html">SearXNG documentation</a></p>
-          <p>Or if you want to use docker: <a href="https://github.com/searxng/searxng-docker">https://github.com/searxng/searxng-docker</a></p>
+          <p>Or if you want to use Docker: <a href="https://docs.searxng.org/admin/installation-docker.html#installation-container">Container Installation</a></p>
 
           <h3>How can I use the results in another project ?</h3>
           <p>You can fetch <a href="data/instances.json">instances.json</a> directly.</p>
-          <p>Do note that the format may change in the future.</p>
+          <p>Please note that the format may change in the future.</p>
+
+          <h3>Can't decide which instance to use ?</h3>
+          <p><a href="https://searloc.org/">Searloc</a> redirects to a random instance from this list. <a href="https://codeberg.org/wazaby/searloc">Source</a></p>
         </div>
       </main>
       <main role="main" class="container theme-showcase full-width" v-if="instances.length > 0 && selected_tab != 'about'">
@@ -148,7 +109,7 @@
         </p>
         <div v-if="selected_tab === 'online_https'">
           <h2>{{instances_filtered.length}}&nbsp;online instances</h2>
-          <p>See the <a href="#" v-on:click="selected_tab='about'">About</a> section to know how to edit this list or look for the meta SearXNG instances</p>
+          <p>To add your instance to this list, open an issue in <a href="https://github.com/searxng/searx-instances">searx-instances</a>.</p>
           <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover">
                 <thead>
