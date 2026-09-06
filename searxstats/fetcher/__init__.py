@@ -40,7 +40,7 @@ FETCHERS = [
             'other'),
     Fetcher(selfreport,
             'self-report',
-            'Fetch the /status and /config URLs 💡',
+            'Fetch the /config and /stats/errors URLs 💡',
             'other'),
     Fetcher(cryptcheck_backend,
             'https-grade',

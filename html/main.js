@@ -523,14 +523,13 @@ Vue.component('engine-component', {
 
                 let text;
                 let working_engine = false;
-                let checker_result = typeof engine.checker!=='undefined'?engine.checker.success:null;
                 let error_rate = typeof engine.error_rate!=='undefined'?engine.error_rate:null;
                 let engine_css_class;
-                if (checker_result === null && error_rate === null) {
+                if (error_rate === null) {
                     engine_css_class = 'unknow';
                 } else if (error_rate >= 90) {
                     engine_css_class = 'error';
-                } else if (checker_result === false || error_rate > 5) {
+                } else if (error_rate > 5) {
                     engine_css_class = 'warning';
                 } else {
                     engine_css_class = 'ok';
@@ -559,20 +558,6 @@ Vue.component('engine-component', {
                 if (engine.errors) {
                     for(const error_index of engine.errors) {
                         tableTooltipContent.push(h('tr', [ h('td', { attrs: { 'colspan': 2  } }, [ this.engine_errors[error_index]])]));
-                    }
-                }
-
-                // data about stats/checker
-                if (checker_result !== null) {
-                    const checker_result_text = engine.checker.success ? 'pass':'fail'
-                    const error_th_style = 'padding: 0.25rem; color: white; background-color:' + hslErrorPercentage(engine.checker.success ? 0:100);
-                    tableTooltipContent.push(h('tr', [ h('td', { attrs: { 'colspan': 2  } }, '') ]));
-                    tableTooltipContent.push(h('tr', [
-                        h('th', { attrs: { 'scope': 'row', 'style': error_th_style } }, 'Checker'),
-                        h('th', { attrs: { 'scope': 'row', 'style': error_th_style } }, checker_result_text)
-                    ]));
-                    for(const checker_error of engine.checker.errors) {
-                        tableTooltipContent.push(h('tr', [ h('td', { attrs: { 'colspan': 2  } }, [ checker_error ])]));
                     }
                 }
 
@@ -1052,9 +1037,6 @@ new Vue({
                         }
                         if (engine_detail['error_rate']) {
                             return engine_detail['error_rate'] <= 10;
-                        }
-                        if (engine_detail['checker'] && engine_detail['checker']['simple']) {
-                            return engine_detail['checker']['simple'].length == 0;
                         }
                         return true;
                     })

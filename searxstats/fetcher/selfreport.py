@@ -36,29 +36,6 @@ async def get_config(session, instance_url):
 
 
 @MemoizeToDisk(func_key=only_instance_url)
-async def get_stats_checker(session, instance_url):
-    result = None
-    response, error = await get(session, urljoin(instance_url, 'stats/checker'), timeout=5)
-    if response is not None and error is None:
-        try:
-            checker_json = response.json()
-        except json.JSONDecodeError:
-            pass
-        else:
-            if checker_json.get('status') != 'ok':
-                return result
-            result = {}
-            for engine_name, engine_checker_result in checker_json.get('engines', {}).items():
-                result[engine_name] = {
-                    'checker': {
-                        'success': engine_checker_result.get('success', False),
-                        'errors': list(engine_checker_result.get('errors', {}).keys()),
-                    }
-                }
-    return result
-
-
-@MemoizeToDisk(func_key=only_instance_url)
 async def get_stats_errors(session, instance_url):
     # pylint: disable=too-many-nested-blocks
     result = None
@@ -113,8 +90,6 @@ async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail)
     async with new_client(network_type=network_type) as session:
         # /config
         result_engines = await get_config(session, url)
-        # /stats/checker
-        result_checker = await get_stats_checker(session, url)
         # /stats/errors
         result_stats_errors = await get_stats_errors(session, url)
 
@@ -123,8 +98,6 @@ async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail)
         if result_engines is not None:
             declared_engines = {engine_name: {} for engine_name in result_engines.keys()}
             dict_merge(engine_detail_dict, declared_engines)
-        if result_checker is not None:
-            dict_merge(engine_detail_dict, result_checker)
         if result_stats_errors is not None:
             set_engine_errors(searx_stats_result, result_stats_errors)
             dict_merge(engine_detail_dict, result_stats_errors)
@@ -144,7 +117,7 @@ async def fetch_one(searx_stats_result: SearxStatisticsResult, url: str, detail)
                         'total_error_rate': 0,
                         # number of instances with this engine
                         'instance_count': 0,
-                        # number of instance with this engine and information in /stats/errors or /stats/checker
+                        # number of instance with this engine and information in /stats/errors
                         'stats_count': 0,
                     }
                     searx_stats_result.engines[engine_name] = engine_detail
