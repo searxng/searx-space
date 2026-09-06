@@ -47,9 +47,6 @@ SEARXNG_GIT_REPOSITORY = 'https://github.com/searxng/searxng'
 
 SEARXINSTANCES_GIT_REPOSITORY = 'https://github.com/searxng/searx-instances'
 
-# geckodriver log file name
-GECKODRIVER_LOG_FILE_NAME = 'geckodriver.log'
-
 # mmdb
 MMDB_FILENAME = os.environ.get("MMDB_FILENAME")
 
@@ -78,8 +75,3 @@ def get_git_repository_path(url: str) -> str:
     url_hash = hashlib.sha256(url.encode()).hexdigest()
     name = "git-" + url_hash
     return os.path.join(os.path.join(CACHE_DIRECTORY, 'git'), name)
-
-
-def get_geckodriver_file_name():
-    global CACHE_DIRECTORY, GECKODRIVER_LOG_FILE_NAME  # pylint: disable=global-statement
-    return os.path.join(CACHE_DIRECTORY, 'geckodriver.log')
