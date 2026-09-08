@@ -1,0 +1,187 @@
+{% macro wrap(tip) -%}
+{%- if tip -%}
+<span>{{ caller() }}<span class="info-tooltip">{{ tip }}</span></span>
+{%- else -%}
+{{ caller() }}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro tip_table(rows) -%}
+<table>
+{%- for row in rows %}
+<tr>
+{%- for cell in row %}
+<td>
+{%- if cell is mapping -%}
+{%- if cell.bold -%}<b>{{ cell.bold }}</b>
+{%- elif cell.href -%}<a href="{{ cell.href }}">{{ cell.text }}</a>
+{%- else -%}{{ cell.text }}
+{%- endif -%}
+{%- else -%}{{ cell }}
+{%- endif -%}
+</td>
+{%- endfor %}
+</tr>
+{%- endfor %}
+</table>
+{%- endmacro %}
+
+{% macro url_cell(u) -%}
+<td class="column-url">
+{%- if u.has_tip -%}
+{%- call wrap(url_tip(u)) -%}<a href="{{ u.href }}">{{ u.href }}</a>{%- endcall -%}
+{%- else -%}
+<a href="{{ u.href }}">{{ u.href }}</a>
+{%- endif -%}
+</td>
+{%- endmacro %}
+
+{% macro url_tip(u) -%}
+<table>
+{%- for comment in u.comments %}
+<tr><td>{{ comment }}</td></tr>
+{%- endfor %}
+{%- if u.alts %}
+{%- if u.comments %}<tr><td></td></tr>{% endif %}
+{%- for alt, comment in u.alts %}
+<tr><td>{{ comment }}</td><td>{{ alt }}</td></tr>
+{%- endfor %}
+{%- endif %}
+{%- if u.git_url %}
+<tr><td>Git URL</td><td><a href="{{ u.git_url }}">{{ u.git_url }}</a></td></tr>
+{%- endif %}
+{%- if u.contact %}
+<tr><td>Contact</td><td><a href="{{ u.contact }}">{{ u.contact_label }}</a></td></tr>
+{%- endif %}
+</table>
+{%- endmacro %}
+
+{% macro notes_cells(notes) -%}
+<td class="column-comments col-comments">
+{%- for comment in notes.comments %}<p>{{ comment }}</p>{% endfor -%}
+</td>
+<td class="column-alternativeurls col-comments">
+{%- for alt, comment in notes.alts %}<p><a href="{{ alt }}">{{ alt }}</a> - {{ comment }}</p>{% endfor -%}
+</td>
+{%- endmacro %}
+
+{% macro grade_cell(kind, g) -%}
+<td class="column-{{ kind }} col-stats">
+{%- if g -%}
+{%- set tip = tip_table(g.tip_rows) if g.tip_rows else g.tooltip -%}
+{%- call wrap(tip) -%}
+{%- if g.href -%}
+<a class="value-{{ kind }}" href="{{ g.href }}" style="background-color:{{ g.color }}">{{ g.grade }}</a>
+{%- else -%}
+<span class="value-{{ kind }}" style="background-color:{{ g.color }}">{{ g.grade }}</span>
+{%- endif -%}
+{%- endcall -%}
+{%- endif -%}
+</td>
+{%- endmacro %}
+
+{% macro cert_cell(c) -%}
+<td class="column-certificate col-stats">
+{%- if c -%}
+{%- call wrap(tip_table(c.tip_rows)) -%}
+<a href="{{ c.href }}">{{ c.text }}</a>
+{%- endcall -%}
+{%- endif -%}
+</td>
+{%- endmacro %}
+
+{% macro ipv6_cell(v) -%}
+<td class="column-ipv6 col-stats">
+{%- if v.color -%}
+<span class="value-ipv6" style="background-color:{{ v.color }}; color:white">{{ v.text }}</span>
+{%- else -%}
+<span class="value-ipv6">{{ v.text }}</span>
+{%- endif -%}
+</td>
+{%- endmacro %}
+
+{% macro network_cell(n) -%}
+<td class="column-network col-stats">
+{%- call wrap(network_tip(n)) -%}
+{%- if n.color -%}
+<span class="value-network" style="background-color:{{ n.color }}; color:white">{{ n.text }}</span>
+{%- else -%}
+<span class="value-network">{{ n.text }}</span>
+{%- endif -%}
+{%- endcall -%}
+</td>
+{%- endmacro %}
+
+{% macro network_tip(n) -%}
+<h5>{{ n.text }}</h5>
+{%- if n.dnssec -%}
+<p><b>DNSSEC</b></p><p>{{ n.dnssec }}</p>
+{%- endif -%}
+<p><b>Reverse DNS</b></p>
+{%- for host in n.hosts -%}
+<p>{{ host }}</p>
+{%- endfor -%}
+{%- endmacro %}
+
+{% macro time_cell(t) -%}
+<td class="column-responsetime col-stats">
+{%- if t -%}
+{%- call wrap(time_tip(t)) -%}
+<span class="timing" data-times="{{ t.times|tojson }}">
+{%- if t.color -%}
+<span class="value-responsetime" style="background-color:{{ t.color }}">{{ t.text }}</span>
+{%- elif t.text -%}
+<span>{{ t.text }}</span>
+{%- endif -%}
+</span>
+{%- endcall -%}
+{%- endif -%}
+</td>
+{%- endmacro %}
+
+{% macro time_tip(t) -%}
+{%- if t.success is not none -%}<p>{{ t.success }}% success</p>{%- endif -%}
+{%- if t.engines -%}
+{%- if t.engines.color -%}
+<p style="background-color:{{ t.engines.color }}; color:white">{{ t.engines.text }}</p>
+{%- else -%}
+<p>{{ t.engines.text }}</p>
+{%- endif -%}
+{%- endif -%}
+{%- if t.error -%}<p>Error: {{ t.error }}</p>{%- endif -%}
+{%- for label, value in t.lines -%}
+<p>{{ label }}: {{ value }}</p>
+{%- endfor -%}
+{%- endmacro %}
+
+{% macro uptime_cell(u) -%}
+<td class="column-uptime col-stats">
+{%- if u -%}
+{%- call wrap(uptime_tip(u)) -%}
+<a class="value-uptime" href="{{ u.href }}" style="background-color:{{ u.color }}; color:white">{{ u.text }}</a>
+{%- endcall -%}
+{%- endif -%}
+</td>
+{%- endmacro %}
+
+{% macro uptime_tip(u) -%}
+<table>
+<tr><td>Today</td><td>{{ u.day }} %</td></tr>
+<tr><td>This week</td><td>{{ u.week }} %</td></tr>
+<tr><td>This month</td><td>{{ u.month }} %</td></tr>
+<tr><td>This year</td><td>{{ u.year }} %</td></tr>
+</table>
+{%- endmacro %}
+
+{% macro status_cell(s) -%}
+<td class="column-status col-stats">
+{%- if s and s.css -%}
+<span class="label {{ s.css }}">{{ s.text }}</span>
+{%- elif s -%}{{ s.text }}
+{%- endif -%}
+</td>
+{%- endmacro %}
+
+{% macro help_q(name) -%}
+<a class="help" href="#help-{{ name }}">?</a>
+{%- endmacro %}

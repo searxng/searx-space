@@ -54,7 +54,7 @@ Run (it takes between 30 minutes and 1 hour):
 python3 -m searxstats --cache /usr/local/searx-space/cache --all
 ```
 
-Output in `html/data/instances.json`.
+Output in `html/data/instances.json` and `html/index.html`.
 
 To display all options:
 

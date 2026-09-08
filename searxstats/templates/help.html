@@ -1,0 +1,55 @@
+<h4 id="help-ranking">Instance ranking</h4>
+<p>Instances are sorted in this order:</p>
+<ol>
+  <li>HTML grade</li>
+  <li>Default /search returns results</li>
+  <li>TLS grade</li>
+  <li>CSP grade</li>
+  <li>Monthly uptime in 5% steps</li>
+  <li>SearXNG version from this or previous month</li>
+  <li>There are at least 3 working engines in the default search</li>
+  <li>The Google engine returns results</li>
+  <li>The default /search's response time</li>
+  <li>The Google engine's response time</li>
+</ol>
+<h4 id="help-tls-grade">TLS grade</h4>
+<p>Grade from <a href="https://cryptcheck.fr/">cryptcheck.fr</a>
+(source code: <a href="https://github.com/aeris/cryptcheck">aeris/cryptcheck</a>
+and <a href="https://github.com/dalf/cryptcheck-backend">dalf/cryptcheck-backend</a>).</p>
+<h4 id="help-csp-grade">CSP grade</h4>
+<p>Grade from the <a href="https://developer.mozilla.org/en-US/observatory">MDN HTTP Observatory</a>
+(source code: <a href="https://github.com/mdn/mdn-http-observatory">mdn/mdn-http-observatory</a>).</p>
+<h4 id="help-html-grade">HTML grade</h4>
+<p>Are the scripts and static files well-known?</p>
+<ul>
+  <li>V - Vanilla instance: all static files comes from the SearXNG git repository.</li>
+  <li>F - Fork: all static files comes from a fork of SearXNG</li>
+  <li>C - Some static files have been modified, but the Javascripts comes from the SearXNG git repository.</li>
+  <li>Cjs - Some static files have been modified including Javascript files.</li>
+  <li>E - The instance includes file from another domain.</li>
+  <li>👁️ - The instance uses an analytics software.</li>
+</ul>
+<p>Be aware that only inline and external ( &lt;script src="...") scripts are checked.
+There are many other ways to leak information.</p>
+<h4 id="help-ipv6">IPv6</h4>
+<p>Yes if at least one IPv6 is valid and has the HTTPS port opened</p>
+<h4 id="help-country">Country</h4>
+<p>From whois information of the IPs</p>
+<h4 id="help-responsetime">Response time colums</h4>
+<ul>
+  <li>Search response time - response time of a query with the default engines.</li>
+  <li>Google response time - response time of the Google engine.</li>
+  <li>Initial response time - response time of the front time without prior existing connection.</li>
+</ul>
+<h4 id="help-timing">Displayed time</h4>
+<ul>
+  <li>Total time - client time</li>
+  <li>Server time - on the SearXNG instance, time to serve the page</li>
+  <li>Load time - on the SearXNG instance, time to load third party pages (e.g. Google)</li>
+  <li>Network time = Total time - Server time</li>
+  <li>Processing time = Server time - Load time</li>
+</ul>
+<p>
+  The instances have to send the <a href="https://www.w3.org/TR/server-timing/">Server-Timing header</a> to providing the Server, Load, Network and Processing times.
+  See the SearXNG commit <a href="https://github.com/searxng/searxng/commit/554a21e1d07f3b434b5097b4e3d49e1403be7527">554a21e1d07f3b43</a>.
+</p>

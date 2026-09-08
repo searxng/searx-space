@@ -23,4 +23,7 @@ docker-run: # Run the container
 	./docker-run.sh --all
 
 webserver:
-	cd $(ROOT_DIR)/html; python -m http.server 8889
+	mkdir -p html/data
+	curl -o html/data/instances.json https://searx.space/data/instances.json
+	python3 searxstats/render.py html/data/instances.json
+	python3 -m http.server -d html 8889
