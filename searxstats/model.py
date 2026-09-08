@@ -11,6 +11,7 @@ from .common.utils import dict_update, create_task, print_exception_wrapper
 from .common.foreach import for_each
 from .common.http import get_network_type, NetworkType
 from .config import SEARXNG_GIT_REPOSITORY
+from .render import write_html
 
 
 class AsnPrivacy(Enum):
@@ -111,6 +112,8 @@ class SearxStatisticsResult:
                 'cidrs': self.cidrs,
                 'forks': self.forks,
             }, output_file, ensure_ascii=False)
+
+        write_html(self, output_file_name)
 
 
 class Fetcher:

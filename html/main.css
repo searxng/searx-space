@@ -2,6 +2,61 @@
   margin-top: 2em;
 }
 
+.tab-panel {
+  display: none;
+}
+
+#panel-online {
+  display: block;
+}
+
+body:has(#tor:target, #offline:target, #about:target) #panel-online {
+  display: none;
+}
+
+body:has(#online:target) #panel-online,
+body:has(#tor:target) #panel-tor,
+body:has(#offline:target) #panel-offline,
+body:has(#about:target) #panel-about {
+  display: block;
+}
+
+.navbar-inverse .navbar-nav > .tab-online > a,
+.navbar-inverse .navbar-nav > .tab-online > a:is(:hover, :focus) {
+  color: #fff;
+  background-color: #080808;
+}
+
+body:has(#tor:target, #offline:target, #about:target) .navbar-inverse .navbar-nav > .tab-online > a,
+body:has(#tor:target, #offline:target, #about:target) .navbar-inverse .navbar-nav > .tab-online > a:hover {
+  color: #9d9d9d;
+  background-color: transparent;
+}
+
+body:has(#online:target) .navbar-inverse .navbar-nav > .tab-online > a,
+body:has(#tor:target) .navbar-inverse .navbar-nav > .tab-tor > a,
+body:has(#offline:target) .navbar-inverse .navbar-nav > .tab-offline > a,
+body:has(#about:target) .navbar-inverse .navbar-nav > .tab-about > a,
+body:has(#online:target) .navbar-inverse .navbar-nav > .tab-online > a:is(:hover, :focus),
+body:has(#tor:target) .navbar-inverse .navbar-nav > .tab-tor > a:is(:hover, :focus),
+body:has(#offline:target) .navbar-inverse .navbar-nav > .tab-offline > a:is(:hover, :focus),
+body:has(#about:target) .navbar-inverse .navbar-nav > .tab-about > a:is(:hover, :focus) {
+  color: #fff;
+  background-color: #080808;
+}
+
+body:has(#about:target) .global_filters {
+  display: none;
+}
+
+body:has(#about:target) main.full-width {
+  display: none;
+}
+
+html:not(.js) .js-only {
+  display: none;
+}
+
 .table-responsive {
   max-width: min-content;
   max-width: fit-content;
@@ -197,21 +252,7 @@ tbody .column-responsetime {
   width: 60rem;
 }
 
-.value-tls {
-  color: white;
-  display: block;
-  text-align: center;
-  margin: 0;
-}
-
-.value-csp {
-  color: white;
-  display: block;
-  text-align: center;
-  margin: 0;
-}
-
-.value-html {
+.value-tls, .value-csp, .value-html {
   color: white;
   display: block;
   text-align: center;
@@ -259,4 +300,12 @@ tbody .column-responsetime {
 .global_filters span {
   padding-right: 1em;
   white-space: nowrap;
+}
+
+body:has(#show-comments:checked) .col-stats {
+  display: none;
+}
+
+body:not(:has(#show-comments:checked)) .col-comments {
+  display: none;
 }
