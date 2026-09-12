@@ -1,0 +1,219 @@
+{%- import 'macros.html' as m -%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>document.documentElement.classList.add("js")</script>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<link rel="stylesheet" href="assets/bootstrap.min.css">
+<link rel="stylesheet" href="assets/bootstrap-theme.min.css">
+<link rel="stylesheet" href="main.css">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon.png" type="image/png" sizes="any">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<title>SearXNG instances</title>
+<meta name="description" content="Online and offline SearXNG instances">
+<link rel="canonical" href="https://searx.space/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://searx.space/">
+<meta property="og:title" content="SearXNG instances">
+<meta property="og:image" content="https://searx.space/favicon.png">
+<meta property="og:description" content="Online and offline SearXNG instances">
+<link rel="apple-touch-icon" href="/favicon.png">
+</head>
+<body>
+<header><nav class="navbar navbar-inverse navbar-static-top">
+<div class="container full-width">
+<div class="navbar-header"><a class="navbar-brand" href="#online">SearXNG instances</a></div>
+<ul class="nav navbar-nav" role="tablist">
+<li class="tab-online" id="online"><a href="#online">Online HTTPS</a></li>
+<li class="tab-tor" id="tor"><a href="#tor">Online Tor</a></li>
+<li class="tab-offline" id="offline"><a href="#offline">Offline &amp; error</a></li>
+</ul>
+<ul class="nav navbar-nav navbar-right" role="tablist">
+<li class="tab-about" id="about"><a href="#about">About</a></li>
+</ul></div></nav></header>
+<main role="main" class="container theme-showcase full-width">
+
+<p class="global_filters">
+  <span>Show comments <input id="show-comments" type="checkbox"></span>
+  <span class="js-only">Displayed time:<a class="help" href="#help-timing">?</a>&nbsp;
+    <select name="time-select" id="time-select">
+      <option value="all">Total</option>
+      <option value="server">Server</option>
+      <option value="load">Load</option>
+      <option value="network">Network</option>
+      <option value="processing">Processing</option>
+    </select>
+  </span>
+</p>
+
+<div id="panel-online" class="tab-panel">
+<h2><span id="https-count">{{ https|length }}</span>&nbsp;online instances</h2>
+<p>To add your instance to this list, open an issue in
+<a href="https://github.com/searxng/searx-instances">searx-instances</a>.</p>
+<div class="table-responsive"><table class="table table-bordered table-striped table-hover" id="https-table">
+<thead>
+<tr>
+  <th class="column-url">URL</th>
+  <th class="column-version">Version</th>
+  <th class="column-tls col-stats">TLS{{ m.help_q('tls-grade') }}</th>
+  <th class="column-csp col-stats">CSP{{ m.help_q('csp-grade') }}</th>
+  <th class="column-html col-stats">HTML{{ m.help_q('html-grade') }}</th>
+  <th class="column-certificate col-stats">Certificate</th>
+  <th class="column-ipv6 col-stats">IPv6{{ m.help_q('ipv6') }}</th>
+  <th class="column-country col-stats">Country{{ m.help_q('country') }}</th>
+  <th class="column-network col-stats">Network</th>
+  <th class="column-responsetime col-stats">Search response time</th>
+  <th class="column-responsetime col-stats">Google response time</th>
+  <th class="column-responsetime col-stats">Initial response time</th>
+  <th class="column-uptime col-stats">Uptime</th>
+  <th class="column-comments col-comments">Comments</th>
+  <th class="column-alternativeurls col-comments">Alternative URLs</th>
+</tr>
+<tr class="js-only">
+  <th class="column-url"></th>
+  <th class="column-version"><input data-filter="version"></th>
+  <th class="column-tls col-stats"><div class="column-filter"><input data-filter="tls"></div></th>
+  <th class="column-csp col-stats"><div class="column-filter"><input data-filter="csp"></div></th>
+  <th class="column-html col-stats"><div class="column-filter"><input data-filter="html"></div></th>
+  <th class="column-certificate col-stats"><div class="column-filter"></div></th>
+  <th class="column-ipv6 col-stats"><div class="column-filter"><input data-filter="ipv6" type="checkbox"></div></th>
+  <th class="column-country col-stats"><div class="column-filter"><input data-filter="country"></div></th>
+  <th class="column-network col-stats"><div class="column-filter">
+    <input data-filter="network" style="width: 90%">
+    <span><input data-filter="asn-privacy" type="checkbox" style="margin: 0 0.25em;vertical-align: middle; width:auto;"></span>
+    <span class="info-tooltip">Hide networks with privacy issue</span>
+  </div></th>
+  <th class="column-responsetime col-stats"><div class="column-filter"><input data-filter="search" type="checkbox"></div></th>
+  <th class="column-responsetime col-stats"><div class="column-filter"><input data-filter="google" type="checkbox"></div></th>
+  <th class="column-responsetime col-stats"></th>
+  <th class="column-uptime col-stats"></th>
+  <th class="column-comments col-comments"></th>
+  <th class="column-alternativeurls col-comments"></th>
+</tr>
+</thead>
+<tbody>
+{% for row in https %}
+<tr
+  data-version="{{ row.filters.version }}"
+  data-tls="{{ row.filters.tls }}"
+  data-csp="{{ row.filters.csp }}"
+  data-html="{{ row.filters.html }}"
+  data-ipv6="{{ row.filters.ipv6 }}"
+  data-country="{{ row.filters.country }}"
+  data-network="{{ row.filters.network }}"
+  data-search="{{ row.filters.search }}"
+  data-google="{{ row.filters.google }}"
+  data-asn-privacy="{{ row.filters.asn_privacy }}"
+>
+{{ m.url_cell(row.url) }}
+<td class="column-version">{{ row.version }}</td>
+{{ m.grade_cell('tls', row.tls) }}
+{{ m.grade_cell('csp', row.csp) }}
+{{ m.grade_cell('html', row.html) }}
+{{ m.cert_cell(row.cert) }}
+{{ m.ipv6_cell(row.ipv6) }}
+<td class="column-country col-stats">{{ row.country }}</td>
+{{ m.network_cell(row.network) }}
+{{ m.time_cell(row.search) }}
+{{ m.time_cell(row.google) }}
+{{ m.time_cell(row.initial) }}
+{{ m.uptime_cell(row.uptime) }}
+{{ m.notes_cells(row.notes) }}
+</tr>
+{% else %}
+<tr><td colspan="15"></td></tr>
+{% endfor %}
+</tbody>
+</table></div>
+{% include 'help.html' %}
+</div>
+
+<div id="panel-tor" class="tab-panel">
+<h2>{{ tor|length }}&nbsp;online instances</h2>
+<div class="table-responsive"><table class="table table-bordered table-striped table-hover">
+<thead><tr>
+  <th class="column-url">URL</th>
+  <th class="column-version">Version</th>
+  <th class="column-html col-stats">HTML{{ m.help_q('html-grade') }}</th>
+  <th class="column-responsetime col-stats">Search response time</th>
+  <th class="column-responsetime col-stats">Google response time</th>
+  <th class="column-responsetime col-stats">Initial response time</th>
+  <th class="column-comments col-comments">Comments</th>
+  <th class="column-alternativeurls col-comments">Alternative URLs</th>
+</tr></thead>
+<tbody>
+{% for row in tor %}
+<tr>
+{{ m.url_cell(row.url) }}
+<td class="column-version">{{ row.version }}</td>
+{{ m.grade_cell('html', row.html) }}
+{{ m.time_cell(row.search) }}
+{{ m.time_cell(row.google) }}
+{{ m.time_cell(row.initial) }}
+{{ m.notes_cells(row.notes) }}
+</tr>
+{% else %}
+<tr><td colspan="8"></td></tr>
+{% endfor %}
+</tbody>
+</table></div>
+</div>
+
+<div id="panel-offline" class="tab-panel">
+<h2>SearXNG not found</h2>
+<div class="table-responsive"><table class="table table-bordered table-striped table-hover">
+<thead><tr>
+  <th class="column-url">URL</th>
+  <th class="column-status col-stats">Status</th>
+  <th class="column-comments col-comments">Comments</th>
+  <th class="column-alternativeurls col-comments">Alternative URLs</th>
+</tr></thead>
+<tbody>
+{% for row in nosearx %}
+<tr>
+{{ m.url_cell(row.url) }}
+{{ m.status_cell(row.status) }}
+{{ m.notes_cells(row.notes) }}
+</tr>
+{% else %}
+<tr><td colspan="4"></td></tr>
+{% endfor %}
+</tbody>
+</table></div>
+{% for title, rows in errors %}
+<h2>{{ title }}</h2>
+<div class="table-responsive"><table class="table table-bordered table-striped table-hover">
+<thead><tr>
+  <th class="column-url">URL</th>
+  <th class="column-status col-stats">Status</th>
+  <th class="column-error col-stats">Error</th>
+  <th class="column-comments col-comments">Comments</th>
+  <th class="column-alternativeurls col-comments">Alternative URLs</th>
+</tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+{{ m.url_cell(row.url) }}
+{{ m.status_cell(row.status) }}
+<td class="column-error col-stats">{{ row.error }}</td>
+{{ m.notes_cells(row.notes) }}
+</tr>
+{% endfor %}
+</tbody>
+</table></div>
+{% endfor %}
+</div>
+</main>
+<main role="main" class="container theme-showcase tab-panel" id="panel-about">
+{% include 'about.html' %}
+</main>
+<footer class="page-footer"><div class="container text-center"><div class="row"><p>
+<a href="https://github.com/searxng/searx-space">Source code of this website</a>
+ - <a href="https://searx.space">Public URL</a>
+ - <a href="http://searxspbitokayvkhzhsnljde7rqmn7rvoga6e4waeub3h7ug3nghoad.onion">Onion URL</a>
+</p></div></div></footer>
+<script src="main.js"></script>
+</body></html>

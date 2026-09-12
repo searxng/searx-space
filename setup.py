@@ -66,11 +66,15 @@ setup(
             '../requirements.txt',
             '../requirements-dev.txt',
             '../html',
+            'templates/*.html',
         ],
         'html': [
-            'index.html',
-            'index.*',
+            'main.css',
+            'main.js',
             'assets/*.*',
+            'robots.txt',
+            'sitemap.xml',
+            'favicon.*',
         ]
     },
     entry_points={
