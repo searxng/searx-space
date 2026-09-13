@@ -10,11 +10,11 @@ docker-build: # Build the container
 	docker build -t $(APP_NAME) .
 
 docker-run: # Run the container
-	# instances.json
+	# instances.json and index.html
 	mkdir -p $(ROOT_DIR)/html/data
-	touch $(ROOT_DIR)/html/data/instances.json
-	chgrp 1005 $(ROOT_DIR)/html/data/instances.json
-	chmod 664 $(ROOT_DIR)/html/data/instances.json
+	touch $(ROOT_DIR)/html/data/instances.json $(ROOT_DIR)/html/index.html
+	chgrp 1005 $(ROOT_DIR)/html/data/instances.json $(ROOT_DIR)/html/index.html
+	chmod 664 $(ROOT_DIR)/html/data/instances.json $(ROOT_DIR)/html/index.html
 	# cache
 	mkdir -p $(ROOT_DIR)/cache
 	chgrp 1005 $(ROOT_DIR)/cache

@@ -8,6 +8,7 @@ docker run $DOCKER_INTERACTIVE_PARAM \
     --rm \
     --network host \
     -v $ROOT_DIR/html/data:/usr/local/searxstats/html/data \
+    -v $ROOT_DIR/html/index.html:/usr/local/searxstats/html/index.html \
     -v $ROOT_DIR/cache:/usr/local/searxstats/cache \
     -e MMDB_FILENAME=/usr/local/searxstats/cache/dbip-country-lite.mmdb \
     --name="$CONTAINER_NAME" \
