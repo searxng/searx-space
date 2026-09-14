@@ -131,7 +131,7 @@
 <td class="column-responsetime col-stats">
 {%- if t -%}
 {%- call wrap(time_tip(t)) -%}
-<span class="timing" data-times="{{ t.times|tojson }}">
+<span class="timing" data-times="{{ t.times|tojson|forceescape }}">
 {%- if t.color -%}
 <span class="value-responsetime" style="background-color:{{ t.color }}">{{ t.text }}</span>
 {%- elif t.text -%}
