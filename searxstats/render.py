@@ -2,7 +2,7 @@
 import datetime
 import os
 from functools import cmp_to_key
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -31,6 +31,7 @@ _HTML_LABEL = {
     'js?': 'Unloaded Javascript',
 }
 _TIME_KEYS = ('all', 'server', 'load', 'network', 'processing')
+_RESOURCE_TYPES = ('iframe', 'script', 'css', 'link', 'other', 'img')
 _DNSSEC = {0: 'Unknow', 1: 'Secure', 2: 'Insecure', 3: 'Bogus'}
 _TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 _ENV = Environment(
@@ -281,14 +282,89 @@ def _csp_view(http):
     return _grade_view(grade, http.get('gradeUrl'), tooltip=tooltip)
 
 
-def _html_view(html, git_url):
-    grade = (html or {}).get('grade') or '?'
+def _hash_info(hashes, hash_ref):
+    if not isinstance(hashes, list) or not isinstance(hash_ref, int):
+        return None
+    if hash_ref < 0 or hash_ref >= len(hashes):
+        return None
+    info = hashes[hash_ref]
+    return info if isinstance(info, dict) else None
+
+
+def _resource_cell(text, href=None, color=None):
+    cell = {'text': text}
+    if href:
+        cell['href'] = href
+    if color:
+        cell['color'] = color
+    return cell
+
+
+def _resource_row(kind, text, extra, color, href=None):
+    return [
+        _resource_cell(kind, color=color),
+        _resource_cell(text, href=href, color=color),
+        _resource_cell(extra or '', color=color),
+    ]
+
+
+def _html_view(url, html, git_url, hashes):
+    html = html or {}
+    grade = html.get('grade') or '?'
     label = _HTML_LABEL.get(str(grade).split(',', maxsplit=1)[0], '')
+    resources = html.get('resources') or {}
     tip_rows = []
     if label:
         tip_rows.append([label])
     if git_url:
         tip_rows.append(['Git URL', {'href': git_url, 'text': git_url}])
+
+    unknown_inline = 0
+    unknown_count_min = None
+    for detail in resources.get('inline_script') or []:
+        info = _hash_info(hashes, detail.get('hashRef'))
+        if info and info.get('unknown'):
+            unknown_inline += 1
+            count = info.get('count') or 1
+            unknown_count_min = count if unknown_count_min is None else min(unknown_count_min, count)
+    if unknown_inline:
+        color = _hsl_ramp(1, 3)
+        if unknown_count_min == 1:
+            extra = ('unique to this instance' if unknown_inline == 1
+                     else 'at least one is unique to this instance')
+        else:
+            extra = 'at least one is used by {} instances'.format(unknown_count_min)
+        tip_rows.append(_resource_row(
+            '', '{} unknown inline scripts, {}'.format(unknown_inline, extra), '', color))
+
+    for resource_type in _RESOURCE_TYPES:
+        items = resources.get(resource_type)
+        if not isinstance(items, dict):
+            continue
+        for res_url, detail in items.items():
+            if not isinstance(detail, dict):
+                detail = {}
+            color = extra = None
+            show = False
+            if detail.get('external'):
+                show = True
+                color = _hsl_ramp(0, 3)
+            elif detail.get('notFetched'):
+                show = True
+                color = _hsl_unknown()
+                extra = detail.get('error')
+            else:
+                info = _hash_info(hashes, detail.get('hashRef'))
+                if info and info.get('unknown'):
+                    show = True
+                    color = _hsl_ramp(1, 3)
+            if show:
+                href = urljoin(url, res_url)
+                tip_rows.append(_resource_row(resource_type, href, extra, color, href=href))
+
+    error = resources.get('error')
+    if error:
+        tip_rows.append([str(error)])
     return _grade_view(grade, color=_hsl_html(grade), tip_rows=tip_rows or None)
 
 
@@ -467,7 +543,7 @@ def _status_view(status):
     return {'text': str(code), 'css': css}
 
 
-def _https_row(url, detail, net):
+def _https_row(url, detail, net, hashes):
     html = detail.get('html') or {}
     timing = detail.get('timing') or {}
     version = _version(detail) or ''
@@ -477,7 +553,7 @@ def _https_row(url, detail, net):
         'version': version,
         'tls': _tls_view(detail.get('tls')),
         'csp': _csp_view(detail.get('http')),
-        'html': _html_view(html, detail.get('git_url')),
+        'html': _html_view(url, html, detail.get('git_url'), hashes),
         'cert': _cert_view(url, detail.get('tls')),
         'ipv6': {
             'text': 'Yes' if ipv6 is True else 'No' if ipv6 is False else '?',
@@ -505,12 +581,12 @@ def _https_row(url, detail, net):
     }
 
 
-def _tor_row(url, detail):
+def _tor_row(url, detail, hashes):
     timing = detail.get('timing') or {}
     return {
         'url': _url_view(url, detail),
         'version': _version(detail) or '',
-        'html': _html_view(detail.get('html') or {}, detail.get('git_url')),
+        'html': _html_view(url, detail.get('html') or {}, detail.get('git_url'), hashes),
         'search': _time_view(timing.get('search')),
         'google': _time_view(timing.get('search_go')),
         'initial': _time_view(timing.get('initial')),
@@ -544,9 +620,10 @@ def _split(result):
 def render_html(result):
     https, tor, nosearx, errors = _split(result)
     cidrs = result.cidrs
+    hashes = getattr(result, 'hashes', None) or []
     return _ENV.get_template('index.html').render(
-        https=[_https_row(url, detail, _netinfo(detail, cidrs)) for url, detail in https],
-        tor=[_tor_row(url, detail) for url, detail in tor],
+        https=[_https_row(url, detail, _netinfo(detail, cidrs), hashes) for url, detail in https],
+        tor=[_tor_row(url, detail, hashes) for url, detail in tor],
         nosearx=[_error_row(url, detail) for url, detail in nosearx],
         errors=[
             (title, [_error_row(url, detail, with_error=True) for url, detail in rows])

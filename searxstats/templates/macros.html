@@ -11,7 +11,11 @@
 {%- for row in rows %}
 <tr>
 {%- for cell in row %}
+{%- if cell is mapping and cell.color -%}
+<td style="background-color:{{ cell.color }}; color:white">
+{%- else -%}
 <td>
+{%- endif -%}
 {%- if cell is mapping -%}
 {%- if cell.bold -%}<b>{{ cell.bold }}</b>
 {%- elif cell.href -%}<a href="{{ cell.href }}">{{ cell.text }}</a>
