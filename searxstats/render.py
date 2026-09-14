@@ -308,6 +308,7 @@ def _resource_row(kind, text, extra, color, href=None):
     ]
 
 
+# pylint: disable=too-many-locals, too-many-branches
 def _html_view(url, html, git_url, hashes):
     html = html or {}
     grade = html.get('grade') or '?'
