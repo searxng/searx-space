@@ -1,3 +1,4 @@
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 version: 2
 updates:
   - package-ecosystem: "pip"
@@ -7,3 +8,20 @@ updates:
       day: "friday"
     open-pull-requests-limit: 5
     target-branch: "master"
+    commit-message:
+      prefix: "[upd] pypi:"
+    groups:
+      minor:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+    target-branch: "master"
+    commit-message:
+      prefix: "[upd] github-actions:"
